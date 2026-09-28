@@ -228,6 +228,20 @@ strong, b { font-weight: 600; }
 .about .body { max-width: var(--measure); }
 .about .body > p:first-child { font-size: var(--t-lead); line-height: 1.6; }
 
+.issue-list { list-style: none; margin: 32px 0 0; padding: 0; columns: 2 16em; column-gap: 48px; }
+.issue-list li { break-inside: avoid; padding: 12px 0; border-top: 1px solid var(--rule); }
+.vision { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--rule); color: var(--ink-soft); }
+.epigraph { margin: 32px 0; }
+.epigraph p { font-size: var(--t-lead); font-weight: 300; line-height: 1.5; margin: 0 0 8px; }
+.epigraph cite { font-style: normal; color: var(--slate); }
+.video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
+
+/* Blog index */
+.topic-nav ul { list-style: none; margin: 0 0 56px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 28px; }
+.topic-nav a { font-weight: 500; }
+.year { margin-bottom: 64px; }
+.year h2 { font-size: var(--t-h3); font-weight: 400; margin-bottom: 16px; }
+
 /* Listen & read */
 .media-split { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(40px, 6vw, 96px); }
 @media (max-width: 900px) { .media-split { grid-template-columns: 1fr; } }

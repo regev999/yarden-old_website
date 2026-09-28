@@ -1,1 +1,7 @@
+# Netlify / Cloudflare Pages
 /ראשי-2/  /  301
+/feed  /feed.xml  200
+/feed/  /feed.xml  200
+/comments/feed/  /feed.xml  301
+/wp-sitemap.xml  /sitemap_index.xml  301
+/page-sitemap1.xml  /page-sitemap.xml  301

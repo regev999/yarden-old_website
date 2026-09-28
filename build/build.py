@@ -33,6 +33,15 @@ LOCATION = "הרצליה ובזום"
 # Left empty, the forms open the visitor's mail app with the details filled in.
 FORM_ENDPOINT = ""
 HOME_ID = 139
+BLOG_ID = 513
+# The old site's title suffix (Yoast default "%%title%% - %%sitename%%"); kept
+# verbatim so search results and rankings don't see a title change.
+SITE_TITLE = "ירדן כרם - התמקדות, הקומי, Somatic Experiencing"
+
+
+def enc(path):
+    """Percent-encode a path the way WordPress did (lowercase hex)."""
+    return re.sub(r"%[0-9A-F]{2}", lambda m: m.group(0).lower(), urllib.parse.quote(path))
 SOCIAL = [
     ("youtube", "יוטיוב", "https://www.youtube.com/@yardenkerem5297"),
     ("facebook", "פייסבוק", "https://www.facebook.com/somatictherapyandfocusing/"),
@@ -546,10 +555,10 @@ def render_nav(current):
     return "".join(out)
 
 
-def page_shell(site, *, path, title, body, description="", hero=None, canonical=None, og_image=None, article=None):
-    full_title = f"{title} | {SITE_NAME}" if title and path != "/" else f"{SITE_NAME} – {TAGLINE}"
+def page_shell(site, *, path, title, body, description="", hero=None, canonical=None, og_image=None, article=None, seo_title=None):
+    full_title = seo_title or f"{title} - {SITE_TITLE}"
     desc = esc(description or f"{SITE_NAME} – {TAGLINE}. טיפול אישי וקורסים בגישת ההתמקדות.")
-    canon = SITE_URL + urllib.parse.quote(canonical or path)
+    canon = SITE_URL + enc(canonical or path)
     hero_html = ""
     if hero:
         subs = "".join(f'<p class="page-hero__sub">{s_}</p>' for s_ in hero.get("sub", []) if s_)
@@ -580,6 +589,7 @@ def page_shell(site, *, path, title, body, description="", hero=None, canonical=
 <link rel="preload" href="/assets/fonts/IBMPlexSansHebrew-ExtraLight.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/IBMPlexSansHebrew-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/style.css">
+<link rel="alternate" type="application/rss+xml" title="{esc(SITE_TITLE)}" href="{SITE_URL}/feed/">
 {ld}
 </head>
 <body>
@@ -685,13 +695,44 @@ def podcast_episodes(site, n=2):
     return list(reversed(eps))[:n]
 
 
+def old_home(site):
+    """Pieces of the old home page that the new home keeps, read from the export."""
+    out = {"videos": [], "issues": [], "vision": "", "issues_intro": "", "tagline": "", "quote": "", "quote_by": ""}
+    def walk(nodes):
+        for e in nodes:
+            s_ = st(e); w = e.get("widgetType")
+            if w == "video":
+                vid = youtube_id(s_.get("youtube_url") or "")
+                if vid and vid not in out["videos"]:
+                    out["videos"].append(vid)
+            elif w == "icon-box" and not plain_text(s_.get("description_text") or ""):
+                out["issues"].append(inline(s_.get("title_text")).rstrip(": ").strip())
+            elif w == "text-editor" and "החזון שלי" in (s_.get("editor") or "") and "Focusing for Freedom" not in (s_.get("editor") or ""):
+                out["vision"] = clean_html(s_["editor"])
+            elif w == "heading":
+                t = inline(s_.get("title"))
+                if t.startswith("הטיפול הפרטי מיועד"):
+                    out["issues_intro"] = t
+                elif t.startswith("מטפלת דרך"):
+                    out["tagline"] = t
+                elif t == "אוסקר ויילד":
+                    out["quote_by"] = t
+            elif w == "animated-headline":
+                out["quote"] = " ".join(x for x in (s_.get("before_text", "").split() + s_.get("highlighted_text", "").split()))
+            walk(e.get("elements", []))
+    walk(json.loads(site.items[HOME_ID]["meta"]["_elementor_data"]))
+    return out
+
+
 def home_body(site):
+    old = old_home(site)
     essays = [p for p in site.posts_in(cat_ids={6, 15, 16}) if len(plain_text(p["content"])) > 1500][:5]
     episodes = podcast_episodes(site)
     also = [
         ("The Focusing Shift", "#contact", "תכנית דיגיטלית של 90 יום: שיעורים מוקלטים, התמקדויות מודרכות ומפגשי זום קבוצתיים."),
         ("קורס טראומה מתקדם", "/טראומה-מורכבת/", "לימודי המשך למי שסיים שנה א' בהתמקדות: עבודה עם חלקי העצמי הפגיעים, התוקפים והמגינים."),
         ("להתיידד עם הנמר", "/פוקוסינג-לחיי-היום-יום/", "תכנית מקוונת לעבודה אישית, לשחרור ממצבי טראומה וחסימות."),
+        ("קורס פוטותרפיה", "/פוטותרפיה/", "קורס למטפלים ולקהל הרחב במרכז גוף נפש ברמת השרון: צילום ככלי להכרת עצמי."),
     ]
     voices = "".join(
         f'<figure class="voice"{"" if i == 0 else " hidden"}><blockquote>{esc(q)}</blockquote><figcaption>{esc(w)}</figcaption></figure>'
@@ -704,7 +745,7 @@ def home_body(site):
     <div class="hero__foot">
       <div>
         <p class="lead">מה שדיברת עליו שנים, הגוף שלך כבר יודע. טיפול אישי וקורסים בגישת ההתמקדות, עם ירדן כרם.</p>
-        <p class="hero__place">קליניקה בהרצליה, ומפגשים בזום.</p>
+        <p class="hero__place">{old["tagline"]}. קליניקה בהרצליה, ומפגשים בזום.</p>
       </div>
       <div class="actions">
         <a class="btn" href="{PRODUCTS['therapy']['href']}" data-product="therapy">{PRODUCTS['therapy']['cta']}</a>
@@ -765,6 +806,16 @@ def home_body(site):
   </div>
 </section>
 
+<section class="section">
+  <div class="wrap split">
+    <h2>למי מתאים הטיפול</h2>
+    <div class="body">
+      <p>{old["issues_intro"]}</p>
+      <ul class="issue-list">{"".join(f"<li>{i}</li>" for i in old["issues"])}</ul>
+    </div>
+  </div>
+</section>
+
 <section class="section section--ink" aria-label="מה אומרים מטופלים">
   <div class="wrap">
     <div class="voices" data-voices>{voices}</div>
@@ -789,6 +840,8 @@ def home_body(site):
     <div class="body">
       <p>אני מטפלת ומרצה כבר 30 שנה, מרצה בכירה לגישת ההתמקדות ולקורסים שעוסקים בטראומה. לימדתי יותר מ־750 תלמידים, ומאחוריי יותר מ־25,000 שעות טיפול.</p>
       <p>בעלת תואר ראשון בפילוסופיה, תואר שני בקולנוע ובטיפול דרך הבעה ויצירה, ותואר שני בעבודה סוציאלית קלינית. מנהלת אקדמית ומרצה במרכז הישראלי לרפואת גוף נפש ברמת השרון, ומגישה את הפודקאסט "פוקוסינג עם ירדן כרם".</p>
+      <div class="vision">{old["vision"]}</div>
+      <blockquote class="epigraph"><p>{old["quote"]}</p><cite>{old["quote_by"]}</cite></blockquote>
       <p><a class="more" href="/אודות/">עוד עליי</a></p>
     </div>
   </div>
@@ -806,6 +859,12 @@ def home_body(site):
       {post_cards(site, essays, single=True)}
       <p style="margin-top:24px"><a class="more" href="/מאמרים-שאני-כתבתי/">כל המאמרים</a></p>
     </div>
+  </div>
+</section>
+<section class="section section--mist">
+  <div class="wrap">
+    <h2 class="section__title">לצפות</h2>
+    <div class="video-grid">{"".join(video_embed(v) for v in old["videos"])}</div>
   </div>
 </section>
 {contact_section(intro="לבחירתך הדרך שמדברת אל ליבך. השאירו פרטים ואחזור אליכם לשיחת היכרות קצרה, או פנו ישירות.")}
@@ -830,10 +889,44 @@ def home_only_testimonials(site, existing_html):
     return f'<section class="block"><div class="wrap"><h2 class="heading">עוד מילים של תלמידים ומטופלים</h2>{quotes}</div></section>'
 
 
+def blog_body(site):
+    posts = site.posts_in(cat_ids={c["id"] for c in site.data["categories"]})
+    cats = []
+    for c in site.data["categories"]:
+        n = len(site.posts_in(cat_ids={c["id"]}))
+        if n:
+            cats.append(f'<li><a href="/category/{esc(c["slug"])}/">{esc(c["name"])}</a> <span class="quiet">{n}</span></li>')
+    years = {}
+    for p in posts:
+        years.setdefault(p["date"][:4], []).append(p)
+    blocks = "".join(
+        f'<section class="year"><h2>{y}</h2>{post_cards(site, ps)}</section>' for y, ps in years.items()
+    )
+    return (
+        f'<section class="block"><div class="wrap">'
+        f'<nav class="topic-nav" aria-label="נושאים"><ul>{"".join(cats)}</ul></nav>{blocks}</div></section>'
+        + contact_block()
+    )
+
+
 def build_page(site, page):
     path = site.url(page)
+    if page["id"] == BLOG_ID:
+        n = len(site.posts_in(cat_ids={c["id"] for c in site.data["categories"]}))
+        hero = {"title": "בלוג", "sub": [f"כל {n} הפוסטים והמאמרים, מ־2018 ועד היום."]}
+        write(path, page_shell(site, path=path, title="בלוג", body=blog_body(site), hero=hero,
+                               description="כל הפוסטים והמאמרים של ירדן כרם על התמקדות, טיפול בטראומה, Somatic Experiencing וטיפול דרך הגוף."))
+        return
     if page["id"] == HOME_ID:
-        write(path, page_shell(site, path=path, title=SITE_NAME, body=home_body(site),
+        ld = {"@context": "https://schema.org", "@graph": [
+            {"@type": "WebSite", "name": SITE_TITLE, "url": SITE_URL + "/", "inLanguage": "he"},
+            {"@type": "Person", "name": SITE_NAME, "url": SITE_URL + "/", "jobTitle": "מטפלת ומרצה לגישת ההתמקדות",
+             "email": EMAIL, "telephone": "+" + PHONE_INTL,
+             "address": {"@type": "PostalAddress", "addressLocality": "הרצליה", "addressCountry": "IL"},
+             "sameAs": [u for _, _, u in SOCIAL]},
+        ]}
+        write(path, page_shell(site, path=path, title=SITE_NAME, body=home_body(site), article=ld,
+                               seo_title="דף הבית - " + SITE_TITLE,
                                description="מה שדיברת עליו שנים, הגוף שלך כבר יודע. טיפול אישי וקורסים בגישת ההתמקדות עם ירדן כרם, בהרצליה ובזום."))
         return
     has_contact = False
@@ -850,7 +943,8 @@ def build_page(site, page):
     if not has_contact and page["slug"] != "מדיניות-פרטיות":
         body += contact_block()
     desc = page["meta"].get("_yoast_wpseo_metadesc") or plain_text(body, 155)
-    write(path, page_shell(site, path=path, title=page["title"], body=body, description=desc, hero=hero))
+    write(path, page_shell(site, path=path, title=page["title"], body=body, description=desc, hero=hero,
+                           seo_title=page["meta"].get("_yoast_wpseo_title") or None))
 
 
 def build_post(site, p):
@@ -891,9 +985,9 @@ def build_post(site, p):
         "crumb": f'<p class="crumb">{cat_links + ", " if cat_links else ""}<time datetime="{p["date"][:10]}">{fmt_date(p["date"])}</time></p>',
         "sub": [],
     }
-    canonical = site.url(site.items[site.canonical_of[p["id"]]]) if p["id"] in site.canonical_of else None
+    canonical = None
     img, _ = site.thumb(p)
-    og = (SITE_URL + urllib.parse.quote(img)) if img and img.startswith("/") else img
+    og = (SITE_URL + enc(img)) if img and img.startswith("/") else img
     ld = {
         "@context": "https://schema.org",
         "@type": "BlogPosting",
@@ -902,16 +996,17 @@ def build_post(site, p):
         "dateModified": (p["modified"] or p["date"]).replace(" ", "T"),
         "author": {"@type": "Person", "name": SITE_NAME},
         "inLanguage": "he",
-        "mainEntityOfPage": SITE_URL + urllib.parse.quote(path),
+        "mainEntityOfPage": SITE_URL + enc(path),
     }
     write(path, page_shell(site, path=path, title=p["title"], body=body, description=excerpt_of(site, p, 155),
                            hero=hero, canonical=canonical, og_image=og, article=ld))
 
 
 def build_archive(site, path, title, posts, eyebrow):
+    seo_title = f"{title} Archives - {SITE_TITLE}"
     body = f'<section class="block"><div class="wrap">{post_cards(site, posts) or "<p>אין כאן עדיין פרסומים.</p>"}</div></section>' + contact_block()
     hero = {"title": esc(title), "crumb": f'<p class="crumb">{eyebrow}</p>', "sub": []}
-    write(path, page_shell(site, path=path, title=title, body=body, description=f"{eyebrow}: {title} – {SITE_NAME}", hero=hero))
+    write(path, page_shell(site, path=path, title=title, body=body, description=f"{eyebrow}: {title} – {SITE_NAME}", hero=hero, seo_title=seo_title))
 
 
 def build_404(site):
@@ -922,16 +1017,35 @@ def build_404(site):
     (OUT / "404.html").write_text(html_, encoding="utf-8")
 
 
-def build_sitemap(site, urls):
-    rows = "".join(
-        f"<url><loc>{SITE_URL}{urllib.parse.quote(u)}</loc>{f'<lastmod>{m[:10]}</lastmod>' if m else ''}</url>"
-        for u, m in urls
-    )
-    (OUT / "sitemap.xml").write_text(
-        f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{rows}</urlset>\n',
-        encoding="utf-8",
-    )
-    (OUT / "robots.txt").write_text(f"User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}/sitemap.xml\n", encoding="utf-8")
+def build_sitemaps(groups):
+    """Yoast-compatible sitemaps: sitemap_index.xml plus one file per type."""
+    def urlset(rows):
+        body = "".join(
+            f"<url><loc>{SITE_URL}{enc(u)}</loc>{f'<lastmod>{m[:10]}</lastmod>' if m else ''}</url>" for u, m in rows
+        )
+        return f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{body}</urlset>\n'
+    today = dt.date.today().isoformat()
+    index = ""
+    for name, rows in groups.items():
+        (OUT / f"{name}-sitemap.xml").write_text(urlset(rows), encoding="utf-8")
+        last = max((m[:10] for _, m in rows if m), default=today)
+        index += f"<sitemap><loc>{SITE_URL}/{name}-sitemap.xml</loc><lastmod>{last}</lastmod></sitemap>"
+    xml = f'<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{index}</sitemapindex>\n'
+    (OUT / "sitemap_index.xml").write_text(xml, encoding="utf-8")
+    (OUT / "sitemap.xml").write_text(xml, encoding="utf-8")
+    (OUT / "robots.txt").write_text(f"User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}/sitemap_index.xml\n", encoding="utf-8")
+
+
+def build_feed(site):
+    items = ""
+    for p in site.posts[:20]:
+        link = SITE_URL + enc(site.url(p))
+        date = dt.datetime.strptime(p["date"], "%Y-%m-%d %H:%M:%S").strftime("%a, %d %b %Y %H:%M:%S +0000")
+        items += (f"<item><title>{esc(p['title'])}</title><link>{link}</link><guid>{link}</guid>"
+                  f"<pubDate>{date}</pubDate><description>{esc(excerpt_of(site, p, 300))}</description></item>")
+    rss = (f'<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>{esc(SITE_TITLE)}</title>'
+           f"<link>{SITE_URL}/</link><description>{esc(TAGLINE)}</description><language>he-IL</language>{items}</channel></rss>\n")
+    (OUT / "feed.xml").write_text(rss, encoding="utf-8")
 
 
 def main():
@@ -944,30 +1058,40 @@ def main():
     OUT.mkdir(exist_ok=True)
     shutil.copytree(ASSETS, OUT / "assets")
 
-    urls = []
+    groups = {"post": [], "page": [], "category": [], "post_tag": []}
     for page in site.pages:
         build_page(site, page)
-        urls.append((site.url(page), page["modified"]))
+        groups["page"].append((site.url(page), page["modified"]))
     for p in site.posts:
         build_post(site, p)
-        if p["id"] not in site.canonical_of:
-            urls.append((site.url(p), p["modified"]))
+        groups["post"].append((site.url(p), p["modified"]))
     for c in site.data["categories"]:
         posts = site.posts_in(cat_ids={c["id"]})
         build_archive(site, f"/category/{c['slug']}/", c["name"], posts, "קטגוריה")
-        urls.append((f"/category/{c['slug']}/", None))
+        groups["category"].append((f"/category/{c['slug']}/", None))
     for t in site.data["tags"]:
         posts = [p for p in site.posts if t["slug"] in {x["slug"] for x in site.post_tags(p)} and p["id"] not in site.canonical_of]
         if posts:
             build_archive(site, f"/tag/{t['slug']}/", t["name"], posts, "תגית")
-            urls.append((f"/tag/{t['slug']}/", None))
+            groups["post_tag"].append((f"/tag/{t['slug']}/", None))
     build_404(site)
-    build_sitemap(site, urls)
-    (OUT / "_redirects").write_text("/ראשי-2/  /  301\n", encoding="utf-8")
+    build_sitemaps(groups)
+    build_feed(site)
+    (OUT / "_redirects").write_text(
+        "# Netlify / Cloudflare Pages\n"
+        "/ראשי-2/  /  301\n"
+        "/feed  /feed.xml  200\n"
+        "/feed/  /feed.xml  200\n"
+        "/comments/feed/  /feed.xml  301\n"
+        "/wp-sitemap.xml  /sitemap_index.xml  301\n"
+        "/page-sitemap1.xml  /page-sitemap.xml  301\n",
+        encoding="utf-8",
+    )
 
     media = sorted(site.images_used)
     (ROOT / "data" / "media-needed.txt").write_text("\n".join(media) + "\n", encoding="utf-8")
-    print(f"built {len(site.pages)} pages, {len(site.posts)} posts, {len(urls)} sitemap urls; {len(media)} media files referenced")
+    total = sum(len(v) for v in groups.values())
+    print(f"built {len(site.pages)} pages, {len(site.posts)} posts, {total} sitemap urls; {len(media)} media files referenced")
 
 
 if __name__ == "__main__":
