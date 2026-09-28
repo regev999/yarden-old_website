@@ -17,7 +17,8 @@ KEEP = {
     "figcaption", "hr", "sup", "sub",
 }
 RENAME = {"h1": "h2", "h5": "h4", "h6": "h4"}
-DROP_WITH_CONTENT = {"style", "script", "object", "noscript", "button", "form", "svg"}
+# <object> is unwrapped, not dropped: old Wix content wraps YouTube links in it.
+DROP_WITH_CONTENT = {"style", "script", "noscript", "button", "form", "svg"}
 VOID = {"br", "img", "hr"}
 ATTRS = {
     "a": {"href"},
