@@ -1103,6 +1103,33 @@ def apply_seo_overrides():
         target.write_text(h, encoding="utf-8")
 
 
+def legacy_redirects(site):
+    """301s for the WordPress addresses that are not real pages any more:
+    ?p= / ?page_id= / ?attachment_id= links and attachment pages. Page and
+    post URLs themselves are unchanged and need no redirect."""
+    rules = {}
+    def add(src, dst, note):
+        if src != dst and src not in rules:
+            rules[src] = {"from": src, "to": dst, "note": note}
+    for item in site.pages + site.posts:
+        target = site.url(item)
+        key = "page_id" if item["type"] == "page" else "p"
+        add(f"/?{key}={item['id']}", target, "קישור וורדפרס לפי מספר")
+        add(f"/?p={item['id']}", target, "קישור וורדפרס לפי מספר")
+    add("/ראשי-2/", "/", "כתובת ישנה של דף הבית")
+    taken = {site.url(i) for i in site.pages + site.posts}
+    for a in (i for i in site.data["items"] if i["type"] == "attachment"):
+        file_url = rewrite_url(a["attachment_url"])
+        add(f"/?attachment_id={a['id']}", file_url, "עמוד קובץ מצורף")
+        add(f"/?p={a['id']}", file_url, "עמוד קובץ מצורף")
+        parent = site.items.get(a["parent"])
+        if parent and parent["type"] in ("page", "post") and parent["status"] == "publish":
+            add(site.url(parent) + a["slug"] + "/", file_url, "עמוד קובץ מצורף")
+        elif f"/{a['slug']}/" not in taken:
+            add(f"/{a['slug']}/", file_url, "עמוד קובץ מצורף")
+    return list(rules.values())
+
+
 def export_seed(site):
     """Files the admin area imports on first run and uses to render new pages."""
     out = OUT / "admin" / "_lib" / "seed"
@@ -1119,6 +1146,7 @@ def export_seed(site):
     (out / "contact.html").write_text(contact_block(), encoding="utf-8")
     cats = [{"slug": c["slug"], "name": c["name"], "wp_id": c["id"]} for c in site.data["categories"]]
     tags = [{"slug": t["slug"], "name": t["name"]} for t in site.data["tags"]]
+    (out / "redirects.json").write_text(json.dumps(legacy_redirects(site), ensure_ascii=False), encoding="utf-8")
     for name, data in (("posts", SEED["posts"]), ("testimonials", SEED["testimonials"]),
                        ("categories", cats), ("tags", tags)):
         (out / f"{name}.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
