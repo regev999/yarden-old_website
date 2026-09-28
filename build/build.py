@@ -53,6 +53,11 @@ SOCIAL = [
 
 esc = html.escape
 
+# Everything the admin area (server/) needs to manage content after launch:
+# post bodies, testimonials, categories and the page template. Written to
+# site/admin/_lib/seed/ and imported into the database on first run.
+SEED = {"posts": [], "testimonials": []}
+
 
 # --------------------------------------------------------------------------
 # Data model
@@ -819,10 +824,10 @@ def home_body(site):
 
 <section class="section section--ink" aria-label="מה אומרים מטופלים">
   <div class="wrap">
-    <div class="voices" data-voices>{voices}</div>
+    <!--yk:voices--><div class="voices" data-voices>{voices}</div>
     <div class="voices__nav">
       <button class="btn btn--line-light btn--sm" type="button" data-voices-next>המלצה הבאה</button>
-      <span class="voices__count" data-voices-count>1 מתוך {len(VOICES)}</span>
+      <span class="voices__count" data-voices-count>1 מתוך {len(VOICES)}</span><!--/yk:voices-->
       <a href="/לקוחות-מספרים/">כל ההמלצות</a>
     </div>
   </div>
@@ -857,7 +862,7 @@ def home_body(site):
     </div>
     <div>
       <h2>לקרוא: מאמרים</h2>
-      {post_cards(site, essays, single=True)}
+      <!--yk:essays-->{post_cards(site, essays, single=True)}<!--/yk:essays-->
       <p style="margin-top:24px"><a class="more" href="/מאמרים-שאני-כתבתי/">כל המאמרים</a></p>
     </div>
   </div>
@@ -872,22 +877,47 @@ def home_body(site):
 """
 
 
-def home_only_testimonials(site, existing_html):
-    """Testimonials that lived only in the old home page carousel, so they
-    are not lost now that the home page has its own composition."""
-    slides = []
-    def walk(nodes):
-        for e in nodes:
-            if e.get("widgetType") == "testimonial-carousel":
-                slides.extend(st(e).get("slides") or [])
-            walk(e.get("elements", []))
-    walk(json.loads(site.items[HOME_ID]["meta"]["_elementor_data"]))
-    seen = plain_text(existing_html)
-    extra = [sl for sl in slides if plain_text(sl.get("content") or "")[:40] not in seen]
-    if not extra:
-        return ""
-    quotes = Renderer(site, site.items[HOME_ID]).w_testimonial_carousel({"slides": extra})
-    return f'<section class="block"><div class="wrap"><h2 class="heading">עוד מילים של תלמידים ומטופלים</h2>{quotes}</div></section>'
+def testimonials_region(site, page, body):
+    """Collect every testimonial (page carousel, old-home-only ones, home voices)
+    into SEED and replace the page's quotes with one admin-managed region."""
+    seen = set()
+    def add(name, role, content_html, on_home=False):
+        key = plain_text(content_html)[:60]
+        if not key or key in seen:
+            return
+        seen.add(key)
+        SEED["testimonials"].append({"name": name or "", "role": role or "", "body": content_html,
+                                     "show_on_home": on_home, "position": len(SEED["testimonials"])})
+    def slides_of(item):
+        out = []
+        def walk(nodes):
+            for e in nodes:
+                if e.get("widgetType") == "testimonial-carousel":
+                    out.extend(st(e).get("slides") or [])
+                walk(e.get("elements", []))
+        walk(json.loads(item["meta"]["_elementor_data"]))
+        return out
+    for q, who in VOICES:
+        add(who, "", f"<p>{esc(q)}</p>", on_home=True)
+    for sl in slides_of(page) + slides_of(site.items[HOME_ID]):
+        add(sl.get("name"), sl.get("title"), clean_html(sl.get("content") or ""))
+    quotes = [t for t in SEED["testimonials"]]
+    region = "<!--yk:testimonials-->" + testimonials_html(quotes) + "<!--/yk:testimonials-->"
+    first = re.search(r'<div class="quotes">.*?</div>', body, flags=re.S)
+    if not first:
+        return body + f'<section class="block"><div class="wrap">{region}</div></section>'
+    start = first.start()
+    body = re.sub(r'<div class="quotes">.*?</div>', "", body, flags=re.S)   # every old carousel
+    return body[:start] + region + body[start:]
+
+
+def testimonials_html(items):
+    cards = []
+    for t in items:
+        role = f" · {esc(t['role'])}" if t["role"] else ""
+        cards.append(f'<figure class="quote"><blockquote class="prose">{t["body"]}</blockquote>'
+                     f'<figcaption><strong>{esc(t["name"])}</strong>{role}</figcaption></figure>')
+    return f'<div class="quotes">{"".join(cards)}</div>'
 
 
 def blog_body(site):
@@ -904,8 +934,8 @@ def blog_body(site):
         f'<section class="year"><h2>{y}</h2>{post_cards(site, ps)}</section>' for y, ps in years.items()
     )
     return (
-        f'<section class="block"><div class="wrap">'
-        f'<nav class="topic-nav" aria-label="נושאים"><ul>{"".join(cats)}</ul></nav>{blocks}</div></section>'
+        f'<section class="block"><div class="wrap"><!--yk:blog-->'
+        f'<nav class="topic-nav" aria-label="נושאים"><ul>{"".join(cats)}</ul></nav>{blocks}<!--/yk:blog--></div></section>'
         + contact_block()
     )
 
@@ -914,7 +944,7 @@ def build_page(site, page):
     path = site.url(page)
     if page["id"] == BLOG_ID:
         n = len(site.posts_in(cat_ids={c["id"] for c in site.data["categories"]}))
-        hero = {"title": "בלוג", "sub": [f"כל {n} הפוסטים והמאמרים, מ־2018 ועד היום."]}
+        hero = {"title": "בלוג", "sub": [f"כל <!--yk:count-->{n}<!--/yk:count--> הפוסטים והמאמרים, מ־2018 ועד היום."]}
         write(path, page_shell(site, path=path, title="בלוג", body=blog_body(site), hero=hero,
                                description="כל הפוסטים והמאמרים של ירדן כרם על התמקדות, טיפול בטראומה, Somatic Experiencing וטיפול דרך הגוף."))
         return
@@ -940,7 +970,7 @@ def build_page(site, page):
         hero = {"title": esc(page["title"])}
     hero["sub"] = hero.get("sub", [])[:1]
     if page["slug"] == "לקוחות-מספרים":
-        body += home_only_testimonials(site, body)
+        body = testimonials_region(site, page, body)
     if not has_contact and page["slug"] != "מדיניות-פרטיות":
         body += contact_block()
     desc = page["meta"].get("_yoast_wpseo_metadesc") or plain_text(body, 155)
@@ -987,6 +1017,20 @@ def build_post(site, p):
         "sub": [],
     }
     canonical = None
+    SEED["posts"].append({
+        "wp_id": p["id"],
+        "path": path,
+        "slug": path.strip("/"),
+        "title": p["title"],
+        "date": p["date"],
+        "modified": p["modified"] or p["date"],
+        "categories": [c["slug"] for c in cats],
+        "tags": [t["slug"] for t in tags],
+        "body": body_html,
+        "excerpt": excerpt_of(site, p, 155),
+        "is_video": site.thumb(p)[1],
+        "duplicate_of": site.url(site.items[site.canonical_of[p["id"]]]) if p["id"] in site.canonical_of else None,
+    })
     img, _ = site.thumb(p)
     og = (SITE_URL + enc(img)) if img and img.startswith("/") else img
     ld = {
@@ -1005,7 +1049,8 @@ def build_post(site, p):
 
 def build_archive(site, path, title, posts, eyebrow):
     seo_title = f"{title} Archives - {SITE_TITLE}"
-    body = f'<section class="block"><div class="wrap">{post_cards(site, posts) or "<p>אין כאן עדיין פרסומים.</p>"}</div></section>' + contact_block()
+    body = (f'<section class="block"><div class="wrap"><!--yk:list-->{post_cards(site, posts) or "<p>אין כאן עדיין פרסומים.</p>"}'
+            f'<!--/yk:list--></div></section>' + contact_block())
     hero = {"title": esc(title), "crumb": f'<p class="crumb">{eyebrow}</p>', "sub": []}
     write(path, page_shell(site, path=path, title=title, body=body, description=f"{eyebrow}: {title} – {SITE_NAME}", hero=hero, seo_title=seo_title))
 
@@ -1058,6 +1103,27 @@ def apply_seo_overrides():
         target.write_text(h, encoding="utf-8")
 
 
+def export_seed(site):
+    """Files the admin area imports on first run and uses to render new pages."""
+    out = OUT / "admin" / "_lib" / "seed"
+    out.mkdir(parents=True, exist_ok=True)
+    # Page template: the real site shell with placeholders the PHP side fills in.
+    shell = page_shell(site, path="/__YK_PATH__/", title="__YK_TITLE__", body="__YK_BODY__",
+                       description="__YK_DESC__", og_image="__YK_OG__", article={"yk": "__YK_LD__"},
+                       seo_title="__YK_SEOTITLE__")
+    shell = shell.replace(SITE_URL + "/__YK_PATH__/", "__YK_URL__")
+    shell = re.sub(r'<meta property="og:image" content="__YK_OG__">', "__YK_OGLINE__", shell)
+    shell = re.sub(r'<script type="application/ld\+json">.*?</script>', "__YK_LDSCRIPT__", shell, flags=re.S)
+    shell = shell.replace('content="article"', 'content="__YK_OGTYPE__"', 1)
+    (out / "shell.html").write_text(shell, encoding="utf-8")
+    (out / "contact.html").write_text(contact_block(), encoding="utf-8")
+    cats = [{"slug": c["slug"], "name": c["name"], "wp_id": c["id"]} for c in site.data["categories"]]
+    tags = [{"slug": t["slug"], "name": t["name"]} for t in site.data["tags"]]
+    for name, data in (("posts", SEED["posts"]), ("testimonials", SEED["testimonials"]),
+                       ("categories", cats), ("tags", tags)):
+        (out / f"{name}.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+
+
 def build_feed(site):
     items = ""
     for p in site.posts[:20]:
@@ -1102,6 +1168,7 @@ def main():
             build_archive(site, f"/tag/{t['slug']}/", t["name"], posts, "תגית")
             groups["post_tag"].append((f"/tag/{t['slug']}/", None))
     build_404(site)
+    export_seed(site)
     apply_seo_overrides()
     build_sitemaps(groups)
     build_feed(site)
@@ -1118,6 +1185,7 @@ def main():
 
     media = sorted(site.images_used)
     (ROOT / "data" / "media-needed.txt").write_text("\n".join(media) + "\n", encoding="utf-8")
+    (OUT / "admin" / "_lib" / "seed" / "media-needed.txt").write_text("\n".join(media) + "\n", encoding="utf-8")
     total = sum(len(v) for v in groups.values())
     print(f"built {len(site.pages)} pages, {len(site.posts)} posts, {total} sitemap urls; {len(media)} media files referenced")
 

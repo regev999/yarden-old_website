@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/_lib/bootstrap.php';
 require __DIR__ . '/_lib/layout.php';
-require __DIR__ . '/_lib/seo.php';
+require_once __DIR__ . '/_lib/seo.php';
 
 $user = require_login();
 $paths = seo_paths();
