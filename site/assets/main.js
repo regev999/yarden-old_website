@@ -36,16 +36,41 @@
   }
 
   // Click-to-play YouTube (lighter pages, no tracking until played)
-  document.addEventListener('click', function (e) {
-    var play = e.target.closest('.video__play');
-    if (!play) return;
-    var box = play.parentElement;
+  function playVideo(box) {
+    var play = box.querySelector('.video__play');
     var f = document.createElement('iframe');
     f.src = 'https://www.youtube-nocookie.com/embed/' + box.dataset.yt + '?autoplay=1&rel=0';
     f.title = play.getAttribute('aria-label') || 'YouTube';
     f.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
     f.allowFullscreen = true;
     box.replaceChildren(f);
+  }
+
+  // YouTube stores its own cookies, so videos wait for "embedded content" consent.
+  function askForVideo(box) {
+    if (box.querySelector('.video__consent')) return;
+    var id = box.dataset.yt;
+    var note = document.createElement('div');
+    note.className = 'video__consent';
+    note.setAttribute('role', 'group');
+    note.setAttribute('aria-label', 'הסכמה להפעלת סרטון');
+    note.innerHTML = '<p>הסרטון מגיע מיוטיוב, שעשויה לשמור עוגיות. להפעיל אותו כאן?</p>' +
+      '<div><button type="button" class="btn btn--paper btn--sm" data-yes>להפעיל ולאשר סרטונים</button> ' +
+      '<a class="video__out" href="https://www.youtube.com/watch?v=' + id + '" target="_blank" rel="noopener">לצפייה ביוטיוב</a></div>';
+    box.appendChild(note);
+    note.querySelector('[data-yes]').focus();
+    note.querySelector('[data-yes]').addEventListener('click', function () {
+      if (window.YKConsent) window.YKConsent.grant('media');
+      playVideo(box);
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    var play = e.target.closest('.video__play');
+    if (!play) return;
+    var box = play.parentElement;
+    if (window.YKConsent && !window.YKConsent.allowed('media')) askForVideo(box);
+    else playVideo(box);
   });
 
   // Hide images whose files have not been uploaded yet

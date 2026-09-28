@@ -32,6 +32,9 @@ LOCATION = "הרצליה ובזום"
 # Where the contact forms post to. Left empty, the forms open the visitor's
 # mail app instead (useful on a host without PHP).
 FORM_ENDPOINT = "/api/lead.php"  # PHP endpoint in server/api; leads show up in /admin/
+# Google Analytics 4 measurement id (e.g. "G-XXXXXXX"). Loaded only after the
+# visitor approves statistics cookies. Empty = no analytics at all.
+GA_ID = ""
 HOME_ID = 139
 BLOG_ID = 513
 # The old site's title suffix (Yoast default "%%title%% - %%sitename%%"); kept
@@ -447,7 +450,7 @@ def contact_form(kind="contact", with_message=True):
         '<label>שם מלא<input type="text" name="name" required autocomplete="name"></label>'
         '<label>טלפון<input type="tel" name="phone" autocomplete="tel" inputmode="tel"></label>'
         '<label class="form__full">דוא"ל<input type="email" name="email" autocomplete="email"></label>'
-        f'{msg}' + '<div class="hp" aria-hidden="true"><label>אתר<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>' + '<button class="btn" type="submit">שליחה</button>'
+        f'{msg}' + '<p class="form__consent">הפרטים משמשים רק כדי לחזור אליך. <a href="/מדיניות-פרטיות/">מדיניות הפרטיות</a></p>' + '<div class="hp" aria-hidden="true"><label>אתר<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>' + '<button class="btn" type="submit">שליחה</button>'
         '<p class="form__status" role="status"></p></form>'
     )
 
@@ -543,6 +546,14 @@ NAV = [
 ]
 
 
+def ga_tags():
+    if not GA_ID:
+        return ""
+    return (f'<script type="text/plain" data-consent="analytics" data-src="https://www.googletagmanager.com/gtag/js?id={GA_ID}"></script>'
+            f'<script type="text/plain" data-consent="analytics">window.dataLayer=window.dataLayer||[];function gtag(){{dataLayer.push(arguments)}}'
+            f'gtag("js",new Date());gtag("config","{GA_ID}",{{anonymize_ip:true}});</script>')
+
+
 def render_nav(current):
     out = []
     for label, target in NAV:
@@ -595,6 +606,9 @@ def page_shell(site, *, path, title, body, description="", hero=None, canonical=
 <link rel="preload" href="/assets/fonts/IBMPlexSansHebrew-ExtraLight.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/IBMPlexSansHebrew-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/style.css">
+<script src="/assets/a11y.js"></script>
+<script src="/assets/consent.js" defer></script>
+{ga_tags()}
 <link rel="alternate" type="application/rss+xml" title="{esc(SITE_TITLE)}" href="{SITE_URL}/feed/">
 {ld}
 </head>
@@ -628,7 +642,10 @@ def page_shell(site, *, path, title, body, description="", hero=None, canonical=
         <li><a href="/פודקאסט/">פודקאסט</a></li><li><a href="/לקוחות-מספרים/">לקוחות מספרים</a></li></ul></div>
       <div><h2>יצירת קשר</h2><ul>
         <li><a href="tel:+{PHONE_INTL}" dir="ltr">{PHONE}</a></li><li><a href="mailto:{EMAIL}">{EMAIL}</a></li>
-        <li><a href="/מדיניות-פרטיות/">מדיניות פרטיות</a></li></ul></div>
+        <li><a href="/מדיניות-פרטיות/">מדיניות פרטיות</a></li>
+        <li><a href="/תנאי-שימוש/">תנאי שימוש</a></li>
+        <li><a href="/הצהרת-נגישות/">הצהרת נגישות</a></li>
+        <li><button type="button" class="footer-cookie" data-consent-open>הגדרות עוגיות</button></li></ul></div>
     </div>
     <p class="site-footer__bottom">© {year} {SITE_NAME}</p>
   </div>
@@ -1055,6 +1072,76 @@ def build_archive(site, path, title, posts, eyebrow):
     write(path, page_shell(site, path=path, title=title, body=body, description=f"{eyebrow}: {title} – {SITE_NAME}", hero=hero, seo_title=seo_title))
 
 
+LEGAL_UPDATED = "28 בספטמבר 2026"
+
+ACCESSIBILITY_HTML = f"""
+<p>אני רואה חשיבות רבה בכך שכל אדם יוכל להשתמש באתר בקלות ובנוחות, כולל אנשים עם מוגבלות. האתר נבנה מחדש בשנת 2026 מתוך מטרה לעמוד בדרישות תקנות שוויון זכויות לאנשים עם מוגבלות (התאמות נגישות לשירות), התשע"ג-2013, ובתקן הישראלי ת"י 5568, המבוסס על הנחיות WCAG 2.0 ברמה AA.</p>
+<h2>מה נעשה כדי להנגיש את האתר</h2>
+<ul>
+<li>ניווט מלא במקלדת, עם סימון ברור של הרכיב שנמצא בפוקוס וקישור לדילוג ישיר לתוכן.</li>
+<li>מבנה כותרות היררכי, שפה וכיוון קריאה (עברית, מימין לשמאל) מוגדרים בכל עמוד.</li>
+<li>ניגודיות צבעים שעומדת בדרישות, וטקסטים שאפשר להגדיל עד 200% בלי לאבד תוכן.</li>
+<li>תוויות לכל שדות הטפסים, והודעות שגיאה והצלחה שמוקראות על ידי קוראי מסך.</li>
+<li>האתר מותאם לתצוגה בטלפון, בטאבלט ובמחשב.</li>
+<li>סרטונים נטענים רק בלחיצה, ואין תוכן שזז או מהבהב מעצמו מלבד כותרת אחת בדף הבית, שנעצרת כשמסמנים העדפה לצמצום תנועה.</li>
+<li>תפריט נגישות (הכפתור העגול בפינת המסך) מאפשר להגדיל טקסט, להפעיל ניגודיות גבוהה, להדגיש קישורים, להגדיל ריווח ולעצור תנועה.</li>
+</ul>
+<h2>הסתייגויות</h2>
+<p>האתר כולל תכנים ותיקים שהועברו מהאתר הקודם, ובחלקם עדיין עשויים להיות פערים: תמונות ישנות שחסר להן תיאור טקסטואלי, סרטוני יוטיוב ללא כתוביות בעברית, ומסמכים סרוקים (כתבות מעיתונים) שאינם נגישים לקוראי מסך. אני פועלת להשלים את ההתאמות בהדרגה. אם תוכן מסוים אינו נגיש עבורכם, אשמח לשלוח אותו בפורמט אחר.</p>
+<h2>נתקלתם בבעיה? אשמח לעזור</h2>
+<p>אם משהו באתר אינו נגיש עבורכם, או שיש לכם הצעה לשיפור, פנו אליי ואחזור אליכם תוך 5 ימי עסקים:</p>
+<ul>
+<li>רכזת הנגישות: ירדן כרם</li>
+<li>טלפון: <a href="tel:+{PHONE_INTL}" dir="ltr">{PHONE}</a></li>
+<li>מייל: <a href="mailto:{EMAIL}">{EMAIL}</a></li>
+</ul>
+<p>כדי שאוכל לטפל בפנייה, כדאי לציין באיזה עמוד מדובר, מה לא עבד, ובאיזה דפדפן או טכנולוגיה מסייעת השתמשתם.</p>
+<h2>נגישות הקליניקה</h2>
+<p>לפרטים על הנגישות הפיזית של הקליניקה בהרצליה (חניה, מדרגות, מעלית), פנו אליי לפני המפגש. מפגשים מתקיימים גם בזום, למי שנוח לו יותר.</p>
+<p class="quiet">הצהרה זו עודכנה ב־{LEGAL_UPDATED}.</p>
+"""
+
+TERMS_HTML = f"""
+<p>ברוכים הבאים לאתר של ירדן כרם (להלן: "האתר"). השימוש באתר כפוף לתנאים שלהלן. גלישה באתר או שימוש בו מהווים הסכמה לתנאים אלה. אם אינכם מסכימים להם, אנא הימנעו משימוש באתר. התנאים מנוסחים בלשון נקבה ובלשון זכר לסירוגין, ומיועדים לכל המגדרים.</p>
+<h2>1. מה יש באתר</h2>
+<p>האתר מציג מידע על גישת ההתמקדות (Focusing), Somatic Experiencing, הקומי ושיטות טיפול נוספות, על טיפול אישי, קורסים, תכניות והרצאות, וכן מאמרים, סרטונים ופרקי פודקאסט.</p>
+<h2>2. המידע באתר אינו תחליף לטיפול או לייעוץ מקצועי</h2>
+<p>התכנים באתר נועדו להעשרה ולמידע כללי בלבד. הם אינם אבחנה, ייעוץ רפואי, פסיכולוגי או טיפולי אישי, ואינם מחליפים פנייה לגורם מקצועי המכיר את מצבכם. אין לעשות שימוש בתכנים לצורך קבלת החלטות בנוגע לבריאות בלי להתייעץ עם גורם מוסמך.</p>
+<p><strong>במצב של מצוקה נפשית חריפה או סכנה מיידית</strong> אין להסתמך על האתר או על טופס יצירת הקשר. פנו מיד למד"א בטלפון 101, לחדר מיון, או לקו הסיוע של ער"ן בטלפון 1201.</p>
+<h2>3. פניות, תיאום פגישות והרשמה לקורסים</h2>
+<p>השארת פרטים בטופס באתר היא פנייה לתיאום בלבד, ואינה יוצרת התחייבות לטיפול או הרשמה לקורס. תנאי הטיפול, המחיר, מדיניות הביטולים ותנאי ההרשמה לקורסים ולתכניות יימסרו לכם באופן אישי לפני תחילת הטיפול או ההרשמה, ויחולו בנוסף לתנאים אלה. תשלום עבור קורסים ותכניות, ככל שיתבצע דרך האתר, יתבצע באמצעות ספק סליקה חיצוני ומאובטח, וביטול עסקה יהיה בהתאם לחוק הגנת הצרכן, התשמ"א-1981, ולתקנותיו.</p>
+<h2>4. פרטיות</h2>
+<p>המידע שתמסרו באתר (שם, טלפון, מייל ותוכן הפנייה) ישמש רק לצורך חזרה אליכם וטיפול בפנייתכם, בהתאם ל<a href="/מדיניות-פרטיות/">מדיניות הפרטיות</a>. השימוש בעוגיות באתר מתבצע רק בהתאם להסכמתכם, ואפשר לשנות אותה בכל עת דרך הקישור "הגדרות עוגיות" בתחתית כל עמוד.</p>
+<h2>5. קניין רוחני</h2>
+<p>כל התכנים באתר, לרבות טקסטים, מאמרים, תמונות, סרטונים, עיצוב וסימנים מסחריים, הם בבעלות ירדן כרם או בבעלות צדדים שלישיים שהתירו את השימוש בהם, ומוגנים בדין. מותר לשתף קישור לעמודים באתר ולצטט קטעים קצרים תוך ציון המקור וקישור אליו. אין להעתיק, לשכפל, להפיץ, לפרסם, לתרגם או לעשות שימוש מסחרי בתכנים בלי הסכמה מראש ובכתב.</p>
+<h2>6. שימוש ראוי באתר</h2>
+<p>אין לעשות באתר שימוש שעלול לפגוע בו או בגולשים אחרים, לרבות שליחת תוכן פוגעני, מטעה או בלתי חוקי דרך הטפסים, ניסיון לחדור למערכות האתר, או הפעלת כלים אוטומטיים לאיסוף מידע ממנו.</p>
+<h2>7. קישורים ותכנים של צדדים שלישיים</h2>
+<p>האתר כולל קישורים לאתרים ולשירותים חיצוניים, ובהם יוטיוב, ספוטיפיי ורשתות חברתיות. לאתרים אלה יש תנאי שימוש ומדיניות פרטיות משלהם, ואין לי שליטה על התכנים בהם או אחריות להם.</p>
+<h2>8. אחריות</h2>
+<p>אני משתדלת שהמידע באתר יהיה נכון ומעודכן, אך ייתכנו בו טעויות, השמטות או מידע שאינו עדכני, ובכלל זה מועדים ופרטים של קורסים. האתר ניתן לשימוש כפי שהוא (AS IS). ככל שהדין מתיר, לא אהיה אחראית לנזק שייגרם כתוצאה מהסתמכות על התכנים באתר או מהשימוש בו, ולא לתקלות, הפסקות או אובדן מידע שאינם בשליטתי.</p>
+<h2>9. שינויים בתנאים ובאתר</h2>
+<p>אני רשאית לעדכן את התנאים ואת תכני האתר מעת לעת. הנוסח המחייב הוא זה שמפורסם באתר בעת השימוש, ותאריך העדכון האחרון מופיע בתחתית העמוד.</p>
+<h2>10. דין וסמכות שיפוט</h2>
+<p>על תנאים אלה ועל השימוש באתר יחולו דיני מדינת ישראל בלבד. סמכות השיפוט הבלעדית בכל עניין הנוגע לאתר נתונה לבתי המשפט המוסמכים במחוז תל אביב.</p>
+<h2>11. יצירת קשר</h2>
+<p>לשאלות על תנאים אלה אפשר לפנות בטלפון <a href="tel:+{PHONE_INTL}" dir="ltr">{PHONE}</a> או במייל <a href="mailto:{EMAIL}">{EMAIL}</a>.</p>
+<p class="quiet">התנאים עודכנו ב־{LEGAL_UPDATED}.</p>
+"""
+
+
+def build_legal_pages(site, groups):
+    pages = [
+        ("/הצהרת-נגישות/", "הצהרת נגישות", "כך האתר מונגש, מה עדיין בתהליך, ואיך פונים אם משהו לא עובד.", ACCESSIBILITY_HTML),
+        ("/תנאי-שימוש/", "תנאי שימוש", "התנאים לשימוש באתר של ירדן כרם.", TERMS_HTML),
+    ]
+    for path, title, sub, content in pages:
+        body = f'<section class="block"><div class="wrap prose" style="max-width:var(--measure)">{content}</div></section>'
+        write(path, page_shell(site, path=path, title=title, body=body, description=plain_text(content, 155),
+                               hero={"title": esc(title), "sub": [sub]}))
+        groups["page"].append((path, dt.date.today().isoformat()))
+
+
 def build_404(site):
     body = """<section class="block"><div class="wrap narrow prose">
 <p>ייתכן שהקישור השתנה. אפשר לחזור ל<a href="/">דף הבית</a>, לעבור ל<a href="/בלוג/">בלוג</a> או ל<a href="/מאמרים-שאני-כתבתי/">מאמרים</a>.</p>
@@ -1195,6 +1282,7 @@ def main():
         if posts:
             build_archive(site, f"/tag/{t['slug']}/", t["name"], posts, "תגית")
             groups["post_tag"].append((f"/tag/{t['slug']}/", None))
+    build_legal_pages(site, groups)
     build_404(site)
     export_seed(site)
     apply_seo_overrides()
