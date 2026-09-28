@@ -400,8 +400,8 @@ def social_links(cls="social"):
     out = []
     for key, label, href in SOCIAL:
         out.append(
-            f'<a href="{href}" target="_blank" rel="noopener" aria-label="{label}" title="{label}">'
-            f'<svg viewBox="0 0 24 24" aria-hidden="true">{ICONS[key]}</svg></a>'
+            f'<a href="{href}" target="_blank" rel="noopener">'
+            f'<svg viewBox="0 0 24 24" aria-hidden="true">{ICONS[key]}</svg>{label}</a>'
         )
     return f'<div class="{cls}">{"".join(out)}</div>'
 
@@ -444,23 +444,20 @@ def excerpt_of(site, p, n=150):
     return txt
 
 
-def post_cards(site, posts):
+def post_cards(site, posts, single=False):
+    """Posts as a quiet two-column list: title, one line, date."""
     if not posts:
         return ""
-    cards = []
+    rows = []
     for p in posts:
-        img, is_video = site.thumb(p)
-        cat = site.post_cats(p)
-        media = (
-            f'<div class="post-card__media{" is-video" if is_video else ""}"><img src="{esc(img)}" alt="" loading="lazy" decoding="async"></div>'
-            if img else f'<div class="post-card__media post-card__media--plain"><span>{esc(cat[0]["name"] if cat else SITE_NAME)}</span></div>'
+        _, is_video = site.thumb(p)
+        ex = excerpt_of(site, p, 140)
+        meta = fmt_date(p["date"]) + (" · סרטון" if is_video and len(ex) < 40 else "")
+        rows.append(
+            f'<li><a href="{esc(site.url(p))}"><h3>{esc(p["title"])}</h3>'
+            f'{f"<p>{esc(ex)}</p>" if ex else ""}<small>{meta}</small></a></li>'
         )
-        cards.append(
-            f'<article class="post-card"><a href="{esc(site.url(p))}">{media}'
-            f'<div class="post-card__body"><p class="post-card__meta">{fmt_date(p["date"])}</p>'
-            f'<h3>{esc(p["title"])}</h3><p>{esc(excerpt_of(site, p))}</p></div></a></article>'
-        )
-    return f'<div class="post-grid">{"".join(cards)}</div>'
+    return f'<ul class="entries{" entries--single" if single else ""}">{"".join(rows)}</ul>'
 
 
 def post_list(site, posts):
@@ -473,81 +470,87 @@ def post_list(site, posts):
     return f'<ul class="post-list">{rows}</ul>'
 
 
-def contact_block():
+def contact_section(title="איפה להתחיל?", intro="אפשר להשאיר פרטים ואחזור אליך לתיאום, או לפנות ישירות בטלפון או במייל."):
     return f"""
-<section class="block block--contact" id="contact">
-  <div class="wrap cols cols-2">
-    <div class="col">
-      <p class="eyebrow">צור קשר</p>
-      <h2 class="heading">נשמח לשמוע ממך</h2>
-      <p>אפשר להשאיר פרטים ואחזור אליך, או ליצור קשר ישירות:</p>
-      <ul class="contact-lines">
-        <li><a href="tel:+{PHONE_INTL}">{PHONE}</a></li>
-        <li><a href="mailto:{EMAIL}">{EMAIL}</a></li>
-        <li>פגישות ב{LOCATION}</li>
-      </ul>
+<section class="section section--ink block--contact" id="contact">
+  <div class="wrap contact">
+    <div>
+      <h2>{title}</h2>
+      <p class="quiet">{intro}</p>
+      <dl class="contact-lines">
+        <dt>טלפון</dt><dd><a href="tel:+{PHONE_INTL}" dir="ltr">{PHONE}</a></dd>
+        <dt>מייל</dt><dd><a href="mailto:{EMAIL}">{EMAIL}</a></dd>
+        <dt>איפה</dt><dd>קליניקה בהרצליה, ומפגשים בזום</dd>
+      </dl>
       {social_links()}
     </div>
-    <div class="col">{contact_form()}</div>
+    {contact_form()}
   </div>
 </section>"""
+
+
+def contact_block():
+    return contact_section()
 
 
 # --------------------------------------------------------------------------
 # Page shell
 # --------------------------------------------------------------------------
-def build_menu(site):
-    items = [i for i in site.data["items"] if i["type"] == "nav_menu_item"]
-    items.sort(key=lambda i: i["menu_order"])
-    nodes = {}
-    for i in items:
-        m = i["meta"]
-        target = site.items.get(int(m.get("_menu_item_object_id") or 0))
-        title = i["title"] or (target["title"] if target else "")
-        if m.get("_menu_item_type") == "custom":
-            href = rewrite_url(m.get("_menu_item_url") or "#")
-        else:
-            href = site.url(target) if target else "#"
-        nodes[i["id"]] = {"title": title, "href": href, "parent": int(m.get("_menu_item_menu_item_parent") or 0), "children": []}
-    roots = []
-    for nid, n in nodes.items():
-        (nodes[n["parent"]]["children"] if n["parent"] in nodes else roots).append(n)
-    return roots
+NAV = [
+    ("טיפול", [
+        ("כל סוגי הטיפול", "/טיפולים-פרטניים/"), ("התמקדות", "/התמקדות/"),
+        ("Somatic Experiencing", "/טיפול-בטראומה-2/"), ("הקומי", "/הקומי/"),
+        ("וידאו תרפיה", "/וידאו-תרפיה/"), ("פוטותרפיה", "/פוטותרפיה/"),
+        ("טיפול במגע: שיטת גרינברג", "/גרינברג/"), ("שיטת פאולה", "/שיטת-פאולה/"),
+    ]),
+    ("קורסים", [
+        ("קורסי התמקדות", "/קורסים/"), ("טראומה מורכבת", "/טראומה-מורכבת/"),
+        ("להתיידד עם הנמר", "/פוקוסינג-לחיי-היום-יום/"),
+    ]),
+    ("על ירדן", [
+        ("אודות", "/אודות/"), ("לקוחות מספרים", "/לקוחות-מספרים/"), ("המלצות בווידאו", "/המלצות/"),
+        ("כתבו עליי", "/מן-העיתונות-כתבו-עליי/"), ("מאמרים שפרסמתי בעיתונות", "/מן-העיתונות-אני-כתבתי/"),
+    ]),
+    ("מאמרים", [
+        ("על התמקדות", "/מאמרים-שאני-כתבתי/"), ("על טיפול בטראומה", "/מאמרים-שלי-בנושא-טיפול-בטראומה/"),
+        ("נושאים כלליים", "/מאמרים-שלי-בנושאים-כלליים/"), ("מאמרים של יוג'ין ג'נדלין", "/מאמרים-שכתב-יוגין-גנדלין/"),
+        ("בלוג", "/בלוג/"),
+    ]),
+    ("פודקאסט", "/פודקאסט/"),
+]
 
 
-def render_nav(menu, current):
-    def li(n, depth=0):
-        cur = ' aria-current="page"' if n["href"] == current else ""
-        if n["children"]:
-            sub = "".join(li(c, depth + 1) for c in n["children"])
-            label = esc(n["title"])
-            link = f'<a href="{esc(n["href"])}"{cur}>{label}</a>' if n["href"] not in ("#", "") else f'<span class="nav__label">{label}</span>'
-            return (
-                f'<li class="has-sub">{link}<button class="nav__toggle" type="button" aria-expanded="false" aria-label="פתיחת תת־תפריט {label}"></button>'
-                f'<ul class="nav__sub">{sub}</ul></li>'
-            )
-        return f'<li><a href="{esc(n["href"])}"{cur}>{esc(n["title"])}</a></li>'
-
-    return "".join(li(n) for n in menu)
+def render_nav(current):
+    out = []
+    for label, target in NAV:
+        if isinstance(target, str):
+            cur = ' aria-current="page"' if target == current else ""
+            out.append(f'<li><a href="{esc(target)}"{cur}>{esc(label)}</a></li>')
+            continue
+        sub = "".join(
+            f'<li><a href="{esc(h)}"{" aria-current=page" if h == current else ""}>{esc(t)}</a></li>' for t, h in target
+        )
+        out.append(
+            f'<li class="has-sub"><span class="nav__label" tabindex="0">{esc(label)}</span>'
+            f'<button class="nav__toggle" type="button" aria-expanded="false" aria-label="{esc(label)}: פתיחת תפריט"></button>'
+            f'<ul class="nav__sub">{sub}</ul></li>'
+        )
+    return "".join(out)
 
 
 def page_shell(site, *, path, title, body, description="", hero=None, canonical=None, og_image=None, article=None):
     full_title = f"{title} | {SITE_NAME}" if title and path != "/" else f"{SITE_NAME} – {TAGLINE}"
-    desc = esc(description or f"{SITE_NAME} – {TAGLINE}. טיפול אישי, קורסים והרצאות.")
+    desc = esc(description or f"{SITE_NAME} – {TAGLINE}. טיפול אישי וקורסים בגישת ההתמקדות.")
     canon = SITE_URL + urllib.parse.quote(canonical or path)
-    nav = render_nav(site.menu, path)
     hero_html = ""
     if hero:
-        bg = f' style="--bg:url(\'{esc(hero["bg"])}\')"' if hero.get("bg") else ""
-        subs = "".join(f"<p>{s}</p>" for s in hero.get("sub", []))
+        subs = "".join(f'<p class="page-hero__sub">{s_}</p>' for s_ in hero.get("sub", []) if s_)
         hero_html = (
-            f'<header class="hero{" hero--image" if hero.get("bg") else ""}"{bg}><div class="wrap">'
-            f'{hero.get("eyebrow", "")}<h1>{hero["title"]}</h1>{subs}</div></header>'
+            f'<header class="page-hero"><div class="wrap">{hero.get("crumb", "")}'
+            f'<h1>{hero["title"]}</h1>{subs}</div></header>'
         )
     og = f'<meta property="og:image" content="{esc(og_image)}">' if og_image else ""
-    ld = ""
-    if article:
-        ld = '<script type="application/ld+json">' + json.dumps(article, ensure_ascii=False) + "</script>"
+    ld = '<script type="application/ld+json">' + json.dumps(article, ensure_ascii=False) + "</script>" if article else ""
     year = dt.date.today().year
     return f"""<!doctype html>
 <html lang="he" dir="rtl">
@@ -564,25 +567,21 @@ def page_shell(site, *, path, title, body, description="", hero=None, canonical=
 <meta property="og:locale" content="he_IL">
 <meta property="og:site_name" content="{SITE_NAME}">
 {og}
-<meta name="theme-color" content="#2c4a68">
+<meta name="theme-color" content="#0f2140">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap" rel="stylesheet">
+<link rel="preload" href="/assets/fonts/IBMPlexSansHebrew-ExtraLight.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/IBMPlexSansHebrew-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/style.css">
 {ld}
 </head>
 <body>
 <a class="skip" href="#main">דילוג לתוכן</a>
-<div class="topbar"><div class="wrap">
-  <span>מטפלת ומרצה · {TAGLINE}</span>
-  <a href="tel:+{PHONE_INTL}">{PHONE}</a>
-</div></div>
 <header class="site-header">
   <div class="wrap site-header__inner">
-    <a class="brand" href="/"><span class="brand__mark" aria-hidden="true"></span><span class="brand__name">{SITE_NAME}</span><span class="brand__tag">{TAGLINE}</span></a>
-    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="nav"><span></span><span class="sr-only">תפריט</span></button>
-    <nav id="nav" class="nav" aria-label="ניווט ראשי"><ul>{nav}</ul></nav>
+    <a class="brand" href="/"><b>{SITE_NAME}</b><span>התמקדות וטיפול דרך הגוף</span></a>
+    <nav id="nav" class="nav" aria-label="ניווט ראשי"><ul>{render_nav(path)}</ul></nav>
+    <a class="btn btn--sm header-cta" href="#contact">קביעת פגישה</a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="nav">תפריט</button>
   </div>
 </header>
 <main id="main">
@@ -590,35 +589,27 @@ def page_shell(site, *, path, title, body, description="", hero=None, canonical=
 {body}
 </main>
 <footer class="site-footer">
-  <div class="wrap cols cols-3">
-    <div class="col">
-      <p class="site-footer__brand">{SITE_NAME}</p>
-      <p>טיפול דרך מיינדפולנס והקשבה לחוויה הסומטית: {TAGLINE}.</p>
-      {social_links()}
+  <div class="wrap">
+    <div class="site-footer__grid">
+      <div>
+        <p class="site-footer__brand">{SITE_NAME}</p>
+        <p class="quiet">טיפול, קורסים והרצאות בגישת ההתמקדות, Somatic Experiencing והקומי.</p>
+        <p><a href="https://www.focusingfreedom.co.il/" target="_blank" rel="noopener">Focusing for Freedom</a></p>
+      </div>
+      <div><h2>טיפול וקורסים</h2><ul>
+        <li><a href="/טיפולים-פרטניים/">טיפול אישי</a></li><li><a href="/קורסים/">קורסי התמקדות</a></li>
+        <li><a href="/טראומה-מורכבת/">טראומה מורכבת</a></li><li><a href="/פוקוסינג-לחיי-היום-יום/">להתיידד עם הנמר</a></li></ul></div>
+      <div><h2>לקרוא ולהאזין</h2><ul>
+        <li><a href="/מאמרים-שאני-כתבתי/">מאמרים</a></li><li><a href="/בלוג/">בלוג</a></li>
+        <li><a href="/פודקאסט/">פודקאסט</a></li><li><a href="/לקוחות-מספרים/">לקוחות מספרים</a></li></ul></div>
+      <div><h2>יצירת קשר</h2><ul>
+        <li><a href="tel:+{PHONE_INTL}" dir="ltr">{PHONE}</a></li><li><a href="mailto:{EMAIL}">{EMAIL}</a></li>
+        <li><a href="/מדיניות-פרטיות/">מדיניות פרטיות</a></li></ul></div>
     </div>
-    <div class="col">
-      <p class="site-footer__title">ניווט מהיר</p>
-      <ul class="footer-links">
-        <li><a href="/אודות/">אודות</a></li>
-        <li><a href="/טיפולים-פרטניים/">טיפולים פרטניים</a></li>
-        <li><a href="/קורסים/">קורסי התמקדות</a></li>
-        <li><a href="/בלוג/">בלוג</a></li>
-        <li><a href="/פודקאסט/">פודקאסט</a></li>
-        <li><a href="/מדיניות-פרטיות/">מדיניות פרטיות</a></li>
-      </ul>
-    </div>
-    <div class="col">
-      <p class="site-footer__title">יצירת קשר</p>
-      <ul class="footer-links">
-        <li><a href="tel:+{PHONE_INTL}">{PHONE}</a></li>
-        <li><a href="mailto:{EMAIL}">{EMAIL}</a></li>
-        <li>{LOCATION}</li>
-      </ul>
-    </div>
+    <p class="site-footer__bottom">© {year} {SITE_NAME}</p>
   </div>
-  <div class="wrap site-footer__bottom">© {year} {SITE_NAME}. כל הזכויות שמורות.</div>
 </footer>
-<a class="whatsapp" href="https://wa.me/{PHONE_INTL}" target="_blank" rel="noopener" aria-label="שליחת הודעת וואטסאפ">
+<a class="whatsapp" href="https://wa.me/{PHONE_INTL}" target="_blank" rel="noopener" aria-label="שליחת הודעה בוואטסאפ">
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>
 </a>
 <script>window.SITE_FORM = {{endpoint: {json.dumps(FORM_ENDPOINT)}, email: {json.dumps(EMAIL)}}};</script>
@@ -643,33 +634,195 @@ def render_elementor(site, item):
     return r, body
 
 
+# --------------------------------------------------------------------------
+# Home page — its own composition, copy taken from the existing home page
+# --------------------------------------------------------------------------
+# The two things people can buy; checkout links will replace these hrefs.
+PRODUCTS = {
+    "therapy": {"href": "#contact", "cta": "קביעת פגישת טיפול"},
+    "course": {"href": "/קורסים/", "cta": "הרשמה לקורס"},
+}
+METHODS = [
+    ("התמקדות", "/התמקדות/", "הקשבה לתחושה המורגשת בגוף, ה־Felt Sense, שהיא השער לחוכמה הפנימית."),
+    ("Somatic Experiencing", "/טיפול-בטראומה-2/", "עבודה עם מערכת העצבים, כדי להשתחרר ממצבים שבהם הגוף עדיין מחזיק את הטראומה."),
+    ("הקומי", "/הקומי/", "בשפת ההופי הקומי פירושו how do we stand: מה היחסים שלנו עם כל ממדי הקיום."),
+    ("טיפול במגע", "/גרינברג/", "שיטות גרינברג ופאולה, גישות עדינות לעבודה עם טראומות התפתחותיות דרך הגוף הפיזי."),
+    ("וידאו תרפיה", "/וידאו-תרפיה/", "הקולנוע ככלי לספר את סיפור חיינו, לצפות בו ולראות אותו באור חדש."),
+    ("פוטותרפיה", "/פוטותרפיה/", "צילום כדרך להתבונן בעולם הפנימי, דרך מה שאנחנו בוחרים לראות."),
+]
+VOICES = [
+    ("אחרי שנים של תקיעות ב'מתישהו', מצאתי את האומץ לפתוח קליניקה משלי. זו לא רק עבודה, זו חופש אמיתי שהגיע מתוך תזוזה עמוקה בפנים.", "מטופלת"),
+    ("הרגשתי לכודה בדפוסים ישנים, במיוחד במערכות יחסים. דרך ההקשבה לגוף הבנתי מה אני באמת מרגישה, ופתאום יכולתי להציב גבול ברור ששינה הכל.", "מטופלת"),
+    ("הכאב היה כמו מפלצת שברחתי ממנה כל חיי. כשלמדתי לעצור ולהקשיב לו בעדינות דרך הגוף, הוא התכווץ והפך לחלק ממני. זוהי השלווה שחיפשתי.", "מטופל"),
+]
+
+
+def podcast_episodes(site, n=2):
+    page = site.items.get(1961)
+    if not page:
+        return []
+    eps = []
+    pending = None
+    def walk(nodes):
+        nonlocal pending
+        for e in nodes:
+            s_ = st(e)
+            if e.get("widgetType") == "video":
+                pending = youtube_id(s_.get("youtube_url") or "")
+            elif e.get("widgetType") == "heading" and pending:
+                eps.append((pending, inline(s_.get("title"))))
+                pending = None
+            walk(e.get("elements", []))
+    walk(json.loads(page["meta"]["_elementor_data"]))
+    return list(reversed(eps))[:n]
+
+
+def home_body(site):
+    essays = [p for p in site.posts_in(cat_ids={6, 15, 16}) if len(plain_text(p["content"])) > 1500][:5]
+    episodes = podcast_episodes(site)
+    also = [
+        ("The Focusing Shift", "#contact", "תכנית דיגיטלית של 90 יום: שיעורים מוקלטים, התמקדויות מודרכות ומפגשי זום קבוצתיים."),
+        ("קורס טראומה מתקדם", "/טראומה-מורכבת/", "לימודי המשך למי שסיים שנה א' בהתמקדות: עבודה עם חלקי העצמי הפגיעים, התוקפים והמגינים."),
+        ("להתיידד עם הנמר", "/פוקוסינג-לחיי-היום-יום/", "תכנית מקוונת לעבודה אישית, לשחרור ממצבי טראומה וחסימות."),
+    ]
+    voices = "".join(
+        f'<figure class="voice"{"" if i == 0 else " hidden"}><blockquote>{esc(q)}</blockquote><figcaption>{esc(w)}</figcaption></figure>'
+        for i, (q, w) in enumerate(VOICES)
+    )
+    return f"""
+<section class="hero">
+  <div class="wrap">
+    <h1><span>להקשיב פנימה.</span><span>לזוז החוצה.</span></h1>
+    <div class="hero__foot">
+      <div>
+        <p class="lead">מה שדיברת עליו שנים, הגוף שלך כבר יודע. טיפול אישי וקורסים בגישת ההתמקדות, עם ירדן כרם.</p>
+        <p class="hero__place">קליניקה בהרצליה, ומפגשים בזום.</p>
+      </div>
+      <div class="actions">
+        <a class="btn" href="{PRODUCTS['therapy']['href']}" data-product="therapy">{PRODUCTS['therapy']['cta']}</a>
+        <a class="btn btn--line" href="{PRODUCTS['course']['href']}" data-product="course">{PRODUCTS['course']['cta']}</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0" aria-label="שתי דרכים להתחיל">
+  <div class="wrap">
+    <div class="ways">
+      <article class="way way--ink">
+        <p class="way__kind">פגישה שבועית, בהרצליה או בזום</p>
+        <h2>טיפול אישי</h2>
+        <dl>
+          <div><dt>למי זה מתאים</dt><dd>למי שמחפשת ליווי אישי צמוד ועבודת עומק על כאב ספציפי, טראומה מורכבת או דפוסים שקשה לשחרר לבד.</dd></div>
+          <div><dt>מה קורה במפגש</dt><dd>שעה של הקשבה ל־Felt Sense שלך, במרחב בטוח ותומך, שבו אפשר לפרק בעדינות את מה שתקוע וליצור תנועה פנימית אמיתית.</dd></div>
+        </dl>
+        <div class="actions">
+          <a class="btn btn--paper" href="{PRODUCTS['therapy']['href']}" data-product="therapy">{PRODUCTS['therapy']['cta']}</a>
+          <a class="btn btn--line-light" href="/טיפולים-פרטניים/">על שיטות הטיפול</a>
+        </div>
+      </article>
+      <article class="way way--mist">
+        <p class="way__kind">קורס שנתי, אונליין או פרונטלי</p>
+        <h2>קורס התמקדות</h2>
+        <dl>
+          <div><dt>למי זה מתאים</dt><dd>למי שרוצה ללמוד את שפת הגוף לעומק: להתפתחות אישית, כקורס שנתי למתחילים או כהשלמה מקצועית למטפלים.</dd></div>
+          <div><dt>מה לומדים</dt><dd>את יסודות גישת ההתמקדות, איך להנחות אדם אחר בתהליך, ואיך לפתח קשב פנימי שילווה אותך כל החיים.</dd></div>
+        </dl>
+        <div class="actions">
+          <a class="btn" href="{PRODUCTS['course']['href']}" data-product="course">{PRODUCTS['course']['cta']}</a>
+          <a class="btn btn--line" href="/קורסים/">סילבוס ומועדים</a>
+        </div>
+      </article>
+    </div>
+    <div class="also">
+      <p>דרכים נוספות</p>
+      <ul>{"".join(f'<li><a href="{h}"><b>{t}</b><span>{d}</span></a></li>' for t, h, d in also)}</ul>
+    </div>
+  </div>
+</section>
+
+<section class="section section--mist">
+  <div class="wrap split">
+    <h2>כשהבנה לא הופכת לתנועה</h2>
+    <div class="body">
+      <p>ניסית כבר הרבה: טיפולי שיחה, סדנאות, מדיטציה, ספרים. צברת תובנות עמוקות, ובכל זאת משהו בפנים עדיין תקוע.</p>
+      <p>כשאנחנו תקועים, זה לרוב מפני שמערכת העצבים והגוף מחזיקים את הקושי בצורה פיזית, והבנה שכלית לבדה לא מזיזה חסימה שיושבת בגוף.</p>
+      <p>התמקדות היא לא עוד שיטה שמנסה לתקן אותך. זו דרך עדינה ומבוססת מחקר, שפיתח יוג'ין ג'נדלין, לפגוש את מה שחי בתוכך ולתת לגוף מרחב לדבר ולנוע בקצב שלו.</p>
+      <ul class="plain-list">
+        <li>התהליך ממוקד יותר, כי עובדים עם מפה ולא בתוך ערפל.</li>
+        <li>אפשר לעשות תהליך אישי קצר לאורך היום, גם בלי תלות באדם אחר.</li>
+        <li>מתפתחת עצמאות: היכולת להוביל את החיים מבפנים.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section section--ink" aria-label="מה אומרים מטופלים">
+  <div class="wrap">
+    <div class="voices" data-voices>{voices}</div>
+    <div class="voices__nav">
+      <button class="btn btn--line-light btn--sm" type="button" data-voices-next>המלצה הבאה</button>
+      <span class="voices__count" data-voices-count>1 מתוך {len(VOICES)}</span>
+      <a href="/לקוחות-מספרים/">כל ההמלצות</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <h2 class="section__title">השיטות שאני עובדת איתן</h2>
+    <ul class="methods">{"".join(f'<li><a href="{h}"><span class="methods__name">{n}</span><span class="methods__desc">{d}</span></a></li>' for n, h, d in METHODS)}</ul>
+  </div>
+</section>
+
+<section class="section section--mist">
+  <div class="wrap about">
+    <h2>אני כאן כדי ללמד הקשבה לגוף</h2>
+    <div class="body">
+      <p>אני מטפלת ומרצה כבר 30 שנה, מרצה בכירה לגישת ההתמקדות ולקורסים שעוסקים בטראומה. לימדתי יותר מ־750 תלמידים, ומאחוריי יותר מ־25,000 שעות טיפול.</p>
+      <p>בעלת תואר ראשון בפילוסופיה, תואר שני בקולנוע ובטיפול דרך הבעה ויצירה, ותואר שני בעבודה סוציאלית קלינית. מנהלת אקדמית ומרצה במרכז הישראלי לרפואת גוף נפש ברמת השרון, ומגישה את הפודקאסט "פוקוסינג עם ירדן כרם".</p>
+      <p><a class="more" href="/אודות/">עוד עליי</a></p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap media-split">
+    <div>
+      <h2>להאזין: פוקוסינג עם ירדן כרם</h2>
+      {"".join(f'<div class="episode">{video_embed(v, t)}<p>{t}</p></div>' for v, t in episodes)}
+      <p><a class="more" href="/פודקאסט/">כל פרקי הפודקאסט</a></p>
+    </div>
+    <div>
+      <h2>לקרוא: מאמרים</h2>
+      {post_cards(site, essays, single=True)}
+      <p style="margin-top:24px"><a class="more" href="/מאמרים-שאני-כתבתי/">כל המאמרים</a></p>
+    </div>
+  </div>
+</section>
+{contact_section(intro="לבחירתך הדרך שמדברת אל ליבך. השאירו פרטים ואחזור אליכם לשיחת היכרות קצרה, או פנו ישירות.")}
+"""
+
+
 def build_page(site, page):
     path = site.url(page)
+    if page["id"] == HOME_ID:
+        write(path, page_shell(site, path=path, title=SITE_NAME, body=home_body(site),
+                               description="מה שדיברת עליו שנים, הגוף שלך כבר יודע. טיפול אישי וקורסים בגישת ההתמקדות עם ירדן כרם, בהרצליה ובזום."))
+        return
     has_contact = False
     if page["meta"].get("_elementor_data"):
         r, body = render_elementor(site, page)
         hero = r.hero or {"title": esc(page["title"])}
         has_contact = 'data-form="contact"' in body
     else:
-        body = f'<section class="block"><div class="wrap narrow prose">{clean_html(page["content"])}</div></section>'
+        body = f'<section class="block"><div class="wrap prose" style="max-width:var(--measure)">{clean_html(page["content"])}</div></section>'
         hero = {"title": esc(page["title"])}
-    if page["id"] == HOME_ID:
-        hero = home_hero(hero)
+    hero["sub"] = hero.get("sub", [])[:1]
     if not has_contact and page["slug"] != "מדיניות-פרטיות":
         body += contact_block()
-    text = plain_text(body, 155)
-    desc = page["meta"].get("_yoast_wpseo_metadesc") or text
-    title = SITE_NAME if page["id"] == HOME_ID else page["title"]
-    write(path, page_shell(site, path=path, title=title, body=body, description=desc, hero=hero))
-
-
-def home_hero(h):
-    return {
-        "title": SITE_NAME,
-        "sub": [h["sub"][0] if h.get("sub") else "מטפלת דרך מיינדפולנס והקשבה לחוויה הסומטית"],
-        "bg": h.get("bg"),
-        "eyebrow": '<p class="eyebrow">טיפול אישי · קורסים · הרצאות</p>',
-    }
+    desc = page["meta"].get("_yoast_wpseo_metadesc") or plain_text(body, 155)
+    write(path, page_shell(site, path=path, title=page["title"], body=body, description=desc, hero=hero))
 
 
 def build_post(site, p):
@@ -687,8 +840,8 @@ def build_post(site, p):
         body_html = f'<div class="prose">{clean_html(p["content"], imgs)}</div>'
         for i in imgs:
             site.image(i)
-    chips = "".join(f'<a class="chip" href="/category/{esc(c["slug"])}/">{esc(c["name"])}</a>' for c in cats)
-    tag_html = "".join(f'<a class="chip chip--quiet" href="/tag/{esc(t["slug"])}/">#{esc(t["name"])}</a>' for t in tags)
+    cat_links = ", ".join(f'<a href="/category/{esc(c["slug"])}/">{esc(c["name"])}</a>' for c in cats)
+    tag_html = "".join(f'<a href="/tag/{esc(t["slug"])}/">{esc(t["name"])}</a>' for t in tags)
     related = []
     if cats:
         related = [x for x in site.posts_in(cat_ids={c["id"] for c in cats}) if x["id"] not in (p["id"], site.canonical_of.get(p["id"]))][:3]
@@ -698,16 +851,16 @@ def build_post(site, p):
     )
     body = f"""
 <article class="block article">
-  <div class="wrap narrow">
+  <div class="wrap">
     {body_html}
-    {f'<p class="chips">{tag_html}</p>' if tag_html else ''}
+    {f'<p class="tags">{tag_html}</p>' if tag_html else ''}
   </div>
 </article>
 {rel_html}
 {contact_block()}"""
     hero = {
         "title": esc(p["title"]),
-        "eyebrow": f'<p class="eyebrow">{chips} <time datetime="{p["date"][:10]}">{fmt_date(p["date"])}</time></p>',
+        "crumb": f'<p class="crumb">{cat_links + ", " if cat_links else ""}<time datetime="{p["date"][:10]}">{fmt_date(p["date"])}</time></p>',
         "sub": [],
     }
     canonical = site.url(site.items[site.canonical_of[p["id"]]]) if p["id"] in site.canonical_of else None
@@ -728,8 +881,8 @@ def build_post(site, p):
 
 
 def build_archive(site, path, title, posts, eyebrow):
-    body = f'<section class="block"><div class="wrap">{post_cards(site, posts) or "<p>אין עדיין פוסטים.</p>"}</div></section>' + contact_block()
-    hero = {"title": esc(title), "eyebrow": f'<p class="eyebrow">{eyebrow}</p>', "sub": [f"{len(posts)} פוסטים"]}
+    body = f'<section class="block"><div class="wrap">{post_cards(site, posts) or "<p>אין כאן עדיין פרסומים.</p>"}</div></section>' + contact_block()
+    hero = {"title": esc(title), "crumb": f'<p class="crumb">{eyebrow}</p>', "sub": []}
     write(path, page_shell(site, path=path, title=title, body=body, description=f"{eyebrow}: {title} – {SITE_NAME}", hero=hero))
 
 
@@ -755,7 +908,6 @@ def build_sitemap(site, urls):
 
 def main():
     site = Site(json.loads(DATA.read_text(encoding="utf-8")))
-    site.menu = build_menu(site)
     if OUT.exists():
         for child in OUT.iterdir():
             if child.name == "wp-content":

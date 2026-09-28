@@ -21,6 +21,20 @@
     });
   });
 
+  // Testimonials: one at a time, advanced by the visitor
+  var voices = document.querySelector('[data-voices]');
+  if (voices) {
+    var items = voices.querySelectorAll('.voice');
+    var count = document.querySelector('[data-voices-count]');
+    var at = 0;
+    document.querySelector('[data-voices-next]').addEventListener('click', function () {
+      items[at].hidden = true;
+      at = (at + 1) % items.length;
+      items[at].hidden = false;
+      count.textContent = (at + 1) + ' מתוך ' + items.length;
+    });
+  }
+
   // Click-to-play YouTube (lighter pages, no tracking until played)
   document.addEventListener('click', function (e) {
     var play = e.target.closest('.video__play');
