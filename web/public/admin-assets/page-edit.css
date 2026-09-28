@@ -1,0 +1,46 @@
+/* Edit-mode overlay on top of the real page styles. */
+.yk-editing { padding-top: 0; }
+.yk-editing .site-header { top: 104px; }
+.yk-editing .whatsapp { display: none; }
+.yk-bar {
+  position: sticky; top: 0; z-index: 1000; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  min-height: 56px; padding: 8px 20px; background: #0f2140; color: #e8eef7;
+  font: 400 15px/1.4 "IBM Plex Sans Hebrew", system-ui, sans-serif; box-shadow: 0 6px 20px -10px rgba(0,0,0,.5);
+}
+.yk-bar a { color: #e8eef7; }
+.yk-bar__back { text-decoration: none; padding: 6px 12px; border: 1px solid rgba(255,255,255,.25); border-radius: 8px; }
+.yk-bar__title b { color: #fff; }
+.yk-bar__hint { color: #9fb0c9; margin-inline-start: 8px; }
+.yk-bar__status { margin-inline-start: auto; }
+.yk-bar__status[data-kind="ok"] { color: #8fe0b0; }
+.yk-bar__status[data-kind="warn"] { color: #ffd38a; }
+.yk-bar__status[data-kind="error"] { color: #ffb4ab; }
+.yk-bar__save { min-height: 40px; padding: 0 22px; border: 0; border-radius: 8px; background: #2e57c4; color: #fff; font: 500 15px inherit; font-family: inherit; cursor: pointer; }
+.yk-bar__save:disabled { background: #3a4a66; color: #9fb0c9; cursor: default; }
+.yk-tools { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 4px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.12); }
+.yk-tools[hidden] { display: none; }
+.yk-tools button { min-height: 34px; padding: 0 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; background: transparent; color: #fff; font: inherit; cursor: pointer; }
+.yk-tools button:hover { background: rgba(255,255,255,.1); }
+
+[data-yk-edit] { outline: 1px dashed transparent; outline-offset: 6px; border-radius: 4px; cursor: text; transition: outline-color .15s, background-color .15s; }
+[data-yk-edit]:hover { outline-color: rgba(46,87,196,.55); background-color: rgba(46,87,196,.04); }
+.section--ink [data-yk-edit]:hover, .way--ink [data-yk-edit]:hover { outline-color: rgba(255,255,255,.6); }
+[data-yk-edit].yk-active { outline: 2px solid #2e57c4; background-color: rgba(46,87,196,.05); }
+[data-yk-edit].yk-changed { outline: 2px solid #d9912b; }
+[data-yk-edit] .video { pointer-events: none; opacity: .85; }
+.yk-editing .video__play { pointer-events: none; }
+
+/* Media picker (shared with the admin) */
+.picker { width: min(860px, 94vw); max-height: 86vh; padding: 20px; border: 0; border-radius: 14px; font-family: "IBM Plex Sans Hebrew", sans-serif; direction: rtl; }
+.picker::backdrop { background: rgba(15,33,64,.5); }
+.picker__head { display: flex; justify-content: space-between; align-items: center; }
+.picker__head h2 { margin: 0; font-size: 1.2rem; }
+.picker__tools { display: flex; gap: 10px; margin: 12px 0; }
+.picker__tools input[type=search] { flex: 1; padding: 8px 12px; border: 1px solid #d5deeb; border-radius: 8px; font: inherit; }
+.picker__upload { cursor: pointer; }
+.picker__grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; overflow-y: auto; max-height: 60vh; }
+.picker__grid button { display: block; width: 100%; aspect-ratio: 1; padding: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; background: #e8eef7; cursor: pointer; }
+.picker__grid button:hover, .picker__grid button:focus-visible { border-color: #2e57c4; }
+.picker__grid img { width: 100%; height: 100%; object-fit: cover; }
+.linklike { background: none; border: 0; padding: 0; font: inherit; color: #2e57c4; cursor: pointer; text-decoration: underline; }
+.btn--quiet { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border: 1px solid #d5deeb; border-radius: 8px; background: #fff; color: #0f2140; }

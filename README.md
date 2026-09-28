@@ -3,6 +3,32 @@
 אתר סטטי (HTML/CSS) שנבנה מכל התוכן של אתר הוורדפרס הקודם, בעיצוב חדש.
 כל כתובת של האתר הישן נשמרה בדיוק כמו שהייתה, כך שקישורים ותוצאות בגוגל ממשיכים לעבוד.
 
+## העלאה לוורסל (הגרסה הפעילה: תיקיית `web/`)
+
+האתר והניהול רצים ב־Next.js על Vercel, עם מסד נתונים Neon (Postgres) ואחסון תמונות Vercel Blob.
+
+1. ב־Vercel: **Add New → Project**, בוחרים את המאגר, ובשדה **Root Directory** בוחרים `web`.
+2. **Storage → Create → Neon (Postgres)** ומחברים לפרויקט (נוצר `DATABASE_URL`).
+3. **Storage → Create → Blob** ומחברים לפרויקט (נוצר `BLOB_READ_WRITE_TOKEN`).
+4. **Settings → Environment Variables**:
+   - `ADMIN_SETUP_KEY`: קוד סודי חד־פעמי ליצירת חשבון הניהול הראשון.
+   - `SITE_URL`: `https://www.yardenkerem.co.il`
+   - `RESEND_API_KEY` ו־`MAIL_FROM` (למשל `אתר ירדן כרם <site@yardenkerem.co.il>`): מיילים של לידים ואיפוס סיסמה, דרך resend.com.
+5. Deploy. בכל פריסה `scripts/migrate.mjs` יוצר את הטבלאות, ובפעם הראשונה בלבד טוען את כל התוכן (57 עמודים, 97 פוסטים, 551 הפניות, המלצות). עריכות מהניהול לא נדרסות בפריסות הבאות.
+6. נכנסים ל־`/admin/`, מזינים את קוד ההתקנה ויוצרים משתמש.
+7. תמונות מהאתר הישן: מעתיקים את `wp-content/uploads` אל `web/public/wp-content/uploads` (אותן כתובות בדיוק).
+8. מחברים את הדומיין ב־**Settings → Domains**.
+
+### בדיקה מקומית בלי npm
+`web/test/` כולל שרת שמנתב כמו Next.js ודרייבר Postgres מקומי במקום Neon:
+
+```
+DATABASE_URL=postgres://postgres@127.0.0.1:54329/yk YK_LOCAL_BLOB=1 ADMIN_SETUP_KEY=test node --import ./test/register.mjs test/server.mjs
+node test/e2e.mjs          # מעבר מלא על הניהול והאתר (Playwright)
+python3 test/compare.py    # השוואת כל 153 הכתובות לאתר הישן (כותרת, canonical, תיאור, טקסט)
+node --import ./test/register.mjs test/sanitize.test.mjs
+```
+
 ## מבנה
 
 | תיקייה | מה יש בה |
@@ -21,7 +47,7 @@ python3 build/build.py            # אחרי שינוי בעיצוב/בקוד
 python3 build/extract.py          # רק אם יש ייצוא וורדפרס חדש ב-data/
 ```
 
-## אזור הניהול (`/admin/`)
+## אזור הניהול בגרסת PHP (`server/`, לאחסון PHP רגיל; הוחלף בגרסת ורסל)
 
 PHP 8 + SQLite, בלי התקנות. דורש אחסון עם PHP (למשל פרוגינטר), לא אחסון סטטי בלבד.
 

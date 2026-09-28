@@ -13,6 +13,7 @@ const REDIRECTS = [[/^\/feed\/$/, '/feed.xml'], [/^\/comments\/feed\/$/, '/feed.
 
 async function route(pathname) {
   const seg = pathname.split('/').filter(Boolean);
+  if (seg[0] === 'admin') return [await import('../app/admin/[[...path]]/route.js'), { path: seg.length > 1 ? seg.slice(1) : undefined }];
   if (seg[0] === 'api' && seg[1] === 'lead') return [await import('../app/api/lead/route.js'), {}];
   if (seg.length === 1 && XML.includes(seg[0])) return [await import(`../app/${seg[0]}/route.js`), {}];
   return [await import('../app/[[...slug]]/route.js'), { slug: seg.length ? seg : undefined }];
@@ -22,6 +23,9 @@ http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost:3000');
     const p = url.pathname;
+    if (p.startsWith('/__blob/')) {
+      try { const b = await readFile(path.join(root, 'test', '.blob', decodeURIComponent(p.slice(8)))); res.writeHead(200); return res.end(b); } catch { res.writeHead(404); return res.end(); }
+    }
     try {
       const f = path.join(root, 'public', decodeURIComponent(p));
       if (f.startsWith(path.join(root, 'public')) && path.extname(f)) {
@@ -35,13 +39,17 @@ http.createServer(async (req, res) => {
     if (!p.endsWith('/') && !path.extname(p)) { res.writeHead(308, { Location: p + '/' + url.search }); return res.end(); }
     const chunks = [];
     for await (const c of req) chunks.push(c);
-    const request = new Request(url, { method: req.method, headers: req.headers, body: chunks.length ? Buffer.concat(chunks) : undefined });
+    const request = new Request(url, { method: req.method, headers: req.headers, duplex: 'half', body: chunks.length ? Buffer.concat(chunks) : undefined });
     request.nextUrl = url;
     const [mod, params] = await route(p);
     const handler = mod[req.method];
     if (!handler) { res.writeHead(405); return res.end(); }
     const r = await handler(request, { params: Promise.resolve(params) });
-    res.writeHead(r.status, Object.fromEntries(r.headers));
+    const headers = {};
+    r.headers.forEach((v, k) => { if (k !== 'set-cookie') headers[k] = v; });
+    const cookies = r.headers.getSetCookie();
+    if (cookies.length) headers['set-cookie'] = cookies;
+    res.writeHead(r.status, headers);
     res.end(Buffer.from(await r.arrayBuffer()));
   } catch (e) {
     console.error(e);
