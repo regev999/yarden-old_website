@@ -1,0 +1,41 @@
+# Apache / LiteSpeed configuration for the static site + PHP admin.
+Options -Indexes
+DirectoryIndex index.html index.php
+AddDefaultCharset utf-8
+ErrorDocument 404 /404.html
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# Optional: send every visitor to https://www. (enable once the domain points here)
+# RewriteCond %{HTTPS} off [OR]
+# RewriteCond %{HTTP_HOST} !^www\. [NC]
+# RewriteRule ^ https://www.yardenkerem.co.il%{REQUEST_URI} [R=301,L]
+
+# Legacy WordPress addresses
+RewriteRule ^ראשי-2/?$ / [R=301,L]
+RewriteRule ^feed/?$ /feed.xml [L]
+RewriteRule ^comments/feed/?$ /feed.xml [R=301,L]
+RewriteRule ^wp-sitemap\.xml$ /sitemap_index.xml [R=301,L]
+RewriteRule ^wp-admin/?$ /admin/ [R=302,L]
+RewriteRule ^wp-login\.php$ /admin/login.php [R=302,L]
+
+# Private data and code folders are never served
+RewriteRule ^admin/(_lib|_private)(/|$) - [F,L]
+RewriteRule (^|/)\.(?!well-known/) - [F,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+Header always set X-Content-Type-Options "nosniff"
+Header always set Referrer-Policy "strict-origin-when-cross-origin"
+<FilesMatch "\.(woff2|svg|css|js)$">
+Header set Cache-Control "public, max-age=2592000"
+</FilesMatch>
+<FilesMatch "\.(jpe?g|png|webp|gif)$">
+Header set Cache-Control "public, max-age=2592000"
+</FilesMatch>
+</IfModule>
+
+<FilesMatch "^(config\.local\.php|.*\.sqlite)$">
+Require all denied
+</FilesMatch>

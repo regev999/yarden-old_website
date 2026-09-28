@@ -72,6 +72,7 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 strong, b { font-weight: 600; }
 ::selection { background: var(--mist); color: var(--ink); }
 :focus-visible { outline: 2px solid var(--cobalt); outline-offset: 3px; }
+.hp { position: absolute; inset-inline-start: -9999px; width: 1px; height: 1px; overflow: hidden; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .skip { position: absolute; inset-inline-start: 16px; top: -60px; z-index: 100; background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: var(--radius-sm); }
 .skip:focus { top: 12px; }

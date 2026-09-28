@@ -1,2 +1,5 @@
 data/wordpress-export.xml
 __pycache__/
+/site/admin/_lib/config.local.php
+server/admin/_lib/config.local.php
+yk-private/

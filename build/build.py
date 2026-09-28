@@ -29,9 +29,9 @@ PHONE = "054-4250910"
 PHONE_INTL = "972544250910"
 EMAIL = "yardenkerem@gmail.com"
 LOCATION = "הרצליה ובזום"
-# Where the contact forms post to (e.g. a Formspree / Getform URL).
-# Left empty, the forms open the visitor's mail app with the details filled in.
-FORM_ENDPOINT = ""
+# Where the contact forms post to. Left empty, the forms open the visitor's
+# mail app instead (useful on a host without PHP).
+FORM_ENDPOINT = "/api/lead.php"  # PHP endpoint in server/api; leads show up in /admin/
 HOME_ID = 139
 BLOG_ID = 513
 # The old site's title suffix (Yoast default "%%title%% - %%sitename%%"); kept
@@ -430,6 +430,7 @@ def contact_form(kind="contact", with_message=True):
             '<label class="sr-only" for="nl-email">דוא"ל</label>'
             '<input id="nl-email" type="email" name="email" required placeholder="כתובת הדוא&quot;ל שלך" autocomplete="email">'
             '<button class="btn" type="submit">הרשמה לעדכונים</button>'
+            + '<div class="hp" aria-hidden="true"><label>אתר<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>' +
             '<p class="form__status" role="status"></p></form>'
         )
     msg = (
@@ -437,11 +438,11 @@ def contact_form(kind="contact", with_message=True):
         if with_message else ""
     )
     return (
-        '<form class="form" data-form="contact">'
+        '<form class="form" data-form="contact"><input type="hidden" name="product" value="">'
         '<label>שם מלא<input type="text" name="name" required autocomplete="name"></label>'
         '<label>טלפון<input type="tel" name="phone" autocomplete="tel" inputmode="tel"></label>'
         '<label class="form__full">דוא"ל<input type="email" name="email" autocomplete="email"></label>'
-        f'{msg}<button class="btn" type="submit">שליחה</button>'
+        f'{msg}' + '<div class="hp" aria-hidden="true"><label>אתר<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>' + '<button class="btn" type="submit">שליחה</button>'
         '<p class="form__status" role="status"></p></form>'
     )
 
@@ -1033,7 +1034,28 @@ def build_sitemaps(groups):
     xml = f'<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{index}</sitemapindex>\n'
     (OUT / "sitemap_index.xml").write_text(xml, encoding="utf-8")
     (OUT / "sitemap.xml").write_text(xml, encoding="utf-8")
-    (OUT / "robots.txt").write_text(f"User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}/sitemap_index.xml\n", encoding="utf-8")
+    (OUT / "robots.txt").write_text(
+        f"User-agent: *\nDisallow: /admin/\nDisallow: /api/\n\nSitemap: {SITE_URL}/sitemap_index.xml\n", encoding="utf-8")
+
+
+def apply_seo_overrides():
+    """Titles/descriptions edited in the admin (exported to data/seo-overrides.json)
+    survive a rebuild."""
+    f = ROOT / "data" / "seo-overrides.json"
+    if not f.exists():
+        return
+    for row in json.loads(f.read_text(encoding="utf-8")):
+        target = OUT / "index.html" if row["path"] == "/" else OUT / row["path"].strip("/") / "index.html"
+        if not target.exists():
+            continue
+        h = target.read_text(encoding="utf-8")
+        t, d = esc(row["title"] or ""), esc(row["description"] or "")
+        h = re.sub(r"<title>.*?</title>", lambda m: f"<title>{t}</title>", h, count=1, flags=re.S)
+        h = re.sub(r'<meta name="description" content="[^"]*">', lambda m: f'<meta name="description" content="{d}">', h, count=1)
+        h = re.sub(r'<meta property="og:description" content="[^"]*">', lambda m: f'<meta property="og:description" content="{d}">', h, count=1)
+        if row.get("noindex"):
+            h = h.replace('<meta name="description"', '<meta name="robots" content="noindex, follow">\n<meta name="description"', 1)
+        target.write_text(h, encoding="utf-8")
 
 
 def build_feed(site):
@@ -1057,6 +1079,11 @@ def main():
             shutil.rmtree(child) if child.is_dir() else child.unlink()
     OUT.mkdir(exist_ok=True)
     shutil.copytree(ASSETS, OUT / "assets")
+    # Admin area + form endpoint (PHP). A local config.local.php is never copied.
+    for part in ("admin", "api"):
+        shutil.copytree(ROOT / "server" / part, OUT / part,
+                        ignore=shutil.ignore_patterns("config.local.php", "_private"))
+    shutil.copy(ROOT / "server" / "htaccess", OUT / ".htaccess")
 
     groups = {"post": [], "page": [], "category": [], "post_tag": []}
     for page in site.pages:
@@ -1075,6 +1102,7 @@ def main():
             build_archive(site, f"/tag/{t['slug']}/", t["name"], posts, "תגית")
             groups["post_tag"].append((f"/tag/{t['slug']}/", None))
     build_404(site)
+    apply_seo_overrides()
     build_sitemaps(groups)
     build_feed(site)
     (OUT / "_redirects").write_text(

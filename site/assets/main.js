@@ -58,26 +58,45 @@
     else img.addEventListener('error', hide);
   });
 
-  // Forms: post to the configured endpoint, or fall back to the visitor's mail app
+  // Remember which product a visitor chose, so the lead says "therapy" or "course"
+  function setProduct(p) {
+    document.querySelectorAll('form[data-form="contact"] [name="product"]').forEach(function (i) { i.value = p; });
+    try { sessionStorage.setItem('product', p); } catch (e) {}
+  }
+  try { if (sessionStorage.getItem('product')) setProduct(sessionStorage.getItem('product')); } catch (e) {}
+  document.querySelectorAll('[data-product]').forEach(function (a) {
+    a.addEventListener('click', function () { setProduct(a.dataset.product); });
+  });
+
+  // Forms: post to the site's endpoint, or fall back to the visitor's mail app
   var cfg = window.SITE_FORM || {};
   document.querySelectorAll('form[data-form]').forEach(function (form) {
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var status = form.querySelector('.form__status');
+      var button = form.querySelector('button[type="submit"]');
       var data = new FormData(form);
       data.append('form', form.dataset.form);
       data.append('page', location.pathname);
       if (cfg.endpoint) {
         status.textContent = 'שולח…';
+        button.disabled = true;
         fetch(cfg.endpoint, { method: 'POST', body: data, headers: { Accept: 'application/json' } })
           .then(function (r) {
-            if (!r.ok) throw new Error(r.status);
-            form.reset();
-            status.textContent = 'תודה! הפרטים התקבלו ואחזור אליך בהקדם.';
+            return r.json().catch(function () { return {}; }).then(function (body) {
+              if (!r.ok || !body.ok) throw new Error(body.error || '');
+            });
           })
-          .catch(function () {
-            status.textContent = 'השליחה לא הצליחה. אפשר לכתוב ישירות אל ' + cfg.email;
-          });
+          .then(function () {
+            form.reset();
+            status.textContent = form.dataset.form === 'newsletter'
+              ? 'תודה! נרשמת לעדכונים.'
+              : 'תודה! הפרטים התקבלו ואחזור אליך בהקדם.';
+          })
+          .catch(function (err) {
+            status.textContent = err.message || ('השליחה לא הצליחה. אפשר להתקשר או לכתוב ישירות אל ' + cfg.email);
+          })
+          .then(function () { button.disabled = false; });
         return;
       }
       var subject = form.dataset.form === 'newsletter' ? 'הרשמה לעדכונים מהאתר' : 'פנייה מהאתר';

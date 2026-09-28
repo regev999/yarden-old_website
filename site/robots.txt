@@ -1,4 +1,5 @@
 User-agent: *
-Allow: /
+Disallow: /admin/
+Disallow: /api/
 
 Sitemap: https://www.yardenkerem.co.il/sitemap_index.xml

@@ -52,7 +52,7 @@
 <section class="block"><div class="wrap"><div class="video" data-yt="1jbUwFVDHcM"><button type="button" class="video__play" aria-label="הפעלת סרטון: סרטון" style="background-image:url(https://i.ytimg.com/vi/1jbUwFVDHcM/hqdefault.jpg)"><span class="video__icon" aria-hidden="true"></span></button></div>
 <h2 class="heading">פרק 13: שיחה עם אשרת קוטלר</h2></div></section>
 <section class="block block--image" style="--bg:url('/wp-content/uploads/2018/07/spring-276014_1920.jpg')"><div class="wrap"><h2 class="heading">צור קשר</h2>
-<form class="form" data-form="contact"><label>שם מלא<input type="text" name="name" required autocomplete="name"></label><label>טלפון<input type="tel" name="phone" autocomplete="tel" inputmode="tel"></label><label class="form__full">דוא"ל<input type="email" name="email" autocomplete="email"></label><button class="btn" type="submit">שליחה</button><p class="form__status" role="status"></p></form></div></section>
+<form class="form" data-form="contact"><input type="hidden" name="product" value=""><label>שם מלא<input type="text" name="name" required autocomplete="name"></label><label>טלפון<input type="tel" name="phone" autocomplete="tel" inputmode="tel"></label><label class="form__full">דוא"ל<input type="email" name="email" autocomplete="email"></label><div class="hp" aria-hidden="true"><label>אתר<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div><button class="btn" type="submit">שליחה</button><p class="form__status" role="status"></p></form></div></section>
 </main>
 <footer class="site-footer">
   <div class="wrap">
@@ -78,7 +78,7 @@
 <a class="whatsapp" href="https://wa.me/972544250910" target="_blank" rel="noopener" aria-label="שליחת הודעה בוואטסאפ">
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>
 </a>
-<script>window.SITE_FORM = {endpoint: "", email: "yardenkerem@gmail.com"};</script>
+<script>window.SITE_FORM = {endpoint: "/api/lead.php", email: "yardenkerem@gmail.com"};</script>
 <script src="/assets/main.js" defer></script>
 </body>
 </html>
