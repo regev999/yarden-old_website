@@ -66,6 +66,12 @@ class Site:
         )
         self.images_used = set()
         self._dupes()
+        # WordPress served the page when a page and a post shared a slug, so
+        # the page keeps the URL and the post moves to "<slug>-2".
+        page_slugs = {pg["slug"] for pg in self.pages}
+        self.path_override = {
+            p["id"]: f"/{p['slug']}-2/" for p in self.posts if p["slug"] in page_slugs
+        }
 
     def _dupes(self):
         """Some posts were published twice. Keep the URLs but point search
@@ -83,6 +89,8 @@ class Site:
     def url(self, item):
         if item["id"] == HOME_ID:
             return "/"
+        if item["id"] in self.path_override:
+            return self.path_override[item["id"]]
         return f"/{item['slug']}/"
 
     def post_cats(self, p):
@@ -804,6 +812,24 @@ def home_body(site):
 """
 
 
+def home_only_testimonials(site, existing_html):
+    """Testimonials that lived only in the old home page carousel, so they
+    are not lost now that the home page has its own composition."""
+    slides = []
+    def walk(nodes):
+        for e in nodes:
+            if e.get("widgetType") == "testimonial-carousel":
+                slides.extend(st(e).get("slides") or [])
+            walk(e.get("elements", []))
+    walk(json.loads(site.items[HOME_ID]["meta"]["_elementor_data"]))
+    seen = plain_text(existing_html)
+    extra = [sl for sl in slides if plain_text(sl.get("content") or "")[:40] not in seen]
+    if not extra:
+        return ""
+    quotes = Renderer(site, site.items[HOME_ID]).w_testimonial_carousel({"slides": extra})
+    return f'<section class="block"><div class="wrap"><h2 class="heading">עוד מילים של תלמידים ומטופלים</h2>{quotes}</div></section>'
+
+
 def build_page(site, page):
     path = site.url(page)
     if page["id"] == HOME_ID:
@@ -819,6 +845,8 @@ def build_page(site, page):
         body = f'<section class="block"><div class="wrap prose" style="max-width:var(--measure)">{clean_html(page["content"])}</div></section>'
         hero = {"title": esc(page["title"])}
     hero["sub"] = hero.get("sub", [])[:1]
+    if page["slug"] == "לקוחות-מספרים":
+        body += home_only_testimonials(site, body)
     if not has_contact and page["slug"] != "מדיניות-פרטיות":
         body += contact_block()
     desc = page["meta"].get("_yoast_wpseo_metadesc") or plain_text(body, 155)
