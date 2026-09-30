@@ -19,9 +19,9 @@ export function fileHash(publicPath) {
   return hashes[publicPath];
 }
 
-/** Stamp every /assets/ image in a piece of HTML with its version. */
+/** Stamp every /assets/ image in a piece of HTML with its version (in srcset lists too). */
 export function versionAssets(html) {
-  return html.replace(/(["'(])(\/assets\/[\w./-]+\.(?:jpe?g|png|webp|svg|gif))(?=["')])/g, (m, pre, p) => {
+  return html.replace(/(["'(]|,\s*)(\/assets\/[\w./-]+\.(?:jpe?g|png|webp|svg|gif))(?=["')\s])/g, (m, pre, p) => {
     const h = fileHash(p);
     return h ? `${pre}${p}?v=${h}` : m;
   });
