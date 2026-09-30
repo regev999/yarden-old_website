@@ -15,7 +15,7 @@ export const page = {
     const body = `<div class="settings-grid">
   <section class="panel">
     <h2>התראות על לידים</h2>
-    ${mailReady ? '' : '<p class="notice notice--warn">שליחת מיילים עוד לא מחוברת: צריך להגדיר RESEND_API_KEY בוורסל. הלידים נשמרים כאן בכל מקרה.</p>'}
+    ${mailReady ? '' : '<p class="notice notice--warn">שליחת מיילים עוד לא מחוברת: צריך להגדיר RESEND_API_KEY במשתני הסביבה של האפליקציה בשרת. הלידים נשמרים כאן בכל מקרה.</p>'}
     <form method="post" class="stack">${csrfField(ctx)}<input type="hidden" name="action" value="notify">
       <label>לאיזה מייל לשלוח כל ליד חדש <input name="notify_email" type="email" value="${esc(notify)}" dir="ltr">
         <small>השאירו ריק כדי לא לקבל מיילים. הלידים נשמרים כאן בכל מקרה.</small></label>
@@ -97,7 +97,7 @@ export const page = {
         const to = (await getSetting('notify_email', process.env.NOTIFY_EMAIL || '')) || ctx.user.email;
         const ok = await sendMail({ to, subject: 'בדיקת מייל מהאתר', text: 'זו הודעת בדיקה מאזור הניהול של האתר.\nאם היא הגיעה, התראות הלידים ואיפוס הסיסמה יעבדו.' });
         return ok ? back(`נשלחה הודעת בדיקה אל ${to}. אם היא לא מגיעה תוך כמה דקות, בדקו בספאם.`)
-          : back('השליחה נכשלה. צריך להגדיר RESEND_API_KEY ו־MAIL_FROM בוורסל (ולאמת את הדומיין ב־Resend).', 'error');
+          : back('השליחה נכשלה. צריך להגדיר RESEND_API_KEY ו־MAIL_FROM במשתני הסביבה של האפליקציה בשרת (ולאמת את הדומיין ב־Resend).', 'error');
       }
       default:
         return back('');

@@ -131,9 +131,9 @@ export const reset = {
 function setupForm(ctx, error = '', v = {}) {
   const configured = !!process.env.ADMIN_SETUP_KEY;
   return html(authPage(ctx, 'יצירת חשבון ניהול', `<p class="muted">פעם אחת בלבד: יוצרים את החשבון שבו תתחברו לאזור הניהול.</p>
-${configured ? '' : '<p class="notice notice--error">חסר קוד התקנה: הגדירו משתנה סביבה ADMIN_SETUP_KEY בוורסל ופרסו מחדש.</p>'}${errorBox(error)}
+${configured ? '' : '<p class="notice notice--error">חסר קוד התקנה: צריך להגדיר ADMIN_SETUP_KEY במשתני הסביבה של האפליקציה בשרת ולהפעיל אותה מחדש.</p>'}${errorBox(error)}
 <form method="post" class="stack">
-  <label>קוד התקנה <input name="setup_key" required autocomplete="off" dir="ltr"><small>הערך של ADMIN_SETUP_KEY שהגדרתם בוורסל.</small></label>
+  <label>קוד התקנה <input name="setup_key" required autocomplete="off" dir="ltr"><small>הקוד שקיבלתם להתקנה (ADMIN_SETUP_KEY בהגדרות האפליקציה בשרת).</small></label>
   <label>שם משתמש <input name="username" required value="${esc(v.username || '')}" autocomplete="username" dir="ltr"></label>
   <label>מייל (לאיפוס סיסמה) <input name="email" type="email" required value="${esc(v.email || '')}" autocomplete="email" dir="ltr"></label>
   <label>סיסמה <input name="password" type="password" required minlength="10" autocomplete="new-password" dir="ltr"><small>לפחות 10 תווים.</small></label>

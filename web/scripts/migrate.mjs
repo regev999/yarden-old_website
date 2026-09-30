@@ -1,5 +1,5 @@
 /**
- * Runs before every build on Vercel (see package.json "build").
+ * Runs before every build and on every start (see package.json "build" and "start").
  * Creates the tables and, on the very first run, loads the migrated content.
  * Never overwrites content that already exists, so edits made in the admin
  * survive every deploy.

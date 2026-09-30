@@ -7,7 +7,7 @@ import { countHit, encTarget, findRedirect, logNotFound, normalizeSource } from 
 
 export const dynamic = 'force-dynamic';
 
-// Served from Vercel's CDN; an admin save is visible within a minute.
+// A shared cache in front (a CDN, if there is one) keeps a page up to a minute, so an admin save shows within a minute.
 const CACHED = 'public, max-age=0, s-maxage=60, stale-while-revalidate=86400';
 
 function pathOf(slug) {
