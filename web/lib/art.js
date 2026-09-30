@@ -69,7 +69,7 @@ export function artVariant(seed) {
   let h = 2166136261;
   for (const ch of String(seed)) h = Math.imul(h ^ ch.codePointAt(0), 16777619);
   h >>>= 0;
-  return `--art-rot:${(h % 31) - 15}deg;--art-x:${22 + (h >> 9) % 56}%;--art-s:${(0.95 + ((h >> 17) % 40) / 100).toFixed(2)}`;
+  return `--art-rot:${(h % 31) - 15}deg;--art-x:${22 + (h >>> 9) % 56}%;--art-s:${(0.95 + ((h >>> 17) % 40) / 100).toFixed(2)}`;
 }
 
 /** Mark the page's hero and internal links with their motif. */

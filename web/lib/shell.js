@@ -53,15 +53,24 @@ export function navHtml(current) {
   }).join('');
 }
 
-export function headerHtml(current) {
+export function headerHtml(current, book = '#contact') {
   return `<header class="site-header">
   <div class="wrap site-header__inner">
     <a class="brand" href="/"><b>${SITE_NAME}</b><span>התמקדות וטיפול דרך הגוף</span></a>
     <nav id="nav" class="nav" aria-label="ניווט ראשי"><ul>${navHtml(current)}</ul></nav>
-    <a class="btn btn--sm header-cta" href="#contact">קביעת פגישה</a>
+    <a class="btn btn--sm header-cta" href="${book}">קביעת פגישה</a>
     <button class="menu-btn" type="button" aria-expanded="false" aria-controls="nav">תפריט</button>
   </div>
 </header>`;
+}
+
+/** Phones: the three ways to get in touch, where the thumb is. */
+function actionBarHtml(book) {
+  return `<nav class="actionbar" aria-label="יצירת קשר מהירה">
+  <a class="actionbar__btn actionbar__btn--primary" href="${book}">קביעת פגישה</a>
+  <a class="actionbar__btn" href="https://wa.me/${PHONE_INTL}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>וואטסאפ</a>
+  <a class="actionbar__btn" href="tel:+${PHONE_INTL}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1l-2.3 2.2Z"/></svg>התקשרות</a>
+</nav>`;
 }
 
 export function footerHtml() {
@@ -114,6 +123,8 @@ export function pageDocument({ path, title, seoTitle, description, canonical, og
   const fullTitle = seoTitle || `${title} - ${SITE_TITLE}`;
   const desc = esc(description || `${SITE_NAME} – ${TAGLINE}. טיפול אישי וקורסים בגישת ההתמקדות.`);
   const canon = absUrl(canonical || path);
+  // Pages without the contact block (legal pages) send "book a session" to the contact page
+  const book = main.includes('id="contact"') ? '#contact' : '/צור-קשר/#contact';
   return `<!doctype html>
 <html lang="he" dir="rtl">
 <head>
@@ -142,11 +153,12 @@ ${ldScript(ld)}${extraHead}
 </head>
 <body>
 <a class="skip" href="#main">דילוג לתוכן</a>
-${headerHtml(path)}
+${headerHtml(path, book)}
 <main id="main">
 ${main}
 </main>
 ${footerHtml()}
+${actionBarHtml(book)}
 <script>window.SITE_FORM = {endpoint: "/api/lead/", email: ${JSON.stringify(EMAIL)}};</script>
 <script src="${asset('main.js')}" defer></script>${extraBody}
 </body>

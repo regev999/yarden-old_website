@@ -19,6 +19,45 @@
       if (e.key === 'Escape' && nav.classList.contains('is-open')) { btn.click(); btn.focus(); }
     });
   }
+  // Header: a hairline once the page moves; on phones and tablets it steps aside
+  // while reading down and comes back on the way up
+  (function () {
+    var root = document.documentElement;
+    var header = document.querySelector('.site-header');
+    var small = window.matchMedia('(max-width: 1140px)');
+    var lastY = window.scrollY;
+    var holdUntil = 0;
+    var queued = false;
+    var hide = function (on) { root.classList.toggle('header-hidden', on); };
+    var update = function () {
+      queued = false;
+      var y = window.scrollY;
+      root.classList.toggle('scrolled', y > 4);
+      if (Date.now() < holdUntil) { lastY = y; return; }
+      if (!small.matches || root.classList.contains('menu-open') || y < 140) { hide(false); lastY = y; return; }
+      if (Math.abs(y - lastY) < 10) return;
+      hide(y > lastY);
+      lastY = y;
+    };
+    window.addEventListener('scroll', function () {
+      if (!queued) { queued = true; requestAnimationFrame(update); }
+    }, { passive: true });
+    small.addEventListener('change', update);
+    update();
+    // A jump within the page decides once, so the heading lands just under what stays on screen
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest('a[href^="#"]');
+      if (!a || !small.matches || a.hash.length < 2) return;
+      var target = document.getElementById(decodeURIComponent(a.hash.slice(1)));
+      if (!target) return;
+      var top = target.getBoundingClientRect().top;
+      hide(top > 0 && window.scrollY + top > 140);
+      holdUntil = Date.now() + 1000;
+    });
+    // Keyboard users reaching the header always see it
+    if (header) header.addEventListener('focusin', function () { hide(false); holdUntil = Date.now() + 600; });
+  })();
+
   document.querySelectorAll('.nav__toggle').forEach(function (t) {
     t.addEventListener('click', function () {
       var li = t.parentElement;
@@ -103,18 +142,22 @@
     });
     nav.appendChild(inner);
     hero.after(nav);
-    if (!('IntersectionObserver' in window)) return;
     var current = null;
+    var mark = function (a) {
+      if (a === current) return;
+      if (current) current.removeAttribute('aria-current');
+      current = a;
+      a.setAttribute('aria-current', 'true');
+      var r = a.getBoundingClientRect();
+      var box = inner.getBoundingClientRect();
+      inner.scrollBy({ left: (r.left + r.width / 2) - (box.left + box.width / 2), behavior: 'smooth' });
+    };
+    inner.addEventListener('click', function (e) { var a = e.target.closest('a'); if (a) mark(a); });
+    if (!('IntersectionObserver' in window)) return;
+    // The section whose heading is in the upper part of the screen is the one being read
     var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        if (!e.isIntersecting) return;
-        var a = links[heads.indexOf(e.target)];
-        if (current) current.removeAttribute('aria-current');
-        current = a;
-        a.setAttribute('aria-current', 'true');
-        a.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-      });
-    }, { rootMargin: '-30% 0px -60% 0px' });
+      entries.forEach(function (e) { if (e.isIntersecting) mark(links[heads.indexOf(e.target)]); });
+    }, { rootMargin: '-12% 0px -68% 0px' });
     heads.forEach(function (h) { io.observe(h); });
   })();
 
@@ -125,7 +168,7 @@
     var box = document.createElement('div');
     box.className = 'finder';
     box.innerHTML = '<label class="finder__label" for="finder">חיפוש בבלוג</label>' +
-      '<input id="finder" class="finder__input" type="search" placeholder="מילה מהכותרת או מהתקציר, למשל: טראומה" autocomplete="off">' +
+      '<input id="finder" class="finder__input" type="search" placeholder="מילה מהכותרת, למשל: טראומה" autocomplete="off">' +
       '<p class="finder__count" role="status" aria-live="polite"></p>';
     topics.before(box);
     var input = box.querySelector('input');
@@ -180,8 +223,9 @@
   }
 
   // Long blocks of text open on request instead of filling the screen
-  document.querySelectorAll('main > section.block .prose').forEach(function (p) {
-    if (p.closest('.article, details, .quote, .readmore') || p.textContent.length < 1400) return;
+  document.querySelectorAll('main > section.block .prose, main .vision').forEach(function (p) {
+    var min = p.classList.contains('vision') ? 500 : 1400;
+    if (p.closest('.article, details, .quote, .readmore') || p.textContent.length < min) return;
     var box = document.createElement('div');
     box.className = 'readmore is-closed';
     var body = document.createElement('div');

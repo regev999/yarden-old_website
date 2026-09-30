@@ -52,11 +52,13 @@ export const resolvePath = (path) => process.env.NO_CONTENT_CACHE ? resolve(path
 /** Preview for the admin: drafts included, never cached. */
 export const resolvePreview = (path) => resolve(path, { drafts: true });
 
-export const notFoundDocument = unstable_cache(async () => {
+async function notFound() {
   const page = await getPage('/404/');
   return pageDocument({
     path: '/404/', title: page?.title || 'הדף לא נמצא', seoTitle: page?.seo_title, description: page?.description,
     noindex: true, main: page ? await pageMain(page) : '<section class="block"><div class="wrap"><h1>הדף לא נמצא</h1><p><a href="/">לדף הבית</a></p></div></section>',
     gaId: await gaId(),
   });
-}, ['notfound-doc'], { tags: [CONTENT_TAG], revalidate: 86400 });
+}
+const cachedNotFound = unstable_cache(notFound, ['notfound-doc'], { tags: [CONTENT_TAG], revalidate: 86400 });
+export const notFoundDocument = () => process.env.NO_CONTENT_CACHE ? notFound() : cachedNotFound();
