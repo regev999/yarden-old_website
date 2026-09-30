@@ -128,7 +128,7 @@ ${noindex ? '<meta name="robots" content="noindex, follow">\n' : ''}<meta name="
 <meta property="og:url" content="${canon}">
 <meta property="og:locale" content="he_IL">
 <meta property="og:site_name" content="${SITE_NAME}">
-${ogImage ? `<meta property="og:image" content="${esc(ogImage)}">` : ''}
+${ogImage ? `<meta property="og:image" content="${esc(ogImage)}">${/\/og\//.test(ogImage) ? '<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">' : ''}<meta name="twitter:card" content="summary_large_image">` : ''}
 <meta name="theme-color" content="#0f2140">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="/assets/fonts/IBMPlexSansHebrew-ExtraLight.woff2" as="font" type="font/woff2" crossorigin>

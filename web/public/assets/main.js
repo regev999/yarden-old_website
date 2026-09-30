@@ -118,6 +118,34 @@
     heads.forEach(function (h) { io.observe(h); });
   })();
 
+  // Blog: filter the publications as you type
+  var topics = document.querySelector('.topic-nav');
+  if (topics) {
+    var items = [].slice.call(document.querySelectorAll('.year .entries > li'));
+    var box = document.createElement('div');
+    box.className = 'finder';
+    box.innerHTML = '<label class="finder__label" for="finder">חיפוש בבלוג</label>' +
+      '<input id="finder" class="finder__input" type="search" placeholder="מילה מהכותרת או מהתקציר, למשל: טראומה" autocomplete="off">' +
+      '<p class="finder__count" role="status" aria-live="polite"></p>';
+    topics.before(box);
+    var input = box.querySelector('input');
+    var count = box.querySelector('.finder__count');
+    var norm = function (t) { return t.toLowerCase().replace(/["'׳״]/g, ''); };
+    var texts = items.map(function (li) { return norm(li.textContent); });
+    input.addEventListener('input', function () {
+      var q = norm(input.value.trim());
+      var n = 0;
+      items.forEach(function (li, i) {
+        var hit = !q || texts[i].indexOf(q) !== -1;
+        li.hidden = !hit;
+        if (hit) n++;
+      });
+      document.querySelectorAll('.year').forEach(function (y) { y.hidden = !y.querySelector('.entries > li:not([hidden])'); });
+      topics.hidden = !!q;
+      count.textContent = q ? (n ? (n === 1 ? 'נמצא פרסום אחד' : 'נמצאו ' + n + ' פרסומים') : 'לא נמצאו פרסומים. אפשר לנסות מילה אחרת.') : '';
+    });
+  }
+
   // Long testimonials: a button to read the whole thing, only where it's cut off
   document.querySelectorAll('.quote:not(.is-open) blockquote').forEach(function (q) {
     if (q.scrollHeight <= q.clientHeight + 8) { q.style.webkitMaskImage = 'none'; q.style.maskImage = 'none'; return; }

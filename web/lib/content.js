@@ -5,10 +5,12 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { q, one } from './db';
+import { artForPath, artForPost, withArt } from './art';
 import {
   ESSAY_CATEGORIES, blogHtml, entriesHtml, fillRegions, optimizeImages, plain, postLd, postMainHtml,
   testimonialsHtml, tidyLegacy, voicesHtml,
 } from './html';
+import { titleVideos } from './videos';
 
 const POST_COLS = 'id, path, title, body, format, excerpt, seo_title, description, og_image, noindex, categories, tags, status, is_video, duplicate_of, date, modified';
 
@@ -54,6 +56,7 @@ async function regionsFor(page) {
     const field = m?.[1] === 'tag' ? 'tags' : 'categories';
     const inTerm = m ? posts.filter((p) => p[field].includes(m[2])) : [];
     regions.list = entriesHtml(inTerm) || '<p>אין כאן עדיין פרסומים.</p>';
+    regions._count = inTerm.length;
   }
   if (used.has('essays')) {
     const essays = posts.filter((p) => p.categories.some((c) => ESSAY_CATEGORIES.includes(c)) && plain(p.body).length > 1500).slice(0, 5);
@@ -67,8 +70,21 @@ async function regionsFor(page) {
   return regions;
 }
 
+/** Category and tag pages: a way back to the blog and how many publications there are. */
+function termHero(html, count) {
+  const sub = count ? `<p class="page-hero__sub">${count === 1 ? 'פרסום אחד' : `${count} פרסומים`}</p>` : '';
+  return html
+    .replace(/<p class="crumb">(?:קטגוריה|תגית)<\/p>/, '<p class="crumb"><a href="/בלוג/">בלוג</a></p>')
+    .replace(/(<header class="page-hero"[^>]*>[\s\S]*?<\/h1>)/, `$1${sub}`);
+}
+
 export async function pageMain(page) {
-  return optimizeImages(tidyLegacy(fillRegions(page.main, await regionsFor(page))));
+  const regions = await regionsFor(page);
+  // One contact block for the whole site, kept in content/contact.html
+  let html = tidyLegacy(fillRegions(page.main, regions))
+    .replace(/<section class="section section--ink block--contact" id="contact">[\s\S]*?<\/section>/, () => contactHtml().trim());
+  if (page.kind === 'category' || page.kind === 'tag') html = termHero(html, regions._count);
+  return withArt(titleVideos(optimizeImages(html)), artForPath(page.path));
 }
 
 export async function postMain(post) {
@@ -77,7 +93,7 @@ export async function postMain(post) {
   const related = post.categories.length
     ? posts.filter((x) => !skip.has(x.path) && x.categories.some((c) => post.categories.includes(c))).slice(0, 3)
     : [];
-  return optimizeImages(postMainHtml(post, { categories, tags, related, contact: contactHtml() }));
+  return withArt(titleVideos(optimizeImages(postMainHtml(post, { categories, tags, related, contact: contactHtml() }))), artForPost(post));
 }
 
 export { postLd };

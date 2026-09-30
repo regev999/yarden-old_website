@@ -7,6 +7,7 @@ import { getSetting } from './db';
 import { getPage, getPost, pageMain, postLd, postMain } from './content';
 import { findRedirect, smartRedirect } from './redirects';
 import { pageDocument } from './shell';
+import { ogImageFor } from './ogimage';
 
 export const CONTENT_TAG = 'content';
 
@@ -24,7 +25,7 @@ async function resolve(path, { drafts = false } = {}) {
       type: 'page',
       html: pageDocument({
         path, title: page.title, seoTitle: page.seo_title, description: page.description, canonical: page.canonical,
-        ogType: page.og_type, ogImage: page.og_image, noindex: page.noindex, ld: page.ld, main: await pageMain(page), gaId: await gaId(),
+        ogType: page.og_type, ogImage: ogImageFor(path, page.og_image), noindex: page.noindex, ld: page.ld, main: await pageMain(page), gaId: await gaId(),
       }),
     };
   }
@@ -35,7 +36,7 @@ async function resolve(path, { drafts = false } = {}) {
       type: 'page',
       html: pageDocument({
         path, title: post.title, seoTitle: post.seo_title, description: post.description,
-        ogType: 'article', ogImage: post.og_image, noindex: post.noindex || post.status !== 'published', ld: postLd(post),
+        ogType: 'article', ogImage: ogImageFor(path, post.og_image), noindex: post.noindex || post.status !== 'published', ld: postLd(post),
         main: await postMain(post), gaId: await gaId(),
       }),
     };

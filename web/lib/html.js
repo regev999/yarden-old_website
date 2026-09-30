@@ -1,7 +1,8 @@
 /**
- * Pure helpers that build the site's HTML fragments. No imports, so they run
- * the same on the server, in scripts and in tests.
+ * Pure helpers that build the site's HTML fragments. Only pure imports, so
+ * they run the same on the server, in scripts and in tests.
  */
+import { artForPost, artVariant } from './art';
 
 export const SITE_NAME = 'ירדן כרם';
 export const SITE_TITLE_SUFFIX = ' - ירדן כרם - התמקדות, הקומי, Somatic Experiencing';
@@ -90,11 +91,11 @@ export function entriesHtml(posts, single = false) {
   if (!posts.length) return '';
   const rows = posts.map((p) => {
     const ex = excerptOf(p, 140);
-    const yt = youtubeId(p.body);
-    const img = !yt && /<img[^>]+src="(\/wp-content\/uploads\/[^"]+)"/.exec(p.body || '')?.[1];
-    const thumb = single ? '' : yt
-      ? `<span class="entries__thumb entries__thumb--video"><img src="https://i.ytimg.com/vi/${yt}/mqdefault.jpg" alt="" loading="lazy" decoding="async"></span>`
-      : img ? `<span class="entries__thumb"><img src="${esc(img)}" alt="" loading="lazy" decoding="async"></span>` : '';
+    const yt = youtubeId(p.body) || /data-yt="([\w-]{11})"/.exec(p.body || '')?.[1];
+    const img = yt ? `https://i.ytimg.com/vi/${yt}/mqdefault.jpg` : /<img[^>]+src="(\/wp-content\/uploads\/[^"]+)"/.exec(p.body || '')?.[1];
+    // The subject's motif is always underneath, so a picture that fails to load leaves a designed cover
+    const thumb = single ? '' : `<span class="entries__thumb entries__thumb--art${yt ? ' entries__thumb--video' : ''}" data-art="${artForPost(p)}" style="${artVariant(p.path)}" aria-hidden="true">`
+      + `${img ? `<img src="${esc(img)}" alt="" loading="lazy" decoding="async">` : ''}</span>`;
     const meta = heDate(p.date) + (p.is_video && ex.length < 40 ? ', סרטון' : '');
     return `<li><a href="${esc(p.path)}">${thumb}<h3>${esc(p.title)}</h3>${ex ? `<p>${esc(ex)}</p>` : ''}<small>${esc(meta)}</small></a></li>`;
   });
