@@ -8,6 +8,11 @@
       btn.textContent = open ? 'סגירה' : 'תפריט';
       nav.classList.toggle('is-open', open);
       document.documentElement.classList.toggle('menu-open', open);
+      // The page behind the open menu can't be reached with Tab or a screen reader
+      ['main', '.site-footer', '.actionbar', '.whatsapp'].forEach(function (sel) {
+        var el = document.querySelector(sel);
+        if (el) el.inert = open;
+      });
     };
     btn.addEventListener('click', function () { setOpen(btn.getAttribute('aria-expanded') !== 'true'); });
     // A link inside the menu (or the header's booking button) closes it
@@ -15,6 +20,14 @@
       if (e.target.closest('a[href]') && nav.classList.contains('is-open')) setOpen(false);
     });
     window.matchMedia('(min-width: 1141px)').addEventListener('change', function (m) { if (m.matches) setOpen(false); });
+    // A section's name opens its list from the keyboard, like its arrow button
+    nav.querySelectorAll('.nav__label').forEach(function (label) {
+      label.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        var toggle = label.parentNode.querySelector('.nav__toggle');
+        if (toggle && getComputedStyle(toggle).display !== 'none') { e.preventDefault(); toggle.click(); }
+      });
+    });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && nav.classList.contains('is-open')) { btn.click(); btn.focus(); }
     });
@@ -102,7 +115,7 @@
   function playVideo(box) {
     var play = box.querySelector('.video__play');
     var f = document.createElement('iframe');
-    f.src = 'https://www.youtube-nocookie.com/embed/' + box.dataset.yt + '?autoplay=1&rel=0';
+    f.src = 'https://www.youtube-nocookie.com/embed/' + box.dataset.yt + '?autoplay=1&rel=0&playsinline=1';
     f.title = play.getAttribute('aria-label') || 'YouTube';
     f.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
     f.allowFullscreen = true;
@@ -127,6 +140,26 @@
       playVideo(box);
     });
   }
+
+  // Warm up the connection to YouTube while the pointer (or a finger) is on
+  // its way to a video, so it starts playing sooner. Only once videos are
+  // allowed: before that, nothing is sent to YouTube.
+  var warmed = false;
+  function warmUp(e) {
+    if (warmed || !e.target.closest || !e.target.closest('.video__play')) return;
+    if (window.YKConsent && !window.YKConsent.allowed('media')) return;
+    warmed = true;
+    ['https://www.youtube-nocookie.com', 'https://www.youtube.com', 'https://i.ytimg.com', 'https://www.google.com'].forEach(function (h) {
+      var l = document.createElement('link');
+      l.rel = 'preconnect';
+      l.href = h;
+      l.crossOrigin = '';
+      document.head.appendChild(l);
+    });
+  }
+  document.addEventListener('pointerover', warmUp, { passive: true });
+  document.addEventListener('touchstart', warmUp, { passive: true });
+  document.addEventListener('focusin', warmUp);
 
   document.addEventListener('click', function (e) {
     var play = e.target.closest('.video__play');
@@ -314,6 +347,7 @@
     btn.addEventListener('click', function () {
       if (btn.disabled) return;
       var label = btn.textContent;
+      btn.dataset.label = label;
       btn.disabled = true;
       btn.textContent = 'רגע…';
       note.textContent = '';
@@ -341,6 +375,17 @@
       });
     });
   });
+  // Back from Cardcom with the browser's back button, the page comes back as it
+  // was left (buttons disabled, "רגע…"): make it usable again
+  window.addEventListener('pageshow', function (e) {
+    if (!e.persisted) return;
+    document.querySelectorAll('[data-checkout], form[data-checkout-token] button[type="submit"]').forEach(function (b) {
+      b.disabled = false;
+      if (b.dataset.label) b.textContent = b.dataset.label;
+    });
+    document.querySelectorAll('form[data-checkout-token] .form__status, .buy-status').forEach(function (s) { s.textContent = ''; });
+  });
+
   // Back from Cardcom: say how it went, once
   (function () {
     var result = new URLSearchParams(location.search).get('payment');
@@ -365,8 +410,8 @@
       var status = form.querySelector('.form__status');
       var button = form.querySelector('button[type="submit"]');
       var data = new FormData(form);
-      data.append('form', form.dataset.form);
-      data.append('page', location.pathname);
+      data.set('form', form.dataset.form);
+      data.set('page', location.pathname);
       if (cfg.endpoint) {
         status.textContent = 'שולח…';
         button.disabled = true;

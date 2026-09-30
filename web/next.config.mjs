@@ -5,6 +5,8 @@ const securityHeaders = [
   { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
   { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+  // A floor for every page: no plugins, no <base> hijacking, no framing by other sites
+  { key: 'Content-Security-Policy', value: "object-src 'none'; base-uri 'self'; frame-ancestors 'self'" },
 ];
 
 const nextConfig = {

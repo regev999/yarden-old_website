@@ -31,6 +31,15 @@ export async function GET(request, { params }) {
   const link = /^[\w-]+$/.test(t) ? await linkByToken(t) : null;
   const state = linkState(link, link?.max_uses != null ? await paidLinkCount(link.id) : 0);
 
+  // Back from Cardcom after paying: thank them, even though a single-use link is now used up
+  if (link && new URL(request.url).searchParams.get('payment') === 'success') {
+    return page(link.title, `${hero('תודה, התשלום התקבל', link.title)}
+<section class="block"><div class="wrap"><div class="paybox">
+<p>קבלה נשלחת אליכם במייל. אם יש שאלה, אפשר לפנות לירדן ישירות.</p>
+<div class="actions"><a class="btn" href="/">לדף הבית</a><a class="btn btn--line" href="/צור-קשר/">יצירת קשר</a></div>
+</div></div></section>`);
+  }
+
   if (!state.ok || !isConfigured()) {
     const msg = !isConfigured() ? 'התשלום באתר עוד לא הופעל.' : state.message;
     return page('תשלום', `${hero('התשלום לא זמין', msg)}

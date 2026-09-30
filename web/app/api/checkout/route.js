@@ -8,8 +8,8 @@
  * The amount always comes from the database row, never from the browser.
  */
 import { createLowProfile, isConfigured } from '@/lib/cardcom';
-import { activeProduct, createOrder, linkByToken, linkState, paidLinkCount, patchOrder, siteBase } from '@/lib/shop';
-import { ipHash, recordAttempt, sameOrigin, tooManyAttempts } from '@/lib/security';
+import { activeProduct, createOrder, heldLinkCount, linkByToken, linkState, patchOrder, siteBase } from '@/lib/shop';
+import { bodyTooLarge, ipHash, sameOrigin, takeAttempt } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,9 +28,9 @@ function returnPath(value) {
 
 export async function POST(request) {
   if (!sameOrigin(request)) return reply(403, { error: 'הבקשה נחסמה.' });
+  if (bodyTooLarge(request, 16 * 1024)) return reply(413, { error: 'בקשה לא תקינה.' });
   const key = 'checkout|' + ipHash(request);
-  if (await tooManyAttempts(key, 12, 300)) return reply(429, { error: 'יותר מדי ניסיונות. אפשר לנסות שוב בעוד כמה דקות.' });
-  await recordAttempt(key);
+  if (await takeAttempt(key, 12, 300)) return reply(429, { error: 'יותר מדי ניסיונות. אפשר לנסות שוב בעוד כמה דקות.' });
   if (!isConfigured()) return reply(503, { error: 'התשלום באתר עוד לא הופעל. אפשר ליצור קשר בטלפון או בוואטסאפ.' });
 
   let body;
@@ -48,7 +48,7 @@ export async function POST(request) {
   let charge;
   if (token) {
     const link = await linkByToken(token);
-    const state = linkState(link, link?.max_uses != null ? await paidLinkCount(link.id) : 0);
+    const state = linkState(link, link?.max_uses != null ? await heldLinkCount(link.id, buyer.customer_email) : 0);
     if (!state.ok) return reply(state.reason === 'not_found' ? 404 : 409, { error: state.message });
     charge = { title: link.title, amount: link.amount_agorot, maxPayments: link.max_payments, fields: { payment_link_id: link.id } };
   } else {

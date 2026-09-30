@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { EMAIL, PHONE, PHONE_INTL, SITE_NAME, SITE_URL, absUrl, esc, fullDescription, fullTitle, siteLd } from './html';
+import { EMAIL, PHONE, PHONE_INTL, SITE_NAME, SITE_URL, absUrl, esc, formFallback, fullDescription, fullTitle, lazyVideoThumbs, siteLd } from './html';
 import { versionAssets } from './versions';
 
 /** ?v=<hash> on each asset, so browsers fetch it again as soon as it changes (assets are cached for 30 days). */
@@ -111,6 +111,22 @@ function gaTags(id) {
     + `gtag("js",new Date());gtag("config","${id}",{anonymize_ip:true});</script>`;
 }
 
+/**
+ * Chrome and Edge load a page in the background once the pointer rests on a
+ * link to it (or a finger touches it), so the click opens it instantly. Only
+ * plain public pages: not the admin, forms' endpoints, payment or downloads.
+ */
+const SPECULATION = `<script type="speculationrules">${JSON.stringify({
+  prerender: [{
+    where: { and: [
+      { href_matches: '/*' },
+      { not: { href_matches: ['/admin/*', '/api/*', '/pay/*', '/files/*', '/*.xml', '/*\\?*'] } },
+      { not: { selector_matches: '[target], [download], [data-no-prerender]' } },
+    ] },
+    eagerness: 'moderate',
+  }],
+})}</script>`;
+
 function ldScript(ld) {
   if (!ld) return '';
   return `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>`;
@@ -153,13 +169,13 @@ ${ogImage ? `<meta property="og:image" content="${esc(ogImage)}">${/\/og\//.test
 <script src="${asset('consent.js')}" defer></script>
 ${gaTags(gaId)}
 <link rel="alternate" type="application/rss+xml" title="${esc(SITE_TITLE)}" href="${SITE_URL}/feed/">
-${ldScript(graph)}${extraHead}
+${ldScript(graph)}${SPECULATION}${extraHead}
 </head>
 <body>
 <a class="skip" href="#main">דילוג לתוכן</a>
 ${headerHtml(path, book)}
 <main id="main">
-${versionAssets(main)}
+${versionAssets(lazyVideoThumbs(formFallback(main)))}
 </main>
 ${footerHtml()}
 ${actionBarHtml(book)}

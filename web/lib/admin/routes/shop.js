@@ -7,8 +7,8 @@ import { randomBytes } from 'node:crypto';
 import { q, one } from '../../db';
 import { isConfigured } from '../../cardcom';
 import { isConfigured as ravmesserReady } from '../../ravmesser';
-import { FULFILLMENT, ORDER_STATUS, installmentsText, linkState, newLinkToken, parseShekels, shekels } from '../../shop';
-import { logActivity, publishChanges } from '../common';
+import { FULFILLMENT, ORDER_STATUS, installmentsText, linkState, newLinkToken, parseShekels, shekels, siteBase } from '../../shop';
+import { asText, csvRow, logActivity, publishChanges } from '../common';
 import { adminPage, csrfField, esc, heDate, html, qs, redirect, SECURITY_HEADERS } from '../ui';
 
 const option = (k, label, cur) => `<option value="${esc(k)}"${String(k) === String(cur) ? ' selected' : ''}>${esc(label)}</option>`;
@@ -49,7 +49,7 @@ export const sales = {
   async GET(ctx) {
     const f = saleFilters(ctx.query);
     const [month, all, open] = await Promise.all([
-      one(`SELECT count(*)::int AS n, coalesce(sum(amount_agorot), 0)::bigint AS sum FROM orders WHERE status = 'paid' AND paid_at >= date_trunc('month', now())`),
+      one(`SELECT count(*)::int AS n, coalesce(sum(amount_agorot), 0)::bigint AS sum FROM orders WHERE status = 'paid' AND paid_at >= date_trunc('month', now() AT TIME ZONE 'Asia/Jerusalem') AT TIME ZONE 'Asia/Jerusalem'`),
       one(`SELECT count(*)::int AS n, coalesce(sum(amount_agorot), 0)::bigint AS sum FROM orders WHERE status = 'paid'`),
       one(`SELECT count(*)::int AS n FROM orders WHERE status = 'pending' AND created_at > now() - interval '14 days' AND (customer_name <> '' OR customer_phone <> '')`),
     ]);
@@ -88,19 +88,13 @@ export const salesExport = {
   async GET(ctx) {
     const f = saleFilters(ctx.query);
     const rows = await q(`SELECT * FROM orders${f.where} ORDER BY coalesce(paid_at, created_at) DESC`, f.args);
-    // Cells that start with = + - @ would run as formulas in Excel; prefix them.
-    const cell = (v) => {
-      let s = String(v ?? '');
-      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
-      return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-    };
     const lines = [['תאריך סליקה', 'נוצר', 'מה נרכש', 'סכום', 'תשלומים', 'שם', 'בעל הכרטיס', 'טלפון', 'מייל', 'חשבונית', 'אישור', '4 ספרות', 'סטטוס', 'רב־מסר', 'הערות']];
     for (const o of rows) {
       lines.push([o.paid_at ? heDate(o.paid_at) : '', heDate(o.created_at), o.title, (o.amount_agorot / 100).toFixed(2), o.num_payments || '',
-        o.customer_name, o.card_owner_name, o.customer_phone, o.customer_email, o.invoice_number, o.approval_number, o.card_last4,
+        o.customer_name, o.card_owner_name, asText(o.customer_phone), o.customer_email, asText(o.invoice_number), asText(o.approval_number), asText(o.card_last4),
         ORDER_STATUS[o.status] || o.status, FULFILLMENT[o.fulfillment] || o.fulfillment, o.error_detail]);
     }
-    const csv = '﻿' + lines.map((r) => r.map(cell).join(',')).join('\r\n') + '\r\n';
+    const csv = '﻿' + lines.map(csvRow).join('\r\n') + '\r\n';
     const day = new Date().toISOString().slice(0, 10);
     return new Response(csv, { headers: { ...SECURITY_HEADERS, 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="sales-${day}.csv"` } });
   },
@@ -222,7 +216,7 @@ export const payLinks = {
       <small>להנחה אישית: 1. לדמי הרשמה לכולם: ריק.</small></label>
     <label>בתוקף עד (לא חובה) <input name="expires" type="date" value="${esc(expires)}" dir="ltr"></label>
   </div>
-  <label>מזהה הקישור <input name="token" value="${esc(l.token)}" required pattern="[a-z0-9\\-]{4,40}" maxlength="40" dir="ltr">
+  <label>מזהה הקישור <input name="token" value="${esc(l.token)}" required pattern="[a-z0-9\\-]{10,40}" maxlength="40" dir="ltr">
     <small>מה שמופיע בכתובת. נוצר אקראית כדי שאי אפשר יהיה לנחש קישור של הנחה.</small></label>
   <label>מזהה רשימה ברב־מסר (לא חובה) <input name="ravmesser_list" value="${esc(l.ravmesser_list)}" dir="ltr" maxlength="120"></label>
   <label>הערה פנימית (לא חובה) <input name="internal_note" value="${esc(l.internal_note)}" maxlength="200"><small>רק בשבילך, למשל למי נשלח.</small></label>
@@ -269,10 +263,13 @@ ${list.length ? `<div class="table-wrap"><table class="table">
       if (!(maxPayments >= 1 && maxPayments <= 36)) return back('מספר התשלומים צריך להיות בין 1 ל־36.');
       if (maxUses !== null && !(maxUses >= 1)) return back('מספר הפעמים צריך להיות 1 או יותר, או ריק.');
       if (expires && !/^\d{4}-\d{2}-\d{2}$/.test(expires)) return back('התאריך לא תקין.');
-      if (!/^[a-z0-9-]{4,40}$/.test(token)) return back('מזהה הקישור: 4–40 אותיות אנגליות קטנות, ספרות או מקף.');
+      if (!/^[a-z0-9-]{10,40}$/.test(token)) return back("מזהה הקישור: 10–40 אותיות אנגליות קטנות, ספרות או מקף (כך אי אפשר לנחש אותו).");
       if (await one('SELECT 1 FROM payment_links WHERE token = $1 AND id <> $2', [token, id])) return back('יש כבר קישור עם המזהה הזה.');
       // Valid through the end of the chosen day, Israel time
-      const expiresAt = expires ? new Date(`${expires}T23:59:59+03:00`).toISOString() : null;
+      // The end of that day in Israel, summer (+03:00) or winter (+02:00)
+      const offset = expires ? (/GMT\+(\d+)/.exec(new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Jerusalem', timeZoneName: 'shortOffset' })
+        .formatToParts(new Date(`${expires}T12:00:00Z`)).find((x) => x.type === 'timeZoneName')?.value || '')?.[1] || '2') : '';
+      const expiresAt = expires ? new Date(`${expires}T23:59:59+0${offset}:00`).toISOString() : null;
       const vals = [token, title, f('description', 400), amount, maxPayments, maxUses, expiresAt, f('ravmesser_list', 120).replace(/\s/g, ''), f('internal_note', 200), !!ctx.form.get('active')];
       if (id) {
         await q(`UPDATE payment_links SET token=$1, title=$2, description=$3, amount_agorot=$4, max_payments=$5, max_uses=$6, expires_at=$7,
@@ -282,7 +279,7 @@ ${list.length ? `<div class="table-wrap"><table class="table">
           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, vals);
       }
       await logActivity(ctx, id ? 'עדכן קישור תשלום' : 'יצר קישור תשלום', title, '/admin/pay-links/');
-      return redirect('/admin/pay-links/', `הקישור נשמר: ${ctx.url.origin}/pay/${token}/`);
+      return redirect('/admin/pay-links/', `הקישור נשמר: ${siteBase(ctx.request)}/pay/${token}/`);
     }
     if (action === 'toggle' && id) await q('UPDATE payment_links SET active = NOT active, updated_at = now() WHERE id = $1', [id]);
     if (action === 'delete' && id) {

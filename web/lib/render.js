@@ -3,7 +3,7 @@
  * Results are cached (tag "content") and cleared whenever the admin saves.
  */
 import { unstable_cache } from 'next/cache';
-import { getSetting } from './db';
+import { getSetting, one } from './db';
 import { getPage, getPost, pageMain, postLd, postMain } from './content';
 import { findRedirect, smartRedirect } from './redirects';
 import { pageDocument } from './shell';
@@ -57,7 +57,16 @@ async function resolve(path, { drafts = false } = {}) {
   return { type: 'none' };
 }
 
-export const resolvePath = (path) => process.env.NO_CONTENT_CACHE ? resolve(path) : unstable_cache(() => resolve(path), ['path', path], { tags: [CONTENT_TAG], revalidate: 86400 })();
+const cachedResolve = (path) => unstable_cache(() => resolve(path), ['path', path], { tags: [CONTENT_TAG], revalidate: 86400 })();
+
+/** A page or post stored at this exact address (a cheap indexed lookup). */
+const stored = async (path) => !!(await one('SELECT 1 FROM pages WHERE path = $1 UNION ALL SELECT 1 FROM posts WHERE path = $1 LIMIT 1', [path]));
+
+/**
+ * Pages and posts are cached; any other address (redirects, 404s, random
+ * requests) is looked up each time, so unknown addresses never fill the cache.
+ */
+export const resolvePath = async (path) => (process.env.NO_CONTENT_CACHE || !(await stored(path)) ? resolve(path) : cachedResolve(path));
 
 /** Preview for the admin: drafts included, never cached. */
 export const resolvePreview = (path) => resolve(path, { drafts: true });

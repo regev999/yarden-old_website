@@ -27,9 +27,19 @@ async function empty(table) {
   const rows = await sql.query(`SELECT 1 FROM ${table} LIMIT 1`);
   return rows.length === 0;
 }
+// Each table is seeded once in its life: a table the admin has emptied on
+// purpose (all testimonials removed, say) stays empty on the next start.
+async function seedOnce(table) {
+  const key = `seeded:${table}`;
+  if ((await sql.query('SELECT 1 FROM settings WHERE key = $1', [key])).length) return false;
+  const fresh = await empty(table);
+  await sql.query('INSERT INTO settings(key, value) VALUES($1, $2) ON CONFLICT (key) DO NOTHING', [key, new Date().toISOString()]);
+  return fresh;
+}
+
 
 // 2. Seed each table once, in one statement per table.
-if (await empty('pages')) {
+if (await seedOnce('pages')) {
   const pages = read('pages.json').map((p) => ({ ...p, ld: p.ld ?? null }));
   await sql.query(
     `INSERT INTO pages (path, kind, title, seo_title, description, og_type, og_image, canonical, noindex, ld, main)
@@ -40,7 +50,7 @@ if (await empty('pages')) {
   console.log(`[migrate] pages: ${pages.length}`);
 }
 
-if (await empty('posts')) {
+if (await seedOnce('posts')) {
   const posts = read('posts.json').map((p) => ({
     path: p.path, title: p.title, body: p.body, excerpt: p.excerpt || '', seo_title: p.seo_title || '',
     description: p.description || '', og_image: p.og_image || '', categories: p.categories, tags: p.tags,
@@ -55,7 +65,7 @@ if (await empty('posts')) {
   console.log(`[migrate] posts: ${posts.length}`);
 }
 
-if (await empty('terms')) {
+if (await seedOnce('terms')) {
   const terms = [
     ...read('categories.json').map((c) => ({ kind: 'category', slug: c.slug, name: c.name })),
     ...read('tags.json').map((t) => ({ kind: 'tag', slug: t.slug, name: t.name })),
@@ -65,7 +75,7 @@ if (await empty('terms')) {
      ON CONFLICT DO NOTHING`, [JSON.stringify(terms)]);
 }
 
-if (await empty('testimonials')) {
+if (await seedOnce('testimonials')) {
   const t = read('testimonials.json');
   await sql.query(
     `INSERT INTO testimonials (name, role, body, show_on_home, position)
@@ -73,7 +83,7 @@ if (await empty('testimonials')) {
      AS x(name text, role text, body text, show_on_home boolean, position int)`, [JSON.stringify(t)]);
 }
 
-if (await empty('redirects')) {
+if (await seedOnce('redirects')) {
   const r = read('redirects.json').map((x) => ({ source: x.from, target: x.to, note: x.note }));
   await sql.query(
     `INSERT INTO redirects (source, target, note) SELECT source, target, note FROM jsonb_to_recordset($1::jsonb)

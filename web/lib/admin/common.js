@@ -38,3 +38,21 @@ export async function uniquePath(slug, ignoreId = null) {
     slug = `${base}-${++n}`;
   }
 }
+
+/** A CSV cell. Cells that start with = + - @ would run as formulas in Excel; prefix them. */
+export function csvCell(v) {
+  let s = String(v ?? '');
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+/** Marks a value that must stay as typed (a phone's leading 0 or +972, card digits). */
+export const asText = (v) => ({ asText: String(v ?? '').trim() });
+
+/** One CSV line; values marked asText are written so Excel shows them as text. */
+export function csvRow(values) {
+  return values.map((v) => {
+    if (v && typeof v === 'object' && 'asText' in v) return /^[\d\s+\-()]{1,40}$/.test(v.asText) ? `="${v.asText}"` : csvCell(v.asText);
+    return csvCell(v);
+  }).join(',');
+}

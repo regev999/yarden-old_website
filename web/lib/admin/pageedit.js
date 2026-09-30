@@ -67,13 +67,24 @@ function sanitizeDl(html) {
   return out;
 }
 
+/**
+ * The editor works on the page as shown, where images point at the resizing
+ * service (/_next/image?url=…) and assets carry ?v=<version>. Store the plain
+ * addresses, so the page stays responsive and picks up new versions.
+ */
+export function undoRenderTransforms(html) {
+  return String(html)
+    .replace(/\/_next\/image\?url=([^&"'\s]+)(?:&(?:amp;)?(?:w|q)=\d+)*/g, (m, u) => { try { return decodeURIComponent(u); } catch { return m; } })
+    .replace(/(\/assets\/[\w./-]+\.(?:jpe?g|png|webp|svg|gif))\?v=[0-9a-f]{6,16}/g, '$1');
+}
+
 /** Apply edited blocks ({index: html}) to the page HTML. */
 export function applyEdits(html, edits) {
   const blocks = editableBlocks(html);
   const keys = Object.keys(edits).map(Number).filter((i) => Number.isInteger(i)).sort((a, b) => b - a);
   for (const i of keys) {
     const b = blocks[i];
-    const content = edits[i];
+    const content = typeof edits[i] === 'string' ? undoRenderTransforms(edits[i]) : edits[i];
     if (!b || typeof content !== 'string') continue;
     const clean = b.tag === 'dl' ? sanitizeDl(content) : sanitizeHtml(content, b.kind !== 'rich');
     html = html.slice(0, b.inner) + clean + html.slice(b.innerEnd);

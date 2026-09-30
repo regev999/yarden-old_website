@@ -9,8 +9,8 @@ export const home = {
   async GET(ctx) {
     const [newLeads, week, month, posts, drafts, testimonials, notFound] = await Promise.all([
       n(`SELECT count(*)::int AS n FROM leads WHERE status = 'new'`),
-      n(`SELECT count(*)::int AS n FROM leads WHERE created_at >= date_trunc('day', now()) - interval '6 days'`),
-      n(`SELECT count(*)::int AS n FROM leads WHERE created_at >= date_trunc('month', now())`),
+      n(`SELECT count(*)::int AS n FROM leads WHERE created_at >= (date_trunc('day', now() AT TIME ZONE 'Asia/Jerusalem') - interval '6 days') AT TIME ZONE 'Asia/Jerusalem'`),
+      n(`SELECT count(*)::int AS n FROM leads WHERE created_at >= date_trunc('month', now() AT TIME ZONE 'Asia/Jerusalem') AT TIME ZONE 'Asia/Jerusalem'`),
       n(`SELECT count(*)::int AS n FROM posts WHERE status = 'published'`),
       n(`SELECT count(*)::int AS n FROM posts WHERE status = 'draft'`),
       n('SELECT count(*)::int AS n FROM testimonials WHERE published'),

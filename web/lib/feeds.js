@@ -36,12 +36,21 @@ export const sitemapIndex = unstable_cache(async () => {
   return `${xmlHead}<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${index}</sitemapindex>\n`;
 }, ['sitemap-index'], { tags: [CONTENT_TAG], revalidate: 86400 });
 
+/** RFC 822 date for a post's Israel wall-clock time, with Israel's offset that day (+0200 or +0300). */
+function israelDate(d) {
+  const wall = toDate(d);
+  const name = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Jerusalem', timeZoneName: 'shortOffset' })
+    .formatToParts(new Date(wall.getTime() - 2 * 3600e3)).find((x) => x.type === 'timeZoneName')?.value || 'GMT+2';
+  const h = Number(/GMT\+(\d+)/.exec(name)?.[1] || 2);
+  return wall.toUTCString().replace('GMT', `+0${h}00`);
+}
+
 export const rssFeed = unstable_cache(async () => {
   const posts = await q(`SELECT path, title, excerpt, body, date FROM posts WHERE status = 'published' AND duplicate_of IS NULL ORDER BY date DESC LIMIT 20`);
   const items = posts.map((p) => {
     const link = esc(absUrl(p.path));
     return `<item><title>${esc(p.title)}</title><link>${link}</link><guid>${link}</guid>`
-      + `<pubDate>${toDate(p.date).toUTCString().replace('GMT', '+0000')}</pubDate><description>${esc(excerptOf(p, 300))}</description></item>`;
+      + `<pubDate>${israelDate(p.date)}</pubDate><description>${esc(excerptOf(p, 300))}</description></item>`;
   }).join('');
   return `${xmlHead}<rss version="2.0"><channel><title>${esc(SITE_TITLE)}</title><link>${SITE_URL}/</link>`
     + `<description>התמקדות, הקומי, Somatic Experiencing</description><language>he-IL</language>${items}</channel></rss>\n`;

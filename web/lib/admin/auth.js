@@ -70,8 +70,11 @@ export function cookieValue(request, name) {
   return m ? decodeURIComponent(m[1]) : '';
 }
 
+/** Secure cookies everywhere but a local test server (the proxy doesn't always say the visit was https). */
 function secure(request) {
-  return new URL(request.url).protocol === 'https:' ? '; Secure' : '';
+  const host = request.headers.get('host') || '';
+  if (/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)) return new URL(request.url).protocol === 'https:' ? '; Secure' : '';
+  return '; Secure';
 }
 
 const userAgent = (request) => (request.headers.get('user-agent') || '').slice(0, 200);

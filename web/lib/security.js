@@ -1,5 +1,5 @@
 /** Request helpers shared by the lead form and the admin: IP hashing, throttling, origin checks, tokens. */
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { q, one } from './db';
 
 /**
@@ -37,6 +37,35 @@ export function token(bytes = 32) {
 export async function tooManyAttempts(key, max, seconds) {
   const r = await one(`SELECT count(*)::int AS n FROM attempts WHERE key = $1 AND at > now() - make_interval(secs => $2)`, [key, seconds]);
   return (r?.n ?? 0) >= max;
+}
+
+/**
+ * Counts this attempt first, then says whether it went over the limit. Recording
+ * before checking means many requests sent at the same moment can't all pass
+ * a count that none of them has added to yet.
+ */
+export async function takeAttempt(key, max, seconds) {
+  await q('INSERT INTO attempts(key) VALUES($1)', [key]);
+  const r = await one(`SELECT count(*)::int AS n FROM attempts WHERE key = $1 AND at > now() - make_interval(secs => $2)`, [key, seconds]);
+  return (r?.n ?? 0) > max;
+}
+
+/**
+ * True when a request body is bigger than `max` bytes, or its size isn't
+ * declared (browsers always declare it for forms and fetch). Checked before
+ * reading, so an oversized upload never fills the server's memory.
+ */
+export function bodyTooLarge(request, max) {
+  const len = request.headers.get('content-length');
+  if (len === null) return request.headers.has('transfer-encoding');
+  const n = Number(len);
+  return !Number.isFinite(n) || n > max;
+}
+
+/** Compares two secrets in constant time. */
+export function sameSecret(a, b) {
+  const x = Buffer.from(String(a)), y = Buffer.from(String(b));
+  return x.length === y.length && x.length > 0 && timingSafeEqual(x, y);
 }
 
 export async function recordAttempt(key) {

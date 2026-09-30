@@ -23,12 +23,23 @@ export function validTarget(t) {
   return /^(\/[^\s<>"]*|https?:\/\/[^\s<>"]+)$/i.test(t);
 }
 
-/** Encode a stored target for the Location header. */
+/** Only characters a header can carry: anything outside printable ASCII is percent-encoded. */
+const ascii = (s) => s.replace(/[^\x21-\x7e]/g, (c) => encodeURIComponent(c));
+
+/** Encode a stored target for the Location header (a #section stays a section). */
 export function encTarget(t) {
-  if (!t.startsWith('/')) return t;
-  const [p, qs] = t.split(/\?(.*)/s);
-  return enc(p) + (qs !== undefined ? '?' + qs : '');
+  if (!t.startsWith('/')) {
+    try { return new URL(t).href; } catch { return ascii(t); }
+  }
+  const hi = t.indexOf('#');
+  const hash = hi === -1 ? '' : '#' + ascii(t.slice(hi + 1));
+  const [p, qs] = (hi === -1 ? t : t.slice(0, hi)).split(/\?(.*)/s);
+  return enc(p) + (qs !== undefined ? '?' + ascii(qs) : '') + hash;
 }
+
+/** The forms of an address that lookups treat as the same one: any case, with or without the final slash. */
+const sameKey = (s) => String(s).toLowerCase().replace(/\/+$/, '') || '/';
+const variants = (s) => { const k = sameKey(s); return k === '/' ? ['/'] : [k, k + '/']; };
 
 /** Find a redirect for a path (+ optional query string without "?"). */
 export async function findRedirect(path, query = '') {
@@ -91,10 +102,14 @@ const SCANNER = /(\.(php|asp|aspx|env|git|sql|bak|ini|cgi|xml\.gz)$|\/wp-admin|\
 export async function logNotFound(path, referrer = '') {
   path = normalizeSource(path);
   if (SCANNER.test(path) || path.length > 400) return;
-  await q(`INSERT INTO notfound(path, hits, referrer) VALUES($1, 1, $2)
-           ON CONFLICT (path) DO UPDATE SET hits = notfound.hits + 1, last_seen = now(),
-           referrer = CASE WHEN EXCLUDED.referrer <> '' THEN EXCLUDED.referrer ELSE notfound.referrer END`,
-  [path, String(referrer).slice(0, 300)]);
+  referrer = String(referrer).slice(0, 300);
+  const seen = await one(`UPDATE notfound SET hits = hits + 1, last_seen = now(),
+                          referrer = CASE WHEN $2 <> '' THEN $2 ELSE referrer END WHERE path = $1 RETURNING path`, [path, referrer]);
+  // New addresses only while the list is a readable size, so random requests can't grow it without end
+  if (!seen) {
+    await q(`INSERT INTO notfound(path, hits, referrer) SELECT $1, 1, $2 WHERE (SELECT count(*) FROM notfound) < 3000
+             ON CONFLICT (path) DO UPDATE SET hits = notfound.hits + 1, last_seen = now()`, [path, referrer]);
+  }
   if (Math.random() < 0.02) {
     await q(`DELETE FROM notfound WHERE last_seen < now() - interval '180 days' AND hits < 3`);
   }
@@ -115,24 +130,26 @@ export async function saveRedirect(from, to, note = '', id = null) {
   if (from === '/') return 'אי אפשר להפנות את דף הבית.';
   if (from.startsWith('/admin') || from.startsWith('/api/')) return 'אי אפשר להפנות כתובות של אזור הניהול.';
   if (!validTarget(to)) return 'כתובת היעד לא תקינה. כתבו כתובת שמתחילה ב־/ (בתוך האתר) או ב־https://';
-  const seen = new Set([from]);
+  // Chains and loops are followed the way visitors are sent: any case, with or without the final slash
+  const seen = new Set([sameKey(from)]);
   let final = to;
   for (let i = 0; i < 10; i++) {
-    const next = await one('SELECT target FROM redirects WHERE source = $1 AND id IS DISTINCT FROM $2', [final, id]);
+    if (!final.startsWith('/')) break;
+    const next = await one('SELECT target FROM redirects WHERE lower(source) = ANY($1::text[]) AND id IS DISTINCT FROM $2 LIMIT 1', [variants(final.split('#')[0]), id]);
     if (!next) break;
-    if (seen.has(final)) return 'ההפניה יוצרת לולאה.';
-    seen.add(final);
+    if (seen.has(sameKey(final.split('#')[0]))) return 'ההפניה יוצרת לולאה.';
+    seen.add(sameKey(final.split('#')[0]));
     final = next.target;
   }
-  const strip = (s) => s.replace(/\/+$/, '');
-  if (final === from || strip(final) === strip(from)) return 'המקור והיעד זהים (או מובילים זה לזה).';
+  if (seen.has(sameKey(final.split('#')[0]))) return 'המקור והיעד זהים (או מובילים זה לזה).';
   try {
     if (id) await q('UPDATE redirects SET source = $1, target = $2, note = $3 WHERE id = $4', [from, final, note, id]);
     else await q('INSERT INTO redirects(source, target, note) VALUES($1, $2, $3)', [from, final, note]);
   } catch {
     return 'כבר קיימת הפניה מהכתובת הזו.';
   }
-  await q('UPDATE redirects SET target = $1 WHERE target = $2', [final, from]);
+  // Redirects that pointed at the old address now go straight to the new one
+  await q(`UPDATE redirects SET target = $1 WHERE lower(target) = ANY($2::text[])`, [final, variants(from)]);
   await q('DELETE FROM notfound WHERE path = $1', [from]);
   return null;
 }

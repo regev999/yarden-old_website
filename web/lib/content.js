@@ -76,7 +76,9 @@ function termHero(html, count) {
   const sub = count ? `<p class="page-hero__sub">${count === 1 ? 'פרסום אחד' : `${count} פרסומים`}</p>` : '';
   return html
     .replace(/<p class="crumb">(?:קטגוריה|תגית)<\/p>/, '<p class="crumb"><a href="/בלוג/">בלוג</a></p>')
-    .replace(/(<header class="page-hero"[^>]*>[\s\S]*?<\/h1>)/, `$1${sub}`);
+    .replace(/(<header class="page-hero"[^>]*>[\s\S]*?<\/h1>)/, `$1${sub}`)
+    // The list's titles are h3: give them the h2 they sit under (read out, not shown)
+    .replace(/<ul class="entries">/, '<h2 class="sr-only">כל הפרסומים</h2><ul class="entries">');
 }
 
 export async function pageMain(page) {

@@ -129,7 +129,7 @@ ${revs.map((r) => `<tr><td class="nowrap">${esc(heDate(r.created_at))}</td><td>$
       const cur = await one('SELECT * FROM posts WHERE path = $1', [r.path]);
       if (!cur) return redirect(back, 'המאמר כבר לא קיים, אי אפשר לשחזר אליו גרסה.', 'error');
       await saveRevision(ctx, 'post', cur, 'לפני שחזור גרסה');
-      await q(`UPDATE posts SET title = $1, body = $2, format = $3, excerpt = $4, seo_title = $5, description = $6, categories = $7, tags = $8, modified = now() WHERE path = $9`,
+      await q(`UPDATE posts SET title = $1, body = $2, format = $3, excerpt = $4, seo_title = $5, description = $6, categories = $7, tags = $8, modified = (now() AT TIME ZONE 'Asia/Jerusalem') WHERE path = $9`,
         [c.title, c.body, c.format || 'legacy', c.excerpt || '', c.seo_title || '', c.description || '', JSON.stringify(c.categories || []), JSON.stringify(c.tags || []), r.path]);
     }
     publishChanges();

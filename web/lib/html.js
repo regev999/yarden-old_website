@@ -106,6 +106,27 @@ export function plain(html, limit = 0) {
   return t;
 }
 
+const videoThumb = (src) => `<img class="video__thumb" src="${src}" alt="" width="480" height="360" loading="lazy" decoding="async">`;
+
+/**
+ * Video covers saved in pages as a CSS background load all at once, however far
+ * down the page; turn them into lazy images so each loads as it comes near.
+ */
+export function lazyVideoThumbs(html) {
+  return String(html).replace(/<button\b([^>]*\bclass="video__play"[^>]*?)\s+style="background-image:\s*url\(([^)"]+)\)"([^>]*)>/g,
+    (m, before, src, after) => `<button${before}${after}>${videoThumb(src.replace(/&amp;/g, '&'))}`);
+}
+
+/**
+ * The site's forms post by script; without one (blocked, not loaded yet) the
+ * browser would put the details in the address instead. Give each a real
+ * target, so it still sends the lead, and says which form it came from.
+ */
+export function formFallback(html) {
+  return String(html).replace(/<form\b(?![^>]*\baction=)([^>]*\bdata-form="([\w-]+)"[^>]*)>/g,
+    (m, attrs, kind) => `<form method="post" action="/api/lead/"${attrs}><input type="hidden" name="form" value="${kind}">`);
+}
+
 export function youtubeId(s) {
   const m = /(?:youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^\s"'<]*&(?:amp;)?)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/.exec(String(s || ''));
   return m ? m[1] : null;
@@ -113,7 +134,7 @@ export function youtubeId(s) {
 
 export function videoEmbed(id, title = '') {
   const label = esc(title || 'סרטון');
-  return `<div class="video" data-yt="${esc(id)}"><button type="button" class="video__play" aria-label="הפעלת סרטון: ${label}" style="background-image:url(https://i.ytimg.com/vi/${esc(id)}/hqdefault.jpg)"><span class="video__icon" aria-hidden="true"></span></button></div>`;
+  return `<div class="video" data-yt="${esc(id)}"><button type="button" class="video__play" aria-label="הפעלת סרטון: ${label}">${videoThumb(`https://i.ytimg.com/vi/${esc(id)}/hqdefault.jpg`)}<span class="video__icon" aria-hidden="true"></span></button></div>`;
 }
 
 /* ---------------------------------------------------------------- lists */

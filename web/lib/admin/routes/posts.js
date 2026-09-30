@@ -171,13 +171,19 @@ export const edit = {
     }
     for (const [slug, name] of Object.entries(p.tag_names)) {
       await q(`INSERT INTO terms(kind, slug, name) VALUES('tag', $1, $2) ON CONFLICT DO NOTHING`, [slug, name]);
+      // A new tag gets its page, listing its posts, so the tag's link on the post leads somewhere
+      const main = `<header class="page-hero"><div class="wrap"><p class="crumb">תגית</p><h1>${esc(name)}</h1></div></header>
+<section class="block"><div class="wrap"><!--yk:list--><!--/yk:list--></div></section>
+${contactHtml()}`;
+      await q(`INSERT INTO pages(path, kind, title, description, main) VALUES($1, 'tag', $2, $3, $4) ON CONFLICT (path) DO NOTHING`,
+        [`/tag/${slug}/`, name, `תגית: ${name} – ירדן כרם`, main]);
     }
     const description = p.excerpt || plain(p.body, 155);
     const vals = [p.path, p.title, p.body, p.excerpt, p.seo_title, description, JSON.stringify(p.categories), JSON.stringify(p.tags), p.status, p.is_video, p.date];
     let id;
     if (post) {
       await saveRevision(ctx, 'post', post, wasPublished ? 'עריכת מאמר' : 'עריכת טיוטה');
-      await q(`UPDATE posts SET path=$1, title=$2, body=$3, format='rich', excerpt=$4, seo_title=$5, description=$6, categories=$7, tags=$8, status=$9, is_video=$10, date=$11, modified=now() WHERE id=$12`, [...vals, post.id]);
+      await q(`UPDATE posts SET path=$1, title=$2, body=$3, format='rich', excerpt=$4, seo_title=$5, description=$6, categories=$7, tags=$8, status=$9, is_video=$10, date=$11, modified=(now() AT TIME ZONE 'Asia/Jerusalem') WHERE id=$12`, [...vals, post.id]);
       id = post.id;
     } else {
       [{ id }] = await q(`INSERT INTO posts(path, title, body, format, excerpt, seo_title, description, categories, tags, status, is_video, date, modified)

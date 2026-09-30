@@ -1,5 +1,10 @@
 import { connect } from './sqlclient.mjs';
 
+// Post dates are stored as Israel wall-clock time without a zone, and read back
+// into Date objects holding that time in their UTC fields. That only holds if
+// this process runs in UTC, whatever the server's own zone (Proginter: Israel).
+process.env.TZ = 'UTC';
+
 let sql;
 function client() {
   const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;

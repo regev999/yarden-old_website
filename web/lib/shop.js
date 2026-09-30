@@ -53,6 +53,16 @@ export async function paidLinkCount(id) {
   return (await one(`SELECT count(*)::int AS n FROM orders WHERE payment_link_id = $1 AND status = 'paid'`, [id])).n;
 }
 
+/**
+ * Uses of a link that are paid, or on their way: someone else's payment page
+ * opened in the last 30 minutes. Counting those keeps a single-use link from
+ * being paid twice by two people at once; the same buyer trying again is fine.
+ */
+export async function heldLinkCount(id, email = '') {
+  return (await one(`SELECT count(*)::int AS n FROM orders WHERE payment_link_id = $1
+    AND (status = 'paid' OR (status = 'pending' AND created_at > now() - interval '30 minutes' AND lower(coalesce(customer_email, '')) <> lower($2)))`, [id, email])).n;
+}
+
 /** Can the link be paid right now? One place, so the page and the checkout always agree. */
 export function linkState(link, paidCount = 0) {
   if (!link) return { ok: false, reason: 'not_found', message: 'קישור התשלום לא נמצא.' };

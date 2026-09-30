@@ -205,7 +205,7 @@ strong, b { font-weight: 600; }
 
 .page-hero { --lens: clamp(420px, 62vw, 900px); padding: clamp(64px, 10vw, 150px) 0 clamp(48px, 7vw, 104px); }
 .page-hero h1 { max-width: 13em; margin: 0; color: var(--white); }
-.page-hero h1, .hero h1 span { animation: focus-in 1.8s cubic-bezier(.2, .6, .1, 1) both; }
+.page-hero h1, .hero h1 span { animation: focus-in 1.1s cubic-bezier(.2, .6, .1, 1) both; }
 @keyframes focus-in {
   from { filter: blur(16px); opacity: 0; }
   55%  { opacity: 1; }
@@ -220,7 +220,7 @@ strong, b { font-weight: 600; }
 .hero { --lens: clamp(520px, 78vw, 1200px); padding: clamp(80px, 12vw, 190px) 0 clamp(56px, 8vw, 120px); }
 .hero h1 { font-size: var(--t-hero); font-weight: 200; line-height: .98; letter-spacing: -0.05em; margin: 0 0 clamp(36px, 5vw, 64px); color: var(--white); }
 .hero h1 span { display: block; }
-.hero h1 span + span { animation-delay: .45s; color: var(--halo); }
+.hero h1 span + span { animation-delay: .3s; color: var(--halo); }
 .hero__foot { display: grid; grid-template-columns: minmax(0, 30em) auto; gap: 28px 64px; align-items: end; justify-content: space-between; }
 .hero__foot .lead { margin: 0; color: var(--on-ink); }
 .hero__place { margin: 20px 0 0; color: var(--on-ink-soft); font-size: 1rem; }
@@ -240,7 +240,7 @@ strong, b { font-weight: 600; }
 .hero__text .actions { margin-top: clamp(28px, 3.5vw, 44px); }
 
 .hero__art { position: absolute; z-index: -1; top: 50%; inset-inline-end: -8%; width: min(64%, 920px); aspect-ratio: 1; margin: 0; translate: 0 -50%; pointer-events: none; }
-.hero__art img { display: block; width: 100%; height: 100%; animation: fade-in 2.2s .1s ease-out both; }
+.hero__art img { display: block; width: 100%; height: 100%; animation: fade-in 1.4s ease-out both; }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
 /* The arch: Yarden's portrait as a window, on the About page */
@@ -527,7 +527,9 @@ h3.heading { font-size: var(--t-lead); font-weight: 500; margin-bottom: 16px; }
 
 .video { position: relative; aspect-ratio: 16 / 9; border-radius: var(--r-card); overflow: hidden; background: var(--ink); margin: 0 0 16px; }
 .video iframe, .video__play { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-.video__play { cursor: pointer; background: var(--ink) center/cover no-repeat; }
+.video__play { cursor: pointer; padding: 0; background: var(--ink) center/cover no-repeat; }
+/* The cover, loaded only as it nears the screen */
+.video__thumb { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .video__play::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(15, 33, 64, .55), rgba(15, 33, 64, .05) 55%); transition: opacity .2s; }
 .video__icon { position: absolute; z-index: 1; inset: 0; margin: auto; width: 72px; height: 72px; border-radius: 50%; background: rgba(249, 250, 252, .92); box-shadow: 0 0 0 10px rgba(249, 250, 252, .18); transition: transform .2s, box-shadow .2s; }
 .video__icon::after { content: ""; position: absolute; top: 50%; left: 54%; transform: translate(-50%, -50%); border-style: solid; border-width: 11px 0 11px 17px; border-color: transparent transparent transparent var(--ink); }
@@ -918,6 +920,17 @@ html.a11y-links a:not(.btn) { text-decoration: underline !important; text-decora
 html.a11y-spacing body { letter-spacing: .03em; word-spacing: .12em; }
 html.a11y-spacing p, html.a11y-spacing li, html.a11y-spacing dd { line-height: 2 !important; }
 html.a11y-motion *, html.a11y-motion *::before, html.a11y-motion *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+
+/* Moving between pages: the new page fades in over the old one, while the
+   header and the phone's action bar stay put (Chrome, Edge, Safari 18.2+) */
+@view-transition { navigation: auto; }
+.site-header { view-transition-name: site-header; }
+.actionbar { view-transition-name: actionbar; }
+::view-transition-old(root) { animation: vt-out .18s ease-in both; }
+::view-transition-new(root) { animation: vt-in .26s ease-out both; }
+@keyframes vt-out { to { opacity: 0; } }
+@keyframes vt-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
 
 /* The yellow: the podcast artwork's mustard, carried across the site as its
    one warm accent. On ink it may colour words; on paper and mist it is only

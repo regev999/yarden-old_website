@@ -3,19 +3,21 @@
  *
  * The notice itself is not trusted for the money: only its LowProfileId is
  * used, to fetch the authoritative result with GetLpResult, and the order is
- * updated from that. The answer is always 200, even on our own errors, so
- * Cardcom doesn't retry forever; problems are logged and shown on the order.
+ * updated from that. Until the order is claimed, a failure on our side (the
+ * database, a timeout asking Cardcom) answers 500, so Cardcom sends the notice
+ * again; once claimed, the answer is 200 and problems are shown on the order.
  */
 import { getLpResult, isConfigured, parseResult } from '@/lib/cardcom';
-import { findOrder, patchOrder, shekels } from '@/lib/shop';
+import { findOrder, patchOrder, paidLinkCount, shekels, siteBase } from '@/lib/shop';
 import { addSubscriber, isConfigured as ravmesserReady } from '@/lib/ravmesser';
 import { getSetting, one } from '@/lib/db';
 import { sendMail } from '@/lib/mail';
-import { SITE_URL } from '@/lib/html';
+import { bodyTooLarge, ipHash, takeAttempt } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 
 const ok = () => Response.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
+const retry = () => Response.json({ ok: false }, { status: 500, headers: { 'Cache-Control': 'no-store' } });
 
 async function readBody(request) {
   const type = request.headers.get('content-type') || '';
@@ -42,20 +44,24 @@ async function fulfil(order, email, phone, name) {
 
 export async function POST(request) {
   if (!isConfigured()) return ok();
+  if (bodyTooLarge(request, 64 * 1024)) return ok();
+  // Each notice makes a call to Cardcom; a flood from one address shouldn't
+  if (await takeAttempt('webhook|' + ipHash(request), 60, 300)) return Response.json({ ok: false }, { status: 429 });
   const body = await readBody(request);
   const lowProfileId = body.LowProfileId || body.lowProfileId || body.LowProfile?.LowProfileId || body.lowprofilecode || '';
   if (!lowProfileId) {
     console.warn('[cardcom-webhook] no LowProfileId:', JSON.stringify(body).slice(0, 400));
     return ok();
   }
+  let order, r, claimed;
   try {
     const { httpOk, data } = await getLpResult(lowProfileId);
     if (!httpOk) {
       console.error('[cardcom-webhook] GetLpResult HTTP error for', lowProfileId);
-      return ok();
+      return retry();
     }
-    const r = parseResult(data);
-    const order = await findOrder({ id: r.returnValue, lowProfileId });
+    r = parseResult(data);
+    order = await findOrder({ id: r.returnValue, lowProfileId });
     if (!order) {
       console.error('[cardcom-webhook] order not found', { returnValue: r.returnValue, lowProfileId });
       return ok();
@@ -74,19 +80,30 @@ export async function POST(request) {
     }
 
     // Claim the order, so two notices arriving together are handled once
-    const claimed = await one(`UPDATE orders SET status = 'paid', paid_at = now(), lowprofile_id = $2
-                               WHERE id = $1 AND status IN ('pending', 'failed') RETURNING id`, [order.id, String(lowProfileId)]);
+    claimed = await one(`UPDATE orders SET status = 'paid', paid_at = now(), lowprofile_id = $2
+                         WHERE id = $1 AND status IN ('pending', 'failed') RETURNING id`, [order.id, String(lowProfileId)]);
     if (!claimed) return ok();
+  } catch (e) {
+    console.error('[cardcom-webhook] error before the order was recorded:', e);
+    return retry();
+  }
 
+  try {
     const charged = r.amount != null ? Math.round(Number(r.amount) * 100) : null;
     const notes = [];
-    if (charged != null && Math.abs(charged - order.amount_agorot) > 1) notes.push(`אזהרה: נגבו ${shekels(charged)} ₪ במקום ${shekels(order.amount_agorot)} ₪`);
+    const wrongAmount = charged != null && Math.abs(charged - order.amount_agorot) > 1;
+    if (wrongAmount) notes.push(`אזהרה: נגבו ${shekels(charged)} ₪ במקום ${shekels(order.amount_agorot)} ₪. לא נשלח לרשימה; לבדוק ידנית`);
+    if (order.payment_link_id) {
+      const link = await one('SELECT max_uses FROM payment_links WHERE id = $1', [order.payment_link_id]);
+      if (link?.max_uses != null && (await paidLinkCount(order.payment_link_id)) > link.max_uses) notes.push(`אזהרה: קישור התשלום שולם יותר מ־${link.max_uses} פעמים`);
+    }
     // What the buyer typed for us wins; Cardcom's values fill the gaps
     const email = order.customer_email || r.cardOwnerEmail || '';
     const phone = order.customer_phone || r.cardOwnerPhone || '';
     const name = order.customer_name || r.cardOwnerName || '';
     let f;
-    try { f = await fulfil(order, email, phone, name); } catch (e) { f = { fulfillment: 'failed', note: String(e?.message || e) }; }
+    if (wrongAmount) f = { fulfillment: 'pending' };
+    else try { f = await fulfil(order, email, phone, name); } catch (e) { f = { fulfillment: 'failed', note: String(e?.message || e) }; }
     if (f.note) notes.push(`אספקה: ${f.note}`);
 
     await patchOrder(order.id, {
@@ -112,13 +129,15 @@ export async function POST(request) {
         text: [`${order.title}`, `סכום: ${shekels(order.amount_agorot)} ₪${r.numPayments > 1 ? ` (${r.numPayments} תשלומים)` : ''}`,
           name && `שם: ${name}`, phone && `טלפון: ${phone}`, email && `מייל: ${email}`,
           r.documentNumber && `חשבונית: ${r.documentNumber}`, notes.length && `\n${notes.join('\n')}`,
-          `\nכל המכירות: ${SITE_URL}/admin/sales/`].filter(Boolean).join('\n'),
+          `\nכל המכירות: ${siteBase(request)}/admin/sales/`].filter(Boolean).join('\n'),
         replyTo: email || undefined,
       });
     }
     return ok();
   } catch (e) {
-    console.error('[cardcom-webhook] error:', e);
+    // Paid and recorded; what failed is the details or the mail. Say so on the order.
+    console.error('[cardcom-webhook] error after the order was recorded:', e);
+    await patchOrder(order.id, { error_detail: `שגיאה בעדכון פרטי התשלום: ${String(e?.message || e)}`.slice(0, 500) }).catch(() => {});
     return ok();
   }
 }

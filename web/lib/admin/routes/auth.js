@@ -1,7 +1,8 @@
 /** Login, logout, password reset and first-run account setup. */
 import { q, one } from '../../db';
 import { sendMail } from '../../mail';
-import { ipHash, ipHint, recordAttempt, sha256, token, tooManyAttempts } from '../../security';
+import { clearAttempts, ipHash, ipHint, sameSecret, sha256, takeAttempt, token } from '../../security';
+import { siteBase } from '../../shop';
 import { currentPending, currentSession, deviceName, endPending, endSession, hashPassword, knownDevice, logSignin, passwordProblem, setPassword, startPending, startSession, userCount, verifyPassword } from '../auth';
 import { matchCode, matchRecoveryCode } from '../totp';
 import { authPage, esc, html, redirect } from '../ui';
@@ -26,7 +27,7 @@ async function signedIn(ctx, userId, step) {
       to: u.email, subject: 'כניסה חדשה לניהול האתר',
       text: `שלום ${u.username},\n\nהייתה כניסה לאזור הניהול של האתר ממכשיר שלא נכנס לפני כן:\n`
         + `${deviceName(ctx.request.headers.get('user-agent'))}, ${when}${where ? ` (${where})` : ''}\n\n`
-        + `אם זה הייתם אתם, אין צורך לעשות דבר.\nאם לא: היכנסו לניהול, החליפו סיסמה (הגדרות ← החלפת סיסמה) ונתקו את שאר המכשירים.\n${ctx.url.origin}/admin/settings/\n`,
+        + `אם זה הייתם אתם, אין צורך לעשות דבר.\nאם לא: היכנסו לניהול, החליפו סיסמה (הגדרות ← החלפת סיסמה) ונתקו את שאר המכשירים.\n${siteBase(ctx.request)}/admin/settings/\n`,
     });
   }
   return startSession(ctx.request, userId);
@@ -49,23 +50,27 @@ export const login = {
     return loginForm(ctx);
   },
   async POST(ctx) {
-    const username = String(ctx.form.get('username') || '').trim();
-    const pw = String(ctx.form.get('password') || '');
+    const username = String(ctx.form.get('username') || '').trim().slice(0, 200);
+    const pw = String(ctx.form.get('password') || '').slice(0, 1000);
+    const u = await one('SELECT id, username, password_hash, totp_enabled FROM users WHERE lower(username) = lower($1) OR lower(email) = lower($1)', [username]);
     const ipKey = 'login-ip|' + ipHash(ctx.request);
-    const userKey = 'login-user|' + username.toLowerCase();
-    if ((await tooManyAttempts(ipKey, 10, 900)) || (await tooManyAttempts(userKey, 5, 900))) {
+    // Per account, whichever name or mail was typed for it
+    const userKey = 'login-user|' + (u ? `#${u.id}` : username.toLowerCase());
+    const ipBlocked = await takeAttempt(ipKey, 10, 900);
+    const userBlocked = await takeAttempt(userKey, 5, 900);
+    const ok = await verifyPassword(pw, u?.password_hash);
+    // Wrong guesses from elsewhere can't lock the owner out of a browser she has signed in from before
+    const trusted = u && ok && userBlocked && !ipBlocked && (await knownDevice(ctx.request, u.username));
+    if ((ipBlocked || userBlocked) && !trusted) {
       return loginForm(ctx, 'יותר מדי ניסיונות כניסה. נסו שוב בעוד רבע שעה, או אפסו את הסיסמה.', username);
     }
-    const u = await one('SELECT id, username, password_hash, totp_enabled FROM users WHERE lower(username) = lower($1) OR lower(email) = lower($1)', [username]);
-    const ok = await verifyPassword(pw, u?.password_hash);
     if (u && ok) {
+      await clearAttempts(userKey);
       const next = safeNext(ctx.query.get('next') || '');
       // Two-step sign-in: the password alone doesn't open a session
       if (u.totp_enabled) return redirect('/admin/verify/', null, 'ok', [await startPending(ctx.request, u.id, next)]);
       return redirect(next, null, 'ok', [await signedIn(ctx, u.id, 'password')]);
     }
-    await recordAttempt(ipKey);
-    await recordAttempt(userKey);
     await logSignin(ctx.request, { username, ok: false });
     return loginForm(ctx, 'שם המשתמש או הסיסמה שגויים.', username);
   },
@@ -101,7 +106,9 @@ export const verify = {
     if (!p) return redirect('/admin/login/', 'עבר זמן רב מדי מאז הסיסמה. היכנסו שוב.', 'error');
     // Wrong codes count per account, across sign-ins, so the password can't be used to keep guessing
     const codeKey = `mfa|${p.user_id}`;
-    if (await tooManyAttempts(codeKey, 10, 900)) {
+    // Each try is counted before the code is checked, so parallel guesses can't share one count
+    const tries = await one('UPDATE mfa_pending SET tries = tries + 1 WHERE id = $1 AND tries < 5 RETURNING tries', [p.id]);
+    if (!tries || (await takeAttempt(codeKey, 10, 900))) {
       const cookie = await endPending(ctx.request, p.id);
       return redirect('/admin/login/', 'יותר מדי קודים שגויים. נסו שוב בעוד רבע שעה.', 'error', [cookie]);
     }
@@ -120,12 +127,10 @@ export const verify = {
       return redirect(p.next || '/admin/', note, 'ok', cookies);
     }
     await logSignin(ctx.request, { username: p.username, ok: false, step: 'code' });
-    await recordAttempt(codeKey);
-    if (p.tries + 1 >= 5) {
+    if (tries.tries >= 5) {
       const cookie = await endPending(ctx.request, p.id);
       return redirect('/admin/login/', 'יותר מדי קודים שגויים. היכנסו שוב עם הסיסמה.', 'error', [cookie]);
     }
-    await q('UPDATE mfa_pending SET tries = tries + 1 WHERE id = $1', [p.id]);
     return verifyForm(ctx, 'הקוד שגוי או שפג תוקפו. הקלידו את הקוד שמופיע עכשיו באפליקציה.');
   },
 };
@@ -143,14 +148,13 @@ export const forgot = {
   async POST(ctx) {
     const who = String(ctx.form.get('who') || '').trim();
     const key = 'reset|' + ipHash(ctx.request);
-    if (who && !(await tooManyAttempts(key, 5, 3600))) {
-      await recordAttempt(key);
+    if (who && !(await takeAttempt(key, 5, 3600))) {
       const u = await one('SELECT id, email, username FROM users WHERE lower(email) = lower($1) OR lower(username) = lower($1)', [who]);
       if (u) {
         const t = token();
         await q('DELETE FROM password_resets WHERE user_id = $1', [u.id]);
         await q(`INSERT INTO password_resets(token_hash, user_id, expires_at) VALUES($1, $2, now() + interval '1 hour')`, [sha256(t), u.id]);
-        const link = `${ctx.url.origin}/admin/reset/?token=${t}`;
+        const link = `${siteBase(ctx.request)}/admin/reset/?token=${t}`;
         await sendMail({
           to: u.email, subject: 'איפוס סיסמה לניהול האתר',
           text: `שלום ${u.username},\n\nכדי לבחור סיסמה חדשה לאזור הניהול של האתר, פתחו את הקישור:\n${link}\n\n`
@@ -228,9 +232,8 @@ export const setup = {
     const pw = String(ctx.form.get('password') || '');
     const key = 'setup|' + ipHash(ctx.request);
     const expected = process.env.ADMIN_SETUP_KEY || '';
-    if (await tooManyAttempts(key, 5, 900)) return setupForm(ctx, 'יותר מדי ניסיונות. נסו שוב בעוד רבע שעה.', v);
-    if (!expected || sha256(String(ctx.form.get('setup_key') || '').trim()) !== sha256(expected)) {
-      await recordAttempt(key);
+    if (await takeAttempt(key, 5, 900)) return setupForm(ctx, 'יותר מדי ניסיונות. נסו שוב בעוד רבע שעה.', v);
+    if (!expected || !sameSecret(sha256(String(ctx.form.get('setup_key') || '').trim()), sha256(expected))) {
       return setupForm(ctx, 'קוד ההתקנה שגוי.', v);
     }
     if (!USERNAME.test(v.username)) return setupForm(ctx, 'שם המשתמש צריך להכיל 3–40 אותיות, ספרות, נקודה, מקף או קו תחתון.', v);

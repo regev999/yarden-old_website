@@ -118,6 +118,7 @@ export const page = {
     <form method="post" class="stack">${csrfField(ctx)}<input type="hidden" name="action" value="account">
       <label>שם משתמש <input name="username" value="${esc(ctx.user.username)}" required dir="ltr" autocomplete="username"></label>
       <label>מייל (לאיפוס סיסמה) <input name="email" type="email" value="${esc(ctx.user.email)}" required dir="ltr" autocomplete="email"></label>
+      <label>הסיסמה הנוכחית <input name="current" type="password" required dir="ltr" autocomplete="current-password"><small>לאישור השינוי: המייל הזה מקבל את קישורי איפוס הסיסמה.</small></label>
       <button class="btn" type="submit">שמירה</button>
     </form>
   </section>
@@ -154,6 +155,8 @@ export const page = {
         const email = f('email');
         if (!USERNAME.test(username)) return back('שם המשתמש צריך להכיל 3–40 אותיות, ספרות, נקודה, מקף או קו תחתון.', 'error');
         if (!EMAIL.test(email)) return back('כתובת המייל לא תקינה.', 'error');
+        const me = await one('SELECT password_hash FROM users WHERE id = $1', [ctx.user.id]);
+        if (!(await verifyPassword(String(ctx.form.get('current') || ''), me.password_hash))) return back('הסיסמה הנוכחית שגויה.', 'error');
         try {
           await q('UPDATE users SET username = $1, email = $2 WHERE id = $3', [username, email, ctx.user.id]);
         } catch {
