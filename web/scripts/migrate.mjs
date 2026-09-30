@@ -4,7 +4,7 @@
  * Never overwrites content that already exists, so edits made in the admin
  * survive every deploy.
  */
-import { neon } from '@neondatabase/serverless';
+import { connect } from '../lib/sqlclient.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -12,10 +12,10 @@ import path from 'node:path';
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 if (!url) {
-  console.warn('[migrate] DATABASE_URL is not set: skipping. Connect a Neon database in Vercel (Storage) and redeploy.');
+  console.warn('[migrate] DATABASE_URL is not set: skipping. Connect a Postgres database and redeploy.');
   process.exit(0);
 }
-const sql = neon(url);
+const sql = connect(url);
 const read = (f) => JSON.parse(readFileSync(path.join(root, 'content', f), 'utf8'));
 
 // 1. Schema (statements separated by ";" at line ends)
@@ -82,3 +82,4 @@ if (await empty('redirects')) {
 }
 
 console.log('[migrate] done');
+await sql.end?.();

@@ -1,10 +1,10 @@
-import { neon } from '@neondatabase/serverless';
+import { connect } from './sqlclient.mjs';
 
 let sql;
 function client() {
   const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-  if (!url) throw new Error('DATABASE_URL is not set. Connect a Neon database to the Vercel project.');
-  sql ??= neon(url);
+  if (!url) throw new Error('DATABASE_URL is not set. Connect a Postgres database (Neon on Vercel, or the server database).');
+  sql ??= connect(url);
   return sql;
 }
 
@@ -19,10 +19,9 @@ export async function one(text, params = []) {
   return rows[0] ?? null;
 }
 
-/** Several statements in one transaction (neon HTTP batch). */
+/** Several statements in one transaction. */
 export async function tx(queries) {
-  const s = client();
-  return s.transaction(queries.map(([text, params]) => s.query(text, params ?? [])));
+  return client().transaction(queries);
 }
 
 export async function getSetting(key, fallback = '') {

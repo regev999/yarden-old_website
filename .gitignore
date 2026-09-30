@@ -3,3 +3,4 @@ __pycache__/
 /site/admin/_lib/config.local.php
 server/admin/_lib/config.local.php
 yk-private/
+web/storage/

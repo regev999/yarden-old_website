@@ -167,12 +167,12 @@ export function postLd(p) {
 /* ------------------------------------------------------- image delivery */
 
 /**
- * Serve content images through Vercel's image optimizer: the browser gets a
+ * Serve content images through Next's image optimizer: the browser gets a
  * resized AVIF/WebP instead of the original upload.
  */
 export function optimizeImages(html) {
   return html.replace(/<img\b([^>]*?)\ssrc="([^"]+)"([^>]*)>/g, (m, before, src, after) => {
-    if (!/^\/wp-content\/uploads\/|^https:\/\/[\w.-]+\.public\.blob\.vercel-storage\.com\//.test(src) || /\.gif$/i.test(src)) return m;
+    if (!/^\/wp-content\/uploads\/|^\/files\/uploads\/|^https:\/\/[\w.-]+\.public\.blob\.vercel-storage\.com\//.test(src) || /\.gif$/i.test(src)) return m;
     const u = (w) => `/_next/image?url=${encodeURIComponent(src)}&amp;w=${w}&amp;q=75`;
     const srcset = [640, 1080, 1920].map((w) => `${u(w)} ${w}w`).join(', ');
     return `<img${before} src="${u(1080)}" srcset="${srcset}" sizes="(max-width: 760px) 100vw, 760px"${after}>`;
