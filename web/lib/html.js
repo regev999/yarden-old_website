@@ -29,7 +29,8 @@ export function enc(path) {
 export function fullTitle(title, seoTitle, path = '') {
   const seo = String(seoTitle || '').trim();
   if (path === '/' && (!seo || OLD_TITLE_SUFFIX.test(seo))) return HOME_TITLE;
-  const core = seo.replace(OLD_TITLE_SUFFIX, '') || String(title || '').trim();
+  // WordPress named category and tag pages "X Archives"
+  const core = seo.replace(OLD_TITLE_SUFFIX, '').replace(/ Archives$/, '') || String(title || '').trim();
   if (!core) return SITE_NAME;
   return core.includes(SITE_NAME) ? core : core + TITLE_SUFFIX;
 }
