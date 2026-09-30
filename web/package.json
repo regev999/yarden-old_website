@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "node scripts/migrate.mjs && next build",
-    "start": "next start",
+    "start": "node scripts/migrate.mjs && next start",
     "migrate": "node scripts/migrate.mjs",
     "test:server": "node --import ./test/register.mjs test/server.mjs"
   },
