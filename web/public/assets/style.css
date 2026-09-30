@@ -477,6 +477,11 @@ img.is-missing, .figure.is-missing, .gallery figure.is-missing { display: none; 
   .facets > li::before { top: 28px; inset-inline-start: 22px; }
 }
 
+/* Balance rows by item count: 6 or 9 go in threes, 7 or 8 in fours (no orphans) */
+.facets:is(:has(> li:nth-child(6):last-child), :has(> li:nth-child(9):last-child), :has(> li:nth-child(3):last-child)) { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.facets:is(:has(> li:nth-child(7):last-child), :has(> li:nth-child(8):last-child), :has(> li:nth-child(4):last-child)) { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); }
+.steps:is(:has(> li:nth-child(6):last-child), :has(> li:nth-child(3):last-child)) { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+
 /* Models: summaries that open into the full text */
 .models { display: grid; gap: 10px; }
 .model { border-radius: var(--r-card); background: var(--mist); transition: background .2s; }
@@ -578,7 +583,7 @@ img.is-missing, .figure.is-missing, .gallery figure.is-missing { display: none; 
 .prose :is(.chips, .facets, .steps, .linkcards, .stats) li { margin: 0; }
 
 /* Rhythm between components inside a section */
-.wrap > :is(.split, .facets, .steps, .offers, .stats, .chips, .models, .films, .cols, .timeline, .linkcards, .figure, .prose, .callout, .quotes, .readmore, .actions, .video, .gallery) + :is(.facets, .steps, .offers, .stats, .chips, .models, .films, .cols, .timeline, .linkcards, .figure, .prose, .callout, .quotes, .readmore, .actions, .video, .gallery, h3.heading, .section-intro) { margin-top: clamp(28px, 4vw, 48px); }
+.wrap > :is(.split, .entries, .facets, .steps, .offers, .stats, .chips, .models, .films, .cols, .timeline, .linkcards, .figure, .prose, .callout, .quotes, .readmore, .actions, .video, .gallery) + :is(.facets, .steps, .offers, .stats, .chips, .models, .films, .cols, .timeline, .linkcards, .figure, .prose, .callout, .quotes, .readmore, .actions, .video, .gallery, .entries, h3.heading, .section-intro) { margin-top: clamp(28px, 4vw, 48px); }
 
 /* Long text that opens on request (added by main.js) */
 .readmore { position: relative; }
