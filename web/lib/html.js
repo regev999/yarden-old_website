@@ -5,7 +5,11 @@
 import { artForPost, artVariant } from './art';
 
 export const SITE_NAME = 'ירדן כרם';
-export const SITE_TITLE_SUFFIX = ' - ירדן כרם - התמקדות, הקומי, Somatic Experiencing';
+// Every page title ends with the site name. The old site added the whole tagline, which pushed
+// most titles past what Google shows (about 60 characters), so it is cut down to the name.
+export const TITLE_SUFFIX = ' | ירדן כרם';
+const OLD_TITLE_SUFFIX = / - ירדן כרם - (התמקדות, הקומי, Somatic Experiencing|Somatic Experience - פסיכותרפיה)$/;
+export const HOME_TITLE = 'ירדן כרם | התמקדות, הקומי ו-Somatic Experiencing בהרצליה';
 export const SITE_URL = (typeof process !== 'undefined' && process.env.SITE_URL) || 'https://www.yardenkerem.co.il';
 export const PHONE = '054-4250910';
 export const PHONE_INTL = '972544250910';
@@ -19,6 +23,37 @@ export function esc(s) {
 /** Percent-encode a path the way WordPress did (lowercase hex). */
 export function enc(path) {
   return String(path).split('/').map((s) => encodeURIComponent(s)).join('/').replace(/%[0-9A-F]{2}/g, (m) => m.toLowerCase());
+}
+
+/** The <title> of a page: its own SEO title if it has one, otherwise its name, then the site name. */
+export function fullTitle(title, seoTitle, path = '') {
+  const seo = String(seoTitle || '').trim();
+  if (path === '/' && (!seo || OLD_TITLE_SUFFIX.test(seo))) return HOME_TITLE;
+  const core = seo.replace(OLD_TITLE_SUFFIX, '') || String(title || '').trim();
+  if (!core) return SITE_NAME;
+  return core.includes(SITE_NAME) ? core : core + TITLE_SUFFIX;
+}
+
+/**
+ * A description long enough for search results (70–160 characters): short
+ * ones are continued with the opening words of the page itself.
+ */
+export function fullDescription(desc, main = '') {
+  const d = String(desc || '').trim();
+  if ([...d].length >= 70) return d;
+  // the page's own words: an article's body, or the page without its title block
+  const body = /<article\b[\s\S]*?<\/article>/.exec(main)?.[0] || String(main).replace(/<header class="page-hero"[\s\S]*?<\/header>/, '');
+  let text = plain(body.replace(/<(script|style|nav|form|h1)\b[\s\S]*?<\/\1>/g, '').replace(/<p class="tags">[\s\S]*?<\/p>/g, ''));
+  if (d && text.startsWith(d)) text = text.slice(d.length).replace(/^[\s.?!]+/, '');
+  const start = d ? (/[.?!]$/.test(d) ? d : d + '.') + ' ' : '';
+  const room = 155 - [...start].length;
+  if (!d && !text) return '';
+  if (text.split(' ').length < 6 || room < 30) {
+    return d ? `${start}${SITE_NAME}, מטפלת ומרצה לגישת ההתמקדות, Somatic Experiencing והקומי.` : '';
+  }
+  let tail = text.length > room ? text.slice(0, room).replace(/\s+\S*$/, '') : text;
+  tail = tail.replace(/[,;:\-–\s]+$/, '');
+  return start + tail + (text.length > tail.length ? '…' : '');
 }
 
 export function absUrl(path) {
@@ -162,11 +197,53 @@ ${rel}
 ${contact}`;
 }
 
+const SAME_AS = [
+  'https://www.youtube.com/@yardenkerem5297', 'https://www.facebook.com/somatictherapyandfocusing/',
+  'https://www.instagram.com/yarden_kerem/', 'https://open.spotify.com/show/1PdEltqdiPKR4aGi3efIDc',
+  'https://www.linkedin.com/in/yarden-kerem/', 'https://www.tiktok.com/@yarden.kerem',
+];
+
+/**
+ * Structured data for every page: the site, Yarden, her clinic, the page
+ * itself and its place under the home page. `extra` (an article, say) joins the graph.
+ */
+export function siteLd({ path, name, description, extra }) {
+  const home = absUrl('/');
+  const person = {
+    '@type': 'Person', '@id': `${home}#yarden`, name: SITE_NAME, url: absUrl('/אודות/'),
+    jobTitle: 'מטפלת ומרצה לגישת ההתמקדות', email: EMAIL, telephone: `+${PHONE_INTL}`,
+    image: absUrl('/assets/yarden-arch.jpg'), knowsAbout: ['התמקדות', 'Focusing', 'Somatic Experiencing', 'הקומי', 'טיפול בטראומה', 'וידאו תרפיה'],
+    sameAs: SAME_AS,
+  };
+  const clinic = {
+    '@type': 'ProfessionalService', '@id': `${home}#clinic`, name: `${SITE_NAME} – התמקדות וטיפול דרך הגוף`, url: home,
+    telephone: `+${PHONE_INTL}`, email: EMAIL, image: absUrl('/assets/yarden-arch.jpg'),
+    address: { '@type': 'PostalAddress', addressLocality: 'הרצליה', addressCountry: 'IL' },
+    areaServed: 'IL', founder: { '@id': person['@id'] }, sameAs: SAME_AS,
+  };
+  const site = { '@type': 'WebSite', '@id': `${home}#site`, url: home, name: SITE_NAME, inLanguage: 'he', publisher: { '@id': person['@id'] } };
+  const url = absUrl(path);
+  const page = {
+    '@type': 'WebPage', '@id': `${url}#page`, url, name, inLanguage: 'he',
+    isPartOf: { '@id': site['@id'] }, about: { '@id': person['@id'] }, ...(description ? { description } : {}),
+  };
+  const graph = [site, person, clinic, page];
+  if (path !== '/') {
+    graph.push({ '@type': 'BreadcrumbList', '@id': `${url}#crumbs`, itemListElement: [
+      { '@type': 'ListItem', position: 1, name: SITE_NAME, item: home },
+      { '@type': 'ListItem', position: 2, name, item: url },
+    ] });
+    page.breadcrumb = { '@id': `${url}#crumbs` };
+  }
+  if (extra) { const { '@context': _, ...rest } = extra; graph.push({ ...rest, isPartOf: { '@id': page['@id'] } }); }
+  return { '@context': 'https://schema.org', '@graph': graph };
+}
+
 export function postLd(p) {
   return {
     '@context': 'https://schema.org', '@type': 'BlogPosting', headline: p.title,
     datePublished: ymd(p.date), dateModified: ymd(p.modified || p.date),
-    author: { '@type': 'Person', name: SITE_NAME }, inLanguage: 'he', mainEntityOfPage: absUrl(p.path),
+    author: { '@type': 'Person', '@id': `${absUrl('/')}#yarden`, name: SITE_NAME }, inLanguage: 'he', mainEntityOfPage: absUrl(p.path),
   };
 }
 

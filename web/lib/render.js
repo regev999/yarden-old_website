@@ -15,6 +15,13 @@ async function gaId() {
   return (await getSetting('ga_id')) || process.env.GA_ID || '';
 }
 
+/** Category and tag pages came with "תגית: X – ירדן כרם" as their description; say what's on them instead. */
+function termDescription(page) {
+  const m = /^(?:תגית|קטגוריה): (.+?) – ירדן כרם$/.exec(page.description || '');
+  if (!m) return page.description;
+  return `${m[1]}: מאמרים, סרטונים ופוסטים באתר של ירדן כרם, מטפלת ומרצה לגישת ההתמקדות, Somatic Experiencing והקומי בהרצליה.`;
+}
+
 async function resolve(path, { drafts = false } = {}) {
   const redirect = await findRedirect(path);
   if (redirect) return { type: 'redirect', target: redirect.target, id: redirect.id };
@@ -24,8 +31,8 @@ async function resolve(path, { drafts = false } = {}) {
     return {
       type: 'page',
       html: pageDocument({
-        path, title: page.title, seoTitle: page.seo_title, description: page.description, canonical: page.canonical,
-        ogType: page.og_type, ogImage: ogImageFor(path, page.og_image), noindex: page.noindex, ld: page.ld, main: await pageMain(page), gaId: await gaId(),
+        path, title: page.title, seoTitle: page.seo_title, description: termDescription(page), canonical: page.canonical,
+        ogType: page.og_type, ogImage: ogImageFor(path, page.og_image), noindex: page.noindex, main: await pageMain(page), gaId: await gaId(),
       }),
     };
   }
@@ -36,7 +43,10 @@ async function resolve(path, { drafts = false } = {}) {
       type: 'page',
       html: pageDocument({
         path, title: post.title, seoTitle: post.seo_title, description: post.description,
-        ogType: 'article', ogImage: ogImageFor(path, post.og_image), noindex: post.noindex || post.status !== 'published', ld: postLd(post),
+        // an old copy of another page sends search engines to the original
+        canonical: post.duplicate_of || null,
+        ogType: 'article', ogImage: ogImageFor(path, post.og_image), noindex: post.noindex || post.status !== 'published',
+        ld: post.duplicate_of ? null : { ...postLd(post), image: ogImageFor(path, post.og_image) },
         main: await postMain(post), gaId: await gaId(),
       }),
     };

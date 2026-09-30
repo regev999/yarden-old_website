@@ -8,6 +8,10 @@ Each redesigned page is two files here:
 `scripts/migrate.mjs` applies each update once (it runs on every start/build). The page as it was is saved to the revisions table, so it can be restored from the admin.
 Use the id format `2026-09-<latin-slug>`.
 
+An update can also carry no body and only point search engines elsewhere:
+`{ "id", "path", "canonical": "/other-page/" }` for a page that repeats another one,
+or `{ "id", "path", "duplicate_of": "/original/" }` for an old post that does.
+
 Preview one update locally: `DATABASE_URL=... ONLY_UPDATE=<id> node scripts/migrate.mjs`.
 
 ## The brief

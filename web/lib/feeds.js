@@ -9,7 +9,7 @@ const GROUPS = ['post', 'page', 'category', 'post_tag'];
 
 async function rowsFor(name) {
   if (name === 'post') {
-    return q(`SELECT path, modified AS lastmod FROM posts WHERE status = 'published' AND NOT noindex ORDER BY date DESC`);
+    return q(`SELECT path, modified AS lastmod FROM posts WHERE status = 'published' AND NOT noindex AND duplicate_of IS NULL ORDER BY date DESC`);
   }
   const kind = { page: 'page', category: 'category', post_tag: 'tag' }[name];
   const rows = await q('SELECT path, updated_at AS lastmod FROM pages WHERE kind = $1 AND NOT noindex AND canonical IS NULL ORDER BY path', [kind]);

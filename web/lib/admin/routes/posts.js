@@ -1,8 +1,8 @@
 /** Articles and blog: list, editor (new / edit / publish / draft / delete) and preview. */
 import { q, one } from '../../db';
 import { contactHtml, terms } from '../../content';
-import { SITE_URL, plain, postMainHtml, youtubeId } from '../../html';
-import { pageDocument, SITE_TITLE } from '../../shell';
+import { SITE_URL, TITLE_SUFFIX, plain, postMainHtml, youtubeId } from '../../html';
+import { pageDocument } from '../../shell';
 import { htmlForEditor, sanitizeHtml } from '../sanitize';
 import { logActivity, makeSlug, publishChanges, saveRevision, uniquePath } from '../common';
 import { adminPage, csrfField, esc, html, wallDate, pager, qs, redirect, SECURITY_HEADERS } from '../ui';
@@ -115,7 +115,7 @@ ${errors.map((e) => `<p class="notice notice--error" role="alert">${esc(e)}</p>`
     </section>
     <section class="panel stack"><h2>גוגל</h2>
       <label>תיאור קצר <textarea name="excerpt" rows="3" data-count="160" data-min="70" placeholder="משפט או שניים שיופיעו בגוגל וברשימות">${esc(v.excerpt || '')}</textarea><small data-counter></small></label>
-      <label>כותרת לגוגל (לא חובה) <input name="seo_title" value="${esc(v.seo_title || '')}" placeholder="${esc((v.title || 'כותרת המאמר') + ' - ' + SITE_TITLE)}"></label>
+      <label>כותרת לגוגל (לא חובה) <input name="seo_title" value="${esc(v.seo_title || '')}" placeholder="${esc((v.title || 'כותרת המאמר') + TITLE_SUFFIX)}"></label>
     </section>
     ${isNew ? '' : `<section class="panel"><h2>גרסאות קודמות</h2>
       <p class="small"><a href="/admin/revisions/${esc(qs({ path: v.path }))}">היסטוריית שינויים ושחזור</a></p>

@@ -134,8 +134,8 @@ assert.match(postHtml, /פסקה ראשונה של המאמר/);
 assert.match(postHtml, /BlogPosting/);
 const blog = await (await page.request.get(B + '/' + encodeURIComponent('בלוג') + '/')).text();
 assert.match(blog, /מאמר בדיקה חדש/);
-assert.match(blog, /כל <!--yk:count-->93</);
-step('post published, listed in blog (count 93)');
+assert.match(blog, /כל <!--yk:count-->92</); // 91 published (old duplicates left out) + this one
+step('post published, listed in blog (count 92)');
 
 // Media upload: 4000x3000 JPEG is compressed in the browser
 await page.goto(B + '/admin/media/');

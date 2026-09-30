@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { EMAIL, PHONE, PHONE_INTL, SITE_NAME, SITE_URL, absUrl, esc } from './html';
+import { EMAIL, PHONE, PHONE_INTL, SITE_NAME, SITE_URL, absUrl, esc, fullDescription, fullTitle, siteLd } from './html';
 import { versionAssets } from './versions';
 
 /** ?v=<hash> on each asset, so browsers fetch it again as soon as it changes (assets are cached for 30 days). */
@@ -121,9 +121,12 @@ function ldScript(ld) {
  * content; everything else is head metadata.
  */
 export function pageDocument({ path, title, seoTitle, description, canonical, ogType, ogImage, noindex, ld, main, gaId, extraHead = '', extraBody = '' }) {
-  const fullTitle = seoTitle || `${title} - ${SITE_TITLE}`;
-  const desc = esc(description || `${SITE_NAME} – ${TAGLINE}. טיפול אישי וקורסים בגישת ההתמקדות.`);
+  const docTitle = fullTitle(title, seoTitle, path);
+  const plainDesc = fullDescription(description, main) || `${SITE_NAME} – ${TAGLINE}. טיפול אישי וקורסים בגישת ההתמקדות, בהרצליה ובזום.`;
+  const desc = esc(plainDesc);
   const canon = absUrl(canonical || path);
+  // Pages kept out of search get no structured data; the rest describe the site, Yarden and the page
+  const graph = noindex ? null : siteLd({ path: canonical || path, name: title || SITE_NAME, description: plainDesc, extra: ld });
   // Pages without the contact block (legal pages) send "book a session" to the contact page
   const book = main.includes('id="contact"') ? '#contact' : '/צור-קשר/#contact';
   return `<!doctype html>
@@ -131,7 +134,7 @@ export function pageDocument({ path, title, seoTitle, description, canonical, og
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(fullTitle)}</title>
+<title>${esc(docTitle)}</title>
 ${noindex ? '<meta name="robots" content="noindex, follow">\n' : ''}<meta name="description" content="${desc}">
 <link rel="canonical" href="${canon}">
 <meta property="og:type" content="${esc(ogType || 'website')}">
@@ -150,7 +153,7 @@ ${ogImage ? `<meta property="og:image" content="${esc(ogImage)}">${/\/og\//.test
 <script src="${asset('consent.js')}" defer></script>
 ${gaTags(gaId)}
 <link rel="alternate" type="application/rss+xml" title="${esc(SITE_TITLE)}" href="${SITE_URL}/feed/">
-${ldScript(ld)}${extraHead}
+${ldScript(graph)}${extraHead}
 </head>
 <body>
 <a class="skip" href="#main">דילוג לתוכן</a>
