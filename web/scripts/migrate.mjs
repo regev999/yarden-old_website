@@ -5,7 +5,7 @@
  * survive every deploy.
  */
 import { connect } from '../lib/sqlclient.mjs';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -80,6 +80,36 @@ if (await empty('redirects')) {
      AS x(source text, target text, note text) ON CONFLICT (source) DO NOTHING`, [JSON.stringify(r)]);
   console.log(`[migrate] redirects: ${r.length}`);
 }
+
+// 3. Content updates (content/updates/index.json): each one is applied once.
+//    Each update is content/updates/<id>.json (path, file, contact, description)
+//    plus the page body in <id>.body.html.
+//    The page as it was is saved to revisions, so it can be restored in the admin.
+let applied = 0;
+const upDir = path.join(root, 'content', 'updates');
+const only = process.env.ONLY_UPDATE; // apply just this one (local preview)
+const updates = readdirSync(upDir).filter((f) => f.endsWith('.json')).sort()
+  .map((f) => JSON.parse(readFileSync(path.join(upDir, f), 'utf8')))
+  .filter((u) => !only || u.id === only);
+const contact = readFileSync(path.join(root, 'content', 'contact.html'), 'utf8');
+for (const u of updates) {
+  const key = `content_update:${u.id}`;
+  // FORCE_CONTENT_UPDATES=1 re-applies them (for working on an update locally).
+  if (!process.env.FORCE_CONTENT_UPDATES && !only && (await sql.query('SELECT 1 FROM settings WHERE key = $1', [key])).length) continue;
+  const [page] = await sql.query('SELECT * FROM pages WHERE path = $1', [u.path]);
+  if (!page) { console.warn(`[migrate] update ${u.id}: no page at ${u.path}`); continue; }
+  const main = readFileSync(path.join(upDir, u.file), 'utf8') + (u.contact ? '\n' + contact : '');
+  await sql.query("INSERT INTO revisions(path, kind, content, note, username) VALUES($1, 'page', $2, $3, 'system')",
+    [u.path, JSON.stringify(page), 'לפני עדכון העיצוב']);
+  await sql.query('UPDATE pages SET main = $2, description = COALESCE($3, description), updated_at = now() WHERE path = $1',
+    [u.path, main, u.description ?? null]);
+  await sql.query('INSERT INTO settings(key, value) VALUES($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value', [key, new Date().toISOString()]);
+  applied++;
+  console.log(`[migrate] update ${u.id}: ${u.path}`);
+}
+
+// Pages are cached by Next (unstable_cache); drop that cache so updates show up.
+if (applied) rmSync(path.join(root, '.next', 'cache', 'fetch-cache'), { recursive: true, force: true });
 
 console.log('[migrate] done');
 await sql.end?.();

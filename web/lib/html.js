@@ -178,3 +178,47 @@ export function optimizeImages(html) {
     return `<img${before} src="${u(1080)}" srcset="${srcset}" sizes="(max-width: 760px) 100vw, 760px"${after}>`;
   });
 }
+
+/* ------------------------------------------------ tidying migrated pages */
+
+function linkKind(href) {
+  if (/youtube\.com|youtu\.be/.test(href)) return ['video', 'סרטון ביוטיוב'];
+  if (href.startsWith('/')) return ['read', 'באתר'];
+  let host = '';
+  try { host = new URL(href.replace(/&amp;/g, '&')).hostname.replace(/^www\./, ''); } catch {}
+  return ['article', host || 'קישור'];
+}
+
+function linkCard(href, title) {
+  const [kind, where] = linkKind(href);
+  const ext = /^https?:/.test(href) ? ' target="_blank" rel="noopener"' : '';
+  const clean = title.replace(/\s*[-–:]?\s*(לצפייה|לינק למאמר|קישור לרכישת הספר)?\s*[-–:]?\s*לחץ כאן\s*$/, '').replace(/[\s:–-]+$/, '').trim();
+  return `<ul class="linkcards"><li><a class="linkcard linkcard--${kind}" href="${href}"${ext}><span class="linkcard__icon" aria-hidden="true"></span>`
+    + `<span class="linkcard__title">${clean || where}</span><span class="linkcard__where">${where}</span></a></li></ul>`;
+}
+
+/**
+ * Old WordPress pages have "click here" headings, several contact forms and
+ * headings that end in a colon. Turn them into link cards, keep one form.
+ */
+export function tidyLegacy(html) {
+  const H = '<h2 class="heading">';
+  let out = html
+    // "Title:" followed by a separate "click here" heading
+    .replace(/<h2 class="heading">((?:(?!<\/h2>).)*?)<\/h2>\s*<h2 class="heading"><a href="([^"]+)"[^>]*>\s*לחץ כאן\s*<\/a><\/h2>/g,
+      (m, title, href) => linkCard(href, title.replace(/<[^>]+>/g, '')))
+    // "Title: click here" in one linked heading
+    .replace(/<h2 class="heading"><a href="([^"]+)"[^>]*>((?:(?!<\/a>).)*?לחץ כאן\s*)<\/a><\/h2>/g,
+      (m, href, title) => linkCard(href, title.replace(/<[^>]+>/g, '')))
+    // Headings that end with a colon
+    .replace(/(<h[23] class="heading">(?:(?!<\/h[23]>)[^<])*?)\s*:\s*(<\/h[23]>)/g, '$1$2');
+  // A row of columns that only hold link cards becomes one list of cards
+  out = out.replace(/<div class="cols[^"]*">((?:\s*<div class="col">\s*<ul class="linkcards">(?:(?!<\/ul>).)*<\/ul>\s*<\/div>)+)\s*<\/div>/g,
+    (m, inner) => '<ul class="linkcards">' + [...inner.matchAll(/<li>(?:(?!<\/li>).)*<\/li>/g)].map((x) => x[0]).join('') + '</ul>');
+  out = out.replace(/<\/ul>\s*<ul class="linkcards">/g, '');
+  // Keep only the last contact form section
+  const parts = out.split(/(?=<section\b)/);
+  const withForm = parts.map((s, i) => (/data-form="contact"/.test(s) ? i : -1)).filter((i) => i >= 0);
+  if (withForm.length > 1) out = parts.filter((s, i) => !withForm.slice(0, -1).includes(i)).join('');
+  return out.replaceAll(H + '</h2>', '');
+}

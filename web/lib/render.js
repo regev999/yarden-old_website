@@ -46,7 +46,7 @@ async function resolve(path, { drafts = false } = {}) {
   return { type: 'none' };
 }
 
-export const resolvePath = (path) => unstable_cache(() => resolve(path), ['path', path], { tags: [CONTENT_TAG], revalidate: 86400 })();
+export const resolvePath = (path) => process.env.NO_CONTENT_CACHE ? resolve(path) : unstable_cache(() => resolve(path), ['path', path], { tags: [CONTENT_TAG], revalidate: 86400 })();
 
 /** Preview for the admin: drafts included, never cached. */
 export const resolvePreview = (path) => resolve(path, { drafts: true });

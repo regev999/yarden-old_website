@@ -73,6 +73,70 @@
     else playVideo(box);
   });
 
+  // In-page contents: a sticky row of links to the page's sections
+  (function () {
+    var hero = document.querySelector('main > .page-hero');
+    if (!hero || document.querySelector('.article')) return;
+    var heads = [].slice.call(document.querySelectorAll('main > section.block > .wrap > h2.heading, main > section.block > .wrap > .split > h2.heading'))
+      .filter(function (h) { return h.textContent.trim().length > 1 && !h.closest('.block--contact'); });
+    if (heads.length < 3) return;
+    var nav = document.createElement('nav');
+    nav.className = 'toc';
+    nav.setAttribute('aria-label', 'בעמוד הזה');
+    var inner = document.createElement('div');
+    inner.className = 'wrap toc__inner';
+    var links = heads.map(function (h, i) {
+      var sec = h.closest('section');
+      if (!sec.id) sec.id = 'part-' + (i + 1);
+      var a = document.createElement('a');
+      a.href = '#' + sec.id;
+      a.textContent = h.textContent.replace(/[:：]\s*$/, '').trim();
+      inner.appendChild(a);
+      return a;
+    });
+    nav.appendChild(inner);
+    hero.after(nav);
+    if (!('IntersectionObserver' in window)) return;
+    var current = null;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var a = links[heads.indexOf(e.target)];
+        if (current) current.removeAttribute('aria-current');
+        current = a;
+        a.setAttribute('aria-current', 'true');
+        a.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+    heads.forEach(function (h) { io.observe(h); });
+  })();
+
+  // Long blocks of text open on request instead of filling the screen
+  document.querySelectorAll('main > section.block .prose').forEach(function (p) {
+    if (p.closest('.article, details, .quote, .readmore') || p.textContent.length < 1400) return;
+    var box = document.createElement('div');
+    box.className = 'readmore is-closed';
+    var body = document.createElement('div');
+    body.className = 'readmore__body';
+    body.id = 'rm-' + Math.random().toString(36).slice(2, 8);
+    p.replaceWith(box);
+    body.appendChild(p);
+    box.appendChild(body);
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'readmore__btn';
+    b.setAttribute('aria-expanded', 'false');
+    b.setAttribute('aria-controls', body.id);
+    b.textContent = 'להמשך קריאה';
+    box.appendChild(b);
+    b.addEventListener('click', function () {
+      var open = box.classList.toggle('is-closed') === false;
+      b.setAttribute('aria-expanded', String(open));
+      b.textContent = open ? 'לקצר' : 'להמשך קריאה';
+      if (!open) box.scrollIntoView({ block: 'nearest' });
+    });
+  });
+
   // Hide images whose files have not been uploaded yet
   document.querySelectorAll('main img').forEach(function (img) {
     function hide() {

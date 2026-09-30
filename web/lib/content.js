@@ -7,7 +7,7 @@ import path from 'node:path';
 import { q, one } from './db';
 import {
   ESSAY_CATEGORIES, blogHtml, entriesHtml, fillRegions, optimizeImages, plain, postLd, postMainHtml,
-  testimonialsHtml, voicesHtml,
+  testimonialsHtml, tidyLegacy, voicesHtml,
 } from './html';
 
 const POST_COLS = 'id, path, title, body, format, excerpt, seo_title, description, og_image, noindex, categories, tags, status, is_video, duplicate_of, date, modified';
@@ -68,7 +68,7 @@ async function regionsFor(page) {
 }
 
 export async function pageMain(page) {
-  return optimizeImages(fillRegions(page.main, await regionsFor(page)));
+  return optimizeImages(tidyLegacy(fillRegions(page.main, await regionsFor(page))));
 }
 
 export async function postMain(post) {
