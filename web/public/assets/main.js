@@ -3,11 +3,18 @@
   var btn = document.querySelector('.menu-btn');
   var nav = document.getElementById('nav');
   if (btn && nav) {
-    btn.addEventListener('click', function () {
-      var open = btn.getAttribute('aria-expanded') !== 'true';
+    var setOpen = function (open) {
       btn.setAttribute('aria-expanded', String(open));
+      btn.textContent = open ? 'סגירה' : 'תפריט';
       nav.classList.toggle('is-open', open);
+      document.documentElement.classList.toggle('menu-open', open);
+    };
+    btn.addEventListener('click', function () { setOpen(btn.getAttribute('aria-expanded') !== 'true'); });
+    // A link inside the menu (or the header's booking button) closes it
+    document.querySelector('.site-header').addEventListener('click', function (e) {
+      if (e.target.closest('a[href]') && nav.classList.contains('is-open')) setOpen(false);
     });
+    window.matchMedia('(min-width: 1141px)').addEventListener('change', function (m) { if (m.matches) setOpen(false); });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && nav.classList.contains('is-open')) { btn.click(); btn.focus(); }
     });

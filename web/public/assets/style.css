@@ -139,11 +139,14 @@ strong, b { font-weight: 600; }
 
 @media (max-width: 1140px) {
   :root { --header-h: 66px; }
+  /* backdrop-filter would make the header the containing block of the fixed menu */
+  .site-header { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(249, 250, 252, .97); }
+  html.menu-open .toc, html.menu-open .whatsapp, html.menu-open .a11y-btn { visibility: hidden; }
   .site-header__inner { gap: 12px; }
   .header-cta { margin-inline-start: auto; }
   .menu-btn { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 18px; border: 1px solid var(--ink); border-radius: var(--pill); background: none; color: var(--ink); font: 500 1rem var(--font); cursor: pointer; }
   .menu-btn[aria-expanded="true"] { background: var(--ink); color: var(--paper); }
-  .nav { position: fixed; inset: var(--header-h) 0 0; margin: 0; background: var(--paper); padding: 24px 16px 48px; overflow-y: auto; opacity: 0; visibility: hidden; transition: opacity .2s, visibility .2s; }
+  .nav { position: fixed; inset: var(--header-h) 0 0; z-index: 49; margin: 0; background: var(--paper); padding: 24px 16px 48px; overflow-y: auto; overscroll-behavior: contain; opacity: 0; visibility: hidden; transition: opacity .2s, visibility .2s; }
   .nav.is-open { opacity: 1; visibility: visible; }
   .nav > ul { flex-direction: column; gap: 0; max-width: 560px; margin-inline: auto; padding: 0; background: none; border-radius: 0; }
   .nav > ul > li { border-bottom: 1px solid var(--rule); }
