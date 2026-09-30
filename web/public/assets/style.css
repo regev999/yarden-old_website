@@ -140,7 +140,7 @@ strong, b { font-weight: 600; }
 @media (max-width: 1140px) {
   :root { --header-h: 66px; }
   /* backdrop-filter would make the header the containing block of the fixed menu */
-  .site-header { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(249, 250, 252, .97); }
+  .site-header { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--paper); }
   html.menu-open .toc, html.menu-open .whatsapp, html.menu-open .a11y-btn { visibility: hidden; }
   .site-header__inner { gap: 12px; }
   .header-cta { margin-inline-start: auto; }
@@ -220,11 +220,11 @@ strong, b { font-weight: 600; }
 @media (max-width: 860px) { .hero__foot { grid-template-columns: 1fr; } }
 
 /* In-page contents (built by main.js from the section headings) -----------*/
-.toc { position: sticky; top: var(--header-h); z-index: 30; margin-top: 12px; }
+.toc { position: sticky; top: var(--header-h); z-index: 30; margin-top: 12px; background: var(--paper); box-shadow: 0 1px 0 var(--rule); }
 .toc__inner { display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 8px 0; -webkit-mask-image: linear-gradient(to left, #000 92%, transparent); mask-image: linear-gradient(to left, #000 92%, transparent); }
 .toc__inner::-webkit-scrollbar { display: none; }
 .toc__label { flex: none; margin-inline-end: 6px; color: var(--slate); font-size: .95rem; }
-.toc a { flex: none; padding: 8px 16px; border-radius: var(--pill); background: rgba(232, 238, 247, .85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: var(--ink); font-size: .95rem; line-height: 1.3; text-decoration: none; white-space: nowrap; transition: background .2s, color .2s; }
+.toc a { flex: none; padding: 8px 16px; border-radius: var(--pill); background: var(--mist); color: var(--ink); font-size: .95rem; line-height: 1.3; text-decoration: none; white-space: nowrap; transition: background .2s, color .2s; }
 .toc a:hover { background: var(--halo); }
 .toc a[aria-current="true"] { background: var(--ink); color: var(--paper); }
 
@@ -567,7 +567,7 @@ img.is-missing, .figure.is-missing, .gallery figure.is-missing { display: none; 
 
 /* Chips: short tags like issues a therapy helps with */
 .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-.chips li { padding: 9px 18px; border-radius: var(--pill); background: var(--white); border: 1px solid var(--rule); font-size: 1rem; }
+.chips li { padding: 9px 18px; border-radius: 22px; line-height: 1.5; background: var(--white); border: 1px solid var(--rule); font-size: 1rem; }
 .block:not(.block--tint) .chips li { background: var(--mist); border-color: transparent; }
 
 /* Offer: a course or service with its facts */
