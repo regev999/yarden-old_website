@@ -81,11 +81,10 @@ if (await empty('redirects')) {
   console.log(`[migrate] redirects: ${r.length}`);
 }
 
-// 3. Content updates (content/updates/index.json): each one is applied once.
+// 3. Content updates (content/updates/): each one is applied once.
 //    Each update is content/updates/<id>.json (path, file, contact, description)
 //    plus the page body in <id>.body.html.
 //    The page as it was is saved to revisions, so it can be restored in the admin.
-let applied = 0;
 const upDir = path.join(root, 'content', 'updates');
 const only = process.env.ONLY_UPDATE; // apply just this one (local preview)
 const updates = readdirSync(upDir).filter((f) => f.endsWith('.json')).sort()
@@ -104,12 +103,12 @@ for (const u of updates) {
   await sql.query('UPDATE pages SET main = $2, description = COALESCE($3, description), updated_at = now() WHERE path = $1',
     [u.path, main, u.description ?? null]);
   await sql.query('INSERT INTO settings(key, value) VALUES($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value', [key, new Date().toISOString()]);
-  applied++;
   console.log(`[migrate] update ${u.id}: ${u.path}`);
 }
 
-// Pages are cached by Next (unstable_cache); drop that cache so updates show up.
-if (applied) rmSync(path.join(root, '.next', 'cache', 'fetch-cache'), { recursive: true, force: true });
+// Pages are cached by Next (unstable_cache) and hold the asset versions of the
+// build that made them; start every run with a fresh cache.
+rmSync(path.join(root, '.next', 'cache', 'fetch-cache'), { recursive: true, force: true });
 
 console.log('[migrate] done');
 await sql.end?.();

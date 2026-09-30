@@ -1,5 +1,19 @@
 /** Site header, navigation and footer (same markup as the static build). */
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { EMAIL, PHONE, PHONE_INTL, SITE_NAME, SITE_URL, absUrl, esc } from './html';
+
+/** ?v=<hash> on each asset, so browsers fetch it again as soon as it changes (assets are cached for 30 days). */
+const assetVersions = {};
+function asset(file) {
+  if (!(file in assetVersions)) {
+    try {
+      assetVersions[file] = createHash('sha1').update(readFileSync(path.join(process.cwd(), 'public', 'assets', file))).digest('hex').slice(0, 10);
+    } catch { assetVersions[file] = ''; }
+  }
+  return `/assets/${file}${assetVersions[file] ? `?v=${assetVersions[file]}` : ''}`;
+}
 
 export const SITE_TITLE = 'ירדן כרם - התמקדות, הקומי, Somatic Experiencing';
 const TAGLINE = 'התמקדות, הקומי, Somatic Experiencing';
@@ -119,9 +133,9 @@ ${ogImage ? `<meta property="og:image" content="${esc(ogImage)}">` : ''}
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="/assets/fonts/IBMPlexSansHebrew-ExtraLight.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/IBMPlexSansHebrew-Regular.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/style.css">
-<script src="/assets/a11y.js"></script>
-<script src="/assets/consent.js" defer></script>
+<link rel="stylesheet" href="${asset('style.css')}">
+<script src="${asset('a11y.js')}"></script>
+<script src="${asset('consent.js')}" defer></script>
 ${gaTags(gaId)}
 <link rel="alternate" type="application/rss+xml" title="${esc(SITE_TITLE)}" href="${SITE_URL}/feed/">
 ${ldScript(ld)}${extraHead}
@@ -134,7 +148,7 @@ ${main}
 </main>
 ${footerHtml()}
 <script>window.SITE_FORM = {endpoint: "/api/lead/", email: ${JSON.stringify(EMAIL)}};</script>
-<script src="/assets/main.js" defer></script>${extraBody}
+<script src="${asset('main.js')}" defer></script>${extraBody}
 </body>
 </html>
 `;
