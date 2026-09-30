@@ -378,6 +378,12 @@ strong, b { font-weight: 600; }
 .contact { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(40px, 8vw, 128px); align-items: start; }
 @media (max-width: 900px) { .contact { grid-template-columns: 1fr; } }
 .contact h2 { margin-bottom: 20px; font-weight: 200; }
+/* Who answers: Yarden, small, above the question */
+.contact-person { display: flex; align-items: center; gap: 14px; margin: 0 0 28px; }
+.contact-person img { flex: none; width: 64px; height: 64px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 3px var(--ink), 0 0 0 4px rgba(185, 203, 245, .55); }
+.contact-person p { margin: 0; line-height: 1.35; }
+.contact-person b { display: block; font-weight: 500; color: var(--paper); }
+.contact-person span { color: var(--on-ink-soft); font-size: .95rem; }
 .contact-steps { list-style: none; counter-reset: cstep; margin: 32px 0 0; padding: 0; display: grid; gap: 10px; }
 .contact-steps li { counter-increment: cstep; display: grid; grid-template-columns: 34px 1fr; column-gap: 14px; align-items: baseline; }
 .contact-steps li::before { content: counter(cstep); grid-row: span 2; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--halo); color: var(--halo); font-size: .95rem; font-variant-numeric: tabular-nums; align-self: start; }
@@ -879,6 +885,28 @@ html.a11y-contrast .hero::before, html.a11y-contrast .page-hero::before { displa
 html.a11y-contrast :focus-visible { outline: 3px solid #ff8c00 !important; outline-offset: 3px; }
 html.a11y-contrast .actionbar { background: #fff; box-shadow: 0 -2px 0 #000; }
 html.a11y-contrast .actionbar__btn { border: 1px solid #000; }
+
+/* Shop: a page's buy section, the payment link page, the note after paying */
+.offer .price, .paybox .price { margin: 4px 0 0; display: grid; gap: 2px; }
+:is(.offer, .paybox) .price b { font-size: clamp(2rem, 1.6rem + 1.4vw, 2.6rem); font-weight: 200; line-height: 1.1; letter-spacing: -0.02em; color: var(--cobalt); }
+:is(.offer, .paybox) .price span { color: var(--slate); font-size: 1rem; }
+.offer--buy .btn { margin-top: 8px; }
+.block--buy .offers:has(> :only-child) { max-width: 640px; }
+.buy-status { margin: 0; font-size: .95rem; color: var(--ink-soft); }
+.buy-status:empty { display: none; }
+.secure-note { display: flex; align-items: center; gap: 8px; margin: 20px 0 0; color: var(--slate); font-size: .95rem; }
+.secure-note::before { content: ""; flex: none; width: 16px; height: 16px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 7V5a4 4 0 1 1 8 0v2h1v8H3V7h1Zm2 0h4V5a2 2 0 1 0-4 0v2Z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 7V5a4 4 0 1 1 8 0v2h1v8H3V7h1Zm2 0h4V5a2 2 0 1 0-4 0v2Z'/%3E%3C/svg%3E") center / contain no-repeat; }
+.paybox { max-width: 600px; padding: clamp(24px, 4vw, 44px); border-radius: var(--r-panel); background: var(--mist); }
+.paybox > p:first-child:not(.price) { margin-top: 0; }
+.paybox__form { margin-top: 28px; }
+.paybox__form .btn { width: 100%; }
+.pay-toast { position: fixed; inset-inline: 12px; top: 12px; z-index: 70; max-width: 560px; margin-inline: auto; display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px; border-radius: var(--r-card); background: var(--ink); color: var(--paper); box-shadow: 0 24px 50px -24px rgba(15, 33, 64, .7); }
+.pay-toast::before { content: "!"; flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--halo); color: var(--halo); font-weight: 600; }
+.pay-toast--ok::before { content: "✓"; }
+.pay-toast p { margin: 0; display: grid; gap: 2px; }
+.pay-toast b { font-weight: 500; }
+.pay-toast span { color: var(--on-ink-soft); font-size: .95rem; }
+.pay-toast button { margin-inline-start: auto; border: 0; background: none; color: inherit; font: 300 1.6rem/1 var(--font); cursor: pointer; padding: 0 4px; }
 
 /* Header on the move ---------------------------------------------------------
    A hairline once the page moves under it. On phones and tablets it steps aside

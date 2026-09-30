@@ -33,7 +33,8 @@ export const home = {
       <time class="muted small">${esc(heDate(l.created_at))}</time></a></li>`).join('')}</ul>`
       : '<p class="empty">עוד לא הגיעו לידים. כשמישהו ימלא טופס באתר, הוא יופיע כאן ותקבלו גם מייל.</p>';
 
-    const body = `<section class="summary">
+    const twoStep = ctx.user.totp_enabled ? '' : `<p class="notice notice--warn">הכניסה לניהול מוגנת בסיסמה בלבד. מומלץ להפעיל אימות דו־שלבי עם אפליקציה בטלפון: <a href="/admin/settings/#twostep">להפעלה (שתי דקות)</a></p>`;
+    const body = `${twoStep}<section class="summary">
   <a class="summary__item${newLeads ? ' is-hot' : ''}" href="/admin/leads/?status=new"><b>${newLeads}</b><span>לידים שמחכים לתשובה</span></a>
   <a class="summary__item" href="/admin/leads/"><b>${week}</b><span>לידים בשבוע האחרון · ${month} החודש</span></a>
   <a class="summary__item" href="/admin/posts/"><b>${posts}</b><span>מאמרים באתר${drafts ? ` · ${drafts} טיוטות` : ''}</span></a>

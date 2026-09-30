@@ -11,6 +11,7 @@ import {
   testimonialsHtml, tidyLegacy, voicesHtml,
 } from './html';
 import { titleVideos } from './videos';
+import { withBuySection } from './shop';
 
 const POST_COLS = 'id, path, title, body, format, excerpt, seo_title, description, og_image, noindex, categories, tags, status, is_video, duplicate_of, date, modified';
 
@@ -84,6 +85,7 @@ export async function pageMain(page) {
   let html = tidyLegacy(fillRegions(page.main, regions))
     .replace(/<section class="section section--ink block--contact" id="contact">[\s\S]*?<\/section>/, () => contactHtml().trim());
   if (page.kind === 'category' || page.kind === 'tag') html = termHero(html, regions._count);
+  html = await withBuySection(html, page.path);
   return withArt(titleVideos(optimizeImages(html)), artForPath(page.path));
 }
 

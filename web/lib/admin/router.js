@@ -15,9 +15,10 @@ import * as testimonials from './routes/testimonials';
 import * as media from './routes/media';
 import * as seo from './routes/seo';
 import * as redirectsRoutes from './routes/redirects';
+import * as shop from './routes/shop';
 
 const PUBLIC = {
-  'login': authRoutes.login, 'forgot': authRoutes.forgot, 'reset': authRoutes.reset, 'setup': authRoutes.setup,
+  'login': authRoutes.login, 'verify': authRoutes.verify, 'forgot': authRoutes.forgot, 'reset': authRoutes.reset, 'setup': authRoutes.setup,
 };
 const PRIVATE = {
   '': dashboard.home, 'logout': authRoutes.logout,
@@ -29,6 +30,7 @@ const PRIVATE = {
   'media': media.page,
   'seo': seo.page, 'links': seo.links,
   'redirects': redirectsRoutes.page,
+  'sales': shop.sales, 'sales-export': shop.salesExport, 'products': shop.products, 'pay-links': shop.payLinks,
 };
 
 async function readBody(request) {
@@ -71,6 +73,7 @@ export async function handle(request, segments) {
     }
     ctx.user = s.user;
     ctx.csrf = s.csrf;
+    ctx.sessionId = s.sessionId;
     if (method === 'POST') {
       const sent = ctx.form?.get('csrf') ?? ctx.json?.csrf ?? request.headers.get('x-csrf') ?? '';
       if (!sent || sent !== s.csrf) {

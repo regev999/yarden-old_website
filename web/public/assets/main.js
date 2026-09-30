@@ -269,6 +269,68 @@
     a.addEventListener('click', function () { setProduct(a.dataset.product); });
   });
 
+  // Purchases (Cardcom): a product's button, or a payment link's form, opens the secure payment page
+  function checkout(payload, done) {
+    payload.returnPath = location.pathname;
+    return fetch('/api/checkout/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { return { ok: r.ok, body: b }; }); })
+      .then(function (r) {
+        if (r.ok && r.body.url) { location.href = r.body.url; return; }
+        throw new Error(r.body.error || '');
+      })
+      .catch(function (err) { done(err.message || 'לא הצלחנו לפתוח את עמוד התשלום. נסו שוב, או צרו קשר בטלפון.'); });
+  }
+  document.querySelectorAll('[data-checkout]').forEach(function (btn) {
+    var note = document.createElement('p');
+    note.className = 'buy-status';
+    note.setAttribute('role', 'status');
+    btn.after(note);
+    btn.addEventListener('click', function () {
+      if (btn.disabled) return;
+      var label = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'רגע…';
+      note.textContent = '';
+      checkout({ slug: btn.getAttribute('data-checkout') }, function (msg) {
+        btn.disabled = false;
+        btn.textContent = label;
+        note.textContent = msg;
+      });
+    });
+  });
+  document.querySelectorAll('form[data-checkout-token]').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var status = form.querySelector('.form__status');
+      var button = form.querySelector('button[type="submit"]');
+      var v = function (n) { return form.elements[n].value.trim(); };
+      var missing = [['name', 'שם מלא'], ['phone', 'טלפון'], ['email', 'מייל']].filter(function (f) { return !v(f[0]); });
+      if (missing.length) { status.textContent = 'נא למלא: ' + missing.map(function (f) { return f[1]; }).join(', '); form.elements[missing[0][0]].focus(); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v('email'))) { status.textContent = 'כתובת המייל לא תקינה.'; form.elements.email.focus(); return; }
+      button.disabled = true;
+      status.textContent = 'מעבירים לעמוד התשלום…';
+      checkout({ token: form.getAttribute('data-checkout-token'), name: v('name'), phone: v('phone'), email: v('email') }, function (msg) {
+        button.disabled = false;
+        status.textContent = msg;
+      });
+    });
+  });
+  // Back from Cardcom: say how it went, once
+  (function () {
+    var result = new URLSearchParams(location.search).get('payment');
+    if (result !== 'success' && result !== 'failed') return;
+    var ok = result === 'success';
+    var box = document.createElement('div');
+    box.className = 'pay-toast' + (ok ? ' pay-toast--ok' : '');
+    box.setAttribute('role', 'status');
+    box.innerHTML = '<p><b></b><span></span></p><button type="button" aria-label="סגירה">×</button>';
+    box.querySelector('b').textContent = ok ? 'התשלום התקבל, תודה.' : 'התשלום לא הושלם.';
+    box.querySelector('span').textContent = ok ? 'אישור וחשבונית יגיעו אליכם במייל.' : 'לא חויבתם. אפשר לנסות שוב מתי שנוח, או ליצור קשר.';
+    box.querySelector('button').addEventListener('click', function () { box.remove(); });
+    document.body.appendChild(box);
+    try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}
+  })();
+
   // Forms: post to the site's endpoint, or fall back to the visitor's mail app
   var cfg = window.SITE_FORM || {};
   document.querySelectorAll('form[data-form]').forEach(function (form) {

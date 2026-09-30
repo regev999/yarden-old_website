@@ -1,8 +1,9 @@
 /** Login, logout, password reset and first-run account setup. */
 import { q, one } from '../../db';
 import { sendMail } from '../../mail';
-import { ipHash, recordAttempt, sha256, token, tooManyAttempts } from '../../security';
-import { currentSession, endSession, hashPassword, passwordProblem, setPassword, startSession, userCount, verifyPassword } from '../auth';
+import { ipHash, ipHint, recordAttempt, sha256, token, tooManyAttempts } from '../../security';
+import { currentPending, currentSession, deviceName, endPending, endSession, hashPassword, knownDevice, logSignin, passwordProblem, setPassword, startPending, startSession, userCount, verifyPassword } from '../auth';
+import { matchCode, matchRecoveryCode } from '../totp';
 import { authPage, esc, html, redirect } from '../ui';
 
 const USERNAME = /^[\p{L}\p{N}._-]{3,40}$/u;
@@ -11,6 +12,24 @@ const errorBox = (e) => (e ? `<p class="notice notice--error" role="alert">${esc
 
 function safeNext(next) {
   return next && next.startsWith('/admin/') && !next.includes('//') && !next.includes('\\') ? next : '/admin/';
+}
+
+/** A completed sign-in: logged, and from a browser not seen before, reported by mail. */
+async function signedIn(ctx, userId, step) {
+  const u = await one('SELECT username, email FROM users WHERE id = $1', [userId]);
+  const known = await knownDevice(ctx.request, u.username);
+  await logSignin(ctx.request, { username: u.username, ok: true, step });
+  if (!known && process.env.RESEND_API_KEY) {
+    const when = new Date().toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', dateStyle: 'short', timeStyle: 'short' });
+    const where = ipHint(ctx.request);
+    await sendMail({
+      to: u.email, subject: 'כניסה חדשה לניהול האתר',
+      text: `שלום ${u.username},\n\nהייתה כניסה לאזור הניהול של האתר ממכשיר שלא נכנס לפני כן:\n`
+        + `${deviceName(ctx.request.headers.get('user-agent'))}, ${when}${where ? ` (${where})` : ''}\n\n`
+        + `אם זה הייתם אתם, אין צורך לעשות דבר.\nאם לא: היכנסו לניהול, החליפו סיסמה (הגדרות ← החלפת סיסמה) ונתקו את שאר המכשירים.\n${ctx.url.origin}/admin/settings/\n`,
+    });
+  }
+  return startSession(ctx.request, userId);
 }
 
 function loginForm(ctx, error = '', username = '') {
@@ -37,14 +56,17 @@ export const login = {
     if ((await tooManyAttempts(ipKey, 10, 900)) || (await tooManyAttempts(userKey, 5, 900))) {
       return loginForm(ctx, 'יותר מדי ניסיונות כניסה. נסו שוב בעוד רבע שעה, או אפסו את הסיסמה.', username);
     }
-    const u = await one('SELECT id, password_hash FROM users WHERE lower(username) = lower($1) OR lower(email) = lower($1)', [username]);
+    const u = await one('SELECT id, username, password_hash, totp_enabled FROM users WHERE lower(username) = lower($1) OR lower(email) = lower($1)', [username]);
     const ok = await verifyPassword(pw, u?.password_hash);
     if (u && ok) {
-      const cookie = await startSession(ctx.request, u.id);
-      return redirect(safeNext(ctx.query.get('next') || ''), null, 'ok', [cookie]);
+      const next = safeNext(ctx.query.get('next') || '');
+      // Two-step sign-in: the password alone doesn't open a session
+      if (u.totp_enabled) return redirect('/admin/verify/', null, 'ok', [await startPending(ctx.request, u.id, next)]);
+      return redirect(next, null, 'ok', [await signedIn(ctx, u.id, 'password')]);
     }
     await recordAttempt(ipKey);
     await recordAttempt(userKey);
+    await logSignin(ctx.request, { username, ok: false });
     return loginForm(ctx, 'שם המשתמש או הסיסמה שגויים.', username);
   },
 };
@@ -57,9 +79,61 @@ export const logout = {
   },
 };
 
+function verifyForm(ctx, error = '') {
+  return html(authPage(ctx, 'אימות דו־שלבי', `${errorBox(error)}
+<p class="muted">פתחו את אפליקציית האימות בטלפון והקלידו את הקוד בן 6 הספרות שמופיע ליד <b dir="ltr">Yarden Kerem</b>.</p>
+<form method="post" class="stack">
+  <label>קוד מהאפליקציה <input name="code" required inputmode="numeric" autocomplete="one-time-code" autofocus dir="ltr" maxlength="11" class="code-input"></label>
+  <button class="btn" type="submit">כניסה</button>
+</form>
+<details class="auth-card__more"><summary>הטלפון לא איתי</summary>
+<p class="muted">אפשר להקליד באותו שדה את אחד מקודי הגיבוי ששמרתם כשהפעלתם את האימות (למשל <span dir="ltr">a1b2c-3d4e5</span>). כל קוד גיבוי עובד פעם אחת.</p></details>
+<p class="auth-card__alt"><a href="/admin/login/">חזרה לכניסה</a></p>`), error ? 401 : 200);
+}
+
+export const verify = {
+  async GET(ctx) {
+    if (!(await currentPending(ctx.request))) return redirect('/admin/login/');
+    return verifyForm(ctx);
+  },
+  async POST(ctx) {
+    const p = await currentPending(ctx.request);
+    if (!p) return redirect('/admin/login/', 'עבר זמן רב מדי מאז הסיסמה. היכנסו שוב.', 'error');
+    // Wrong codes count per account, across sign-ins, so the password can't be used to keep guessing
+    const codeKey = `mfa|${p.user_id}`;
+    if (await tooManyAttempts(codeKey, 10, 900)) {
+      const cookie = await endPending(ctx.request, p.id);
+      return redirect('/admin/login/', 'יותר מדי קודים שגויים. נסו שוב בעוד רבע שעה.', 'error', [cookie]);
+    }
+    const code = String(ctx.form.get('code') || '').trim();
+    const step = matchCode(p.totp_secret, code, Number(p.totp_last_step));
+    const recovery = step === null ? matchRecoveryCode(p.recovery_codes, code) : -1;
+    // Each code works once, even if the same one is sent twice at the same moment
+    const used = step !== null
+      ? await one('UPDATE users SET totp_last_step = $1 WHERE id = $2 AND totp_last_step < $1 RETURNING id', [step, p.user_id])
+      : recovery >= 0
+        ? await one('UPDATE users SET recovery_codes = recovery_codes - $1::text WHERE id = $2 AND recovery_codes ? $1 RETURNING id', [p.recovery_codes[recovery], p.user_id])
+        : null;
+    if (used) {
+      const cookies = [await endPending(ctx.request, p.id), await signedIn(ctx, p.user_id, recovery >= 0 ? 'recovery' : 'code')];
+      const note = recovery >= 0 ? 'נכנסתם עם קוד גיבוי. הוא לא יעבוד שוב; אפשר ליצור קודים חדשים בהגדרות.' : null;
+      return redirect(p.next || '/admin/', note, 'ok', cookies);
+    }
+    await logSignin(ctx.request, { username: p.username, ok: false, step: 'code' });
+    await recordAttempt(codeKey);
+    if (p.tries + 1 >= 5) {
+      const cookie = await endPending(ctx.request, p.id);
+      return redirect('/admin/login/', 'יותר מדי קודים שגויים. היכנסו שוב עם הסיסמה.', 'error', [cookie]);
+    }
+    await q('UPDATE mfa_pending SET tries = tries + 1 WHERE id = $1', [p.id]);
+    return verifyForm(ctx, 'הקוד שגוי או שפג תוקפו. הקלידו את הקוד שמופיע עכשיו באפליקציה.');
+  },
+};
+
 export const forgot = {
   async GET(ctx) {
-    return html(authPage(ctx, 'איפוס סיסמה', `<p class="muted">כתבו את המייל או שם המשתמש של החשבון, ונשלח קישור לבחירת סיסמה חדשה.</p>
+    const noMail = process.env.RESEND_API_KEY ? '' : '<p class="notice notice--warn">שליחת מיילים מהאתר עוד לא מחוברת, ולכן קישור האיפוס לא יישלח. פנו למי שמתחזק את האתר.</p>';
+    return html(authPage(ctx, 'איפוס סיסמה', `${noMail}<p class="muted">כתבו את המייל או שם המשתמש של החשבון, ונשלח קישור לבחירת סיסמה חדשה.</p>
 <form method="post" class="stack">
   <label>מייל או שם משתמש <input name="who" required autocomplete="username" autofocus dir="ltr"></label>
   <button class="btn" type="submit">שליחת קישור לאיפוס</button>
@@ -119,12 +193,14 @@ export const reset = {
     const r = await findReset(t);
     if (!r) return badLink(ctx);
     const pw = String(ctx.form.get('password') || '');
-    const problem = passwordProblem(pw) || (pw !== String(ctx.form.get('password2') || '') ? 'הסיסמאות לא זהות.' : null);
+    const u = await one('SELECT username, email, totp_enabled FROM users WHERE id = $1', [r.user_id]);
+    const problem = passwordProblem(pw, u || {}) || (pw !== String(ctx.form.get('password2') || '') ? 'הסיסמאות לא זהות.' : null);
     if (problem) return resetForm(ctx, t, problem);
     await setPassword(r.user_id, pw); // also invalidates this link
     await q('DELETE FROM sessions WHERE user_id = $1', [r.user_id]);
-    const cookie = await startSession(ctx.request, r.user_id);
-    return redirect('/admin/', 'הסיסמה עודכנה ואתם מחוברים.', 'ok', [cookie]);
+    // A reset link proves the mailbox, not the phone: the code is still needed
+    if (u?.totp_enabled) return redirect('/admin/verify/', 'הסיסמה עודכנה. נשאר להקליד את הקוד מהאפליקציה.', 'ok', [await startPending(ctx.request, r.user_id, '/admin/')]);
+    return redirect('/admin/', 'הסיסמה עודכנה ואתם מחוברים.', 'ok', [await signedIn(ctx, r.user_id, 'reset')]);
   },
 };
 
@@ -159,11 +235,17 @@ export const setup = {
     }
     if (!USERNAME.test(v.username)) return setupForm(ctx, 'שם המשתמש צריך להכיל 3–40 אותיות, ספרות, נקודה, מקף או קו תחתון.', v);
     if (!EMAIL.test(v.email)) return setupForm(ctx, 'כתובת המייל לא תקינה. היא משמשת לאיפוס סיסמה.', v);
-    const p = passwordProblem(pw);
+    const p = passwordProblem(pw, v);
     if (p) return setupForm(ctx, p, v);
-    const [u] = await q('INSERT INTO users(username, email, password_hash) VALUES($1, $2, $3) RETURNING id', [v.username, v.email, await hashPassword(pw)]);
+    let u;
+    try {
+      [u] = await q('INSERT INTO users(username, email, password_hash) SELECT $1, $2, $3 WHERE NOT EXISTS (SELECT 1 FROM users) RETURNING id',
+        [v.username, v.email, await hashPassword(pw)]);
+    } catch { /* a second account at the same moment: the database refuses it */ }
+    if (!u) return redirect('/admin/login/');
+    await logSignin(ctx.request, { username: v.username, ok: true, step: 'setup' });
     const cookie = await startSession(ctx.request, u.id);
-    return redirect('/admin/', 'החשבון נוצר ואתם מחוברים.', 'ok', [cookie]);
+    return redirect('/admin/settings/#twostep', 'החשבון נוצר ואתם מחוברים. מומלץ להפעיל עכשיו אימות דו־שלבי.', 'ok', [cookie]);
   },
 };
 

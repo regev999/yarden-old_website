@@ -285,3 +285,40 @@ code { background: var(--mist); padding: 1px 6px; border-radius: 4px; font-size:
 .redirects-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }
 .redirect-fields { display: grid; gap: 12px; }
 @media (max-width: 1100px) { .redirects-layout { grid-template-columns: 1fr; } }
+
+/* Security: two-step sign-in, devices, sign-ins */
+.panel--wide { grid-column: 1 / -1; }
+.btn--danger { background: #fff; color: var(--err); border-color: var(--err); }
+.btn--danger:hover { background: var(--err); border-color: var(--err); color: #fff; }
+.tag--ok { background: var(--ok-bg); color: var(--ok); }
+.tag--fail { background: var(--err-bg); color: var(--err); }
+.code-input { font-size: 1.4rem; letter-spacing: .28em; text-align: center; font-variant-numeric: tabular-nums; }
+.twostep-setup { margin: 0 0 12px; padding-inline-start: 1.3em; display: grid; gap: 20px; max-width: 42em; }
+.twostep-setup li::marker { font-weight: 600; color: var(--cobalt); }
+.qr { width: 208px; margin: 12px 0 8px; padding: 6px; background: #fff; border: 1px solid var(--rule); border-radius: 12px; }
+.qr svg { display: block; width: 100%; height: auto; }
+.secret { font-size: .95rem; letter-spacing: .06em; background: var(--mist); padding: 2px 8px; border-radius: 6px; overflow-wrap: anywhere; }
+.twostep-confirm { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.twostep-confirm .code-input { width: 10ch; }
+.twostep-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 28px; align-items: end; }
+.device-list { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 8px; }
+.device-list li { display: grid; gap: 2px; padding: 10px 14px; background: var(--paper); border-radius: var(--radius); }
+.recovery { max-width: 40em; }
+.recovery__codes { list-style: none; margin: 18px 0; padding: 16px 20px; display: grid; grid-template-columns: repeat(2, max-content); gap: 10px 32px; background: var(--paper); border-radius: var(--radius); justify-content: start; }
+.recovery__codes code { font-size: 1.1rem; letter-spacing: .06em; }
+.auth-card__more { margin-top: 18px; }
+.auth-card__more summary { cursor: pointer; color: var(--cobalt); }
+.auth-card .code-input { font-size: 1.6rem; }
+
+/* Shop: sales, products, payment links */
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+@media (max-width: 560px) { .two { grid-template-columns: 1fr; } }
+.btn--sm { min-height: 34px; padding: 0 12px; font-size: .9rem; white-space: nowrap; }
+.tag--order-paid { background: var(--ok-bg); color: var(--ok); }
+.tag--order-pending { background: var(--mist); color: var(--ink-soft); }
+.tag--order-failed { background: var(--err-bg); color: var(--err); }
+.tag--order-refunded { background: #eee; color: #666; }
+.table.sales td { font-size: .95rem; }
+.buyer { display: grid; gap: 1px; min-width: 180px; }
+.buyer a { justify-self: start; font-size: .9rem; text-decoration: none; }
+.order-note { margin: 4px 0 0; max-width: 18em; }

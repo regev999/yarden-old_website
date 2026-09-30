@@ -2,13 +2,27 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { q, one } from './db';
 
+/**
+ * The visitor's address as the server's own proxy saw it: X-Real-IP, set by
+ * nginx, or else the last X-Forwarded-For hop (the one the proxy appended).
+ * The first hop is whatever the client claims, so it is never trusted.
+ */
 export function clientIp(request) {
   const h = request.headers;
-  return (h.get('x-real-ip') || h.get('x-forwarded-for')?.split(',')[0] || '').trim();
+  const hops = (h.get('x-forwarded-for') || '').split(',').map((s) => s.trim()).filter(Boolean);
+  return (h.get('x-real-ip') || hops[hops.length - 1] || '').trim();
 }
 
 export function sha256(s) {
   return createHash('sha256').update(String(s)).digest('hex');
+}
+
+/** Enough of an address to recognise it (84.229.x.x), not enough to identify anyone. */
+export function ipHint(request) {
+  const ip = clientIp(request).replace(/^::ffff:/, '');
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(ip)) return ip.split('.').slice(0, 2).join('.') + '.x.x';
+  if (ip.includes(':')) return ip.split(':').slice(0, 3).join(':') + ':…';
+  return '';
 }
 
 /** IP addresses are only kept as a salted hash. */
