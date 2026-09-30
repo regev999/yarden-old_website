@@ -159,7 +159,14 @@ strong, b { font-weight: 600; }
   .has-sub.is-open > .nav__sub { display: block; }
   .nav__sub a { font-size: 1.125rem; font-weight: 400; padding: 8px 16px; color: var(--ink-soft); }
 }
-@media (max-width: 460px) { .header-cta { display: none; } .menu-btn { margin-inline-start: auto; } .brand span { display: none; } }
+@media (max-width: 520px) {
+  .brand span { display: none; }
+  .brand b { font-size: 1.15rem; }
+  .brand::before { width: 28px; height: 28px; }
+  .header-cta { min-height: 40px; padding: 0 14px; font-size: .95rem; }
+  .menu-btn { min-height: 40px; padding: 0 14px; }
+}
+@media (max-width: 350px) { .header-cta { display: none; } .menu-btn { margin-inline-start: auto; } }
 
 /* The lens: ink panel, breathing rings, titles that come into focus --------*/
 .hero, .page-hero {
@@ -465,6 +472,11 @@ img.is-missing, .figure.is-missing, .gallery figure.is-missing { display: none; 
 .facets p { margin: 0; color: var(--slate); font-size: 1.0625rem; line-height: 1.65; }
 .facets p + p { margin-top: .7em; }
 
+@media (max-width: 640px) {
+  .facets > li { padding: 22px 22px 22px 22px; padding-inline-start: 58px; }
+  .facets > li::before { top: 28px; inset-inline-start: 22px; }
+}
+
 /* Models: summaries that open into the full text */
 .models { display: grid; gap: 10px; }
 .model { border-radius: var(--r-card); background: var(--mist); transition: background .2s; }
@@ -478,6 +490,7 @@ img.is-missing, .figure.is-missing, .gallery figure.is-missing { display: none; 
 .model__head { display: grid; gap: 6px; }
 .model h3 { margin: 0; font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2.2rem); font-weight: 300; }
 .model__sum { color: var(--slate); max-width: 40em; }
+@media (max-width: 640px) { .model > summary { gap: 14px; padding: 22px; } .model > summary::after { width: 40px; height: 40px; } .model > .prose { padding-inline: 22px !important; } }
 .model > .prose { padding: 0 clamp(24px, 3vw, 36px) clamp(28px, 3vw, 40px); max-width: calc(var(--measure) + 72px); }
 
 /* Timeline: a real sequence */
@@ -552,6 +565,9 @@ img.is-missing, .figure.is-missing, .gallery figure.is-missing { display: none; 
 .offer dd { margin: 0; }
 .offer .btn { align-self: flex-start; margin-top: auto; }
 
+/* Rhythm between components inside a section */
+.wrap > :is(.facets, .steps, .offers, .stats, .chips, .models, .films, .cols, .timeline, .linkcards, .figure, .prose, .callout, .quotes, .readmore, .actions, .video) + :is(.facets, .steps, .offers, .stats, .chips, .models, .films, .cols, .timeline, .linkcards, .figure, .prose, .callout, .quotes, .readmore, .actions, .video, h3.heading, .section-intro) { margin-top: clamp(28px, 4vw, 48px); }
+
 /* Long text that opens on request (added by main.js) */
 .readmore { position: relative; }
 .readmore.is-closed > .readmore__body { max-height: 15em; overflow: hidden; -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent); }
@@ -603,7 +619,7 @@ img.is-missing, .figure.is-missing, .gallery figure.is-missing { display: none; 
 .site-footer__brand { font-size: 1.5rem; font-weight: 300; letter-spacing: -0.01em; }
 .site-footer__bottom { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--rule); color: var(--slate); font-size: var(--t-small); }
 @media (max-width: 900px) { .site-footer__grid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 520px) { .site-footer__grid { grid-template-columns: 1fr; } }
+@media (max-width: 520px) { .site-footer__grid { grid-template-columns: 1fr 1fr; gap: 32px 20px; } .site-footer__grid > :first-child { grid-column: 1 / -1; } }
 
 .whatsapp { position: fixed; inset-inline-start: 20px; bottom: 20px; z-index: 40; width: 52px; height: 52px; border-radius: 50%; background: #25d366; color: #fff; display: grid; place-items: center; box-shadow: 0 10px 24px -10px rgba(15,33,64,.5); }
 .whatsapp svg { width: 26px; height: 26px; fill: currentColor; }
