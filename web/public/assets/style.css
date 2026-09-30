@@ -228,44 +228,64 @@ strong, b { font-weight: 600; }
 .hero .btn--line:hover { background: var(--paper); color: var(--ink) !important; }
 @media (max-width: 860px) { .hero__foot { grid-template-columns: 1fr; } }
 
-/* Home hero, split: the words on one side and Yarden in an arch on the other,
-   standing on the panel's lower edge, with the lens breathing around her */
-.hero--split { padding-bottom: 0; }
-.hero--split::before { display: none; }
-.hero__grid { display: grid; grid-template-columns: minmax(0, 1fr) clamp(250px, 29vw, 420px); gap: clamp(32px, 6vw, 104px); align-items: end; }
-.hero__text { align-self: center; padding-bottom: clamp(56px, 8vw, 120px); }
+/* Home hero, split: the words on one side and Yarden's photo filling the
+   other, dissolving into the ink panel instead of sitting in a frame on it */
+.hero--split, .page-hero--split { min-height: clamp(540px, 46vw, 760px); display: grid; align-items: center; }
+.hero--split::before, .page-hero--split::before { display: none; }
+.page-hero--split > .field { display: none; } /* the photo is the picture here; the waves would cross it */
+.hero__grid { display: grid; grid-template-columns: minmax(0, 1fr) 34%; gap: clamp(32px, 5vw, 80px); align-items: center; }
+.hero__text { position: relative; }
 .hero--split h1 { font-size: clamp(3rem, .8rem + 5.6vw, 7.4rem); margin-bottom: clamp(24px, 3vw, 40px); }
 .hero__text .lead { margin: 0; max-width: 30em; color: var(--on-ink); }
 .hero__text .actions { margin-top: clamp(28px, 3.5vw, 44px); }
 
-/* The arch: Yarden's portrait as a window */
+/* The arch: Yarden's portrait as a window (the About section, on paper) */
 .arch { position: relative; margin: 0; aspect-ratio: 576 / 860; }
 .arch img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 999px 999px 0 0; background: var(--ink-2); }
 .arch::after { content: ""; position: absolute; inset: -16px -16px 0; border: 1px solid rgba(185, 203, 245, .32); border-bottom: 0; border-radius: 999px 999px 0 0; pointer-events: none; }
-.hero__arch img { animation: focus-in 2s .15s cubic-bezier(.2, .6, .1, 1) both; }
-.hero__arch::before {
-  content: ""; position: absolute; z-index: -1; left: 50%; top: 32%; width: 310%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle, rgba(46, 87, 196, .5) 0, rgba(46, 87, 196, .16) 24%, transparent 50%), repeating-radial-gradient(circle, transparent 0 36px, rgba(185, 203, 245, .14) 36px 37px);
-  -webkit-mask-image: radial-gradient(circle, #000 36%, transparent 70%); mask-image: radial-gradient(circle, #000 36%, transparent 70%);
-  animation: breathe 11s ease-in-out infinite;
+
+/* In a hero the photo is part of the panel: it fills the far side, full
+   height, and fades out toward the words */
+.hero__arch { position: absolute; z-index: -1; inset-block: 0; inset-inline-end: 0; width: 40%; aspect-ratio: auto; }
+.hero__arch::after {
+  /* the bright room behind her turns to ink as it fades, not to grey */
+  display: block; inset: 0; border: 0; border-radius: 0;
+  background: linear-gradient(to right, transparent 38%, rgba(15, 33, 64, .55) 72%, var(--ink) 96%);
 }
-/* The same on a page hero (the podcast) */
-.page-hero--split { padding-bottom: 0; }
-.page-hero--split::before { display: none; }
+.hero__arch img {
+  border-radius: 0; object-position: 50% 22%; background: none;
+  /* opaque on the panel's edge, gone by the time it reaches the words */
+  -webkit-mask-image: linear-gradient(to right, #000 40%, transparent 96%);
+  mask-image: linear-gradient(to right, #000 40%, transparent 96%);
+  animation: fade-in 1.6s .1s ease-out both;
+}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
 /* In the About section, on paper */
 .about__side:has(.about__arch) { gap: 20px; }
 .about__arch { width: min(100%, 300px); margin: 18px 16px 0; }
 .about__arch img { border-radius: 50% 50% 24px 24px / 33.5% 33.5% 24px 24px; }
 .about__arch::after { inset: -14px; border: 1px solid var(--halo); border-radius: 50% 50% 36px 36px / 34% 34% 36px 36px; }
 @media (max-width: 900px) { .about__arch { width: min(56vw, 230px); justify-self: center; margin: 22px 0 34px; } }
+
+/* Phones: the photo stands in the top corner of the panel, flush with its
+   edges, and melts into the ink below and toward the words */
 @media (max-width: 760px) {
-  .hero--split, .page-hero--split { padding-bottom: 48px; }
+  .hero.hero--split, .page-hero.page-hero--split { min-height: 0; display: block; padding-top: 0; padding-bottom: 44px; }
   .hero__grid { grid-template-columns: 1fr; gap: 0; }
-  .hero__text { padding-bottom: 0; }
-  .hero__arch { order: -1; justify-self: start; width: min(38vw, 156px); margin: 0 14px 30px; }
-  .hero__arch img { border-radius: 50% 50% 22px 22px / 33.5% 33.5% 22px 22px; }
-  .hero__arch::after { inset: -12px; border-bottom: 1px solid rgba(185, 203, 245, .32); border-radius: 50% 50% 32px 32px / 34% 34% 32px 32px; }
-  .hero__arch::before { width: 360%; top: 40%; }
+  .hero__arch {
+    position: relative; z-index: -1; inset: auto; order: -1;
+    justify-self: end; width: 68%; height: min(92vw, 380px); margin-inline-end: -16px; /* .wrap leaves 16px on phones */
+  }
+  .hero__arch img {
+    object-position: 50% 12%;
+    -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 97%), linear-gradient(to right, #000 45%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to bottom, #000 45%, transparent 97%), linear-gradient(to right, #000 45%, transparent 100%);
+    mask-composite: intersect;
+  }
+  .hero__arch::after { background: linear-gradient(to right, transparent 45%, rgba(15, 33, 64, .5) 100%), linear-gradient(to bottom, transparent 50%, rgba(15, 33, 64, .6) 100%); }
+  .hero__text { margin-top: -96px; }
 }
 
 /* Yarden, at the centre of the lens, coming into focus with the title */
@@ -865,7 +885,7 @@ img.is-missing, .figure.is-missing, .gallery figure.is-missing { display: none; 
 .whatsapp:hover { color: #fff; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero h1 span, .page-hero h1, .hero::before, .page-hero::before, .page-hero::after, .hero__portrait, .page-hero__portrait, .arch img, .hero__arch::before { animation: none; }
+  .hero h1 span, .page-hero h1, .hero::before, .page-hero::before, .page-hero::after, .hero__portrait, .page-hero__portrait, .arch img { animation: none; }
   * { transition: none !important; }
 }
 @media print { .site-header, .whatsapp, .block--contact, .site-footer, .toc, .a11y-btn { display: none; } .hero, .page-hero { background: none; color: #000; } .page-hero h1, .hero h1 { color: #000; } }
@@ -921,7 +941,7 @@ html.a11y-contrast { --paper: #ffffff; --mist: #ffffff; --ink: #000000; --ink-so
 html.a11y-contrast .section--ink, html.a11y-contrast .way--ink, html.a11y-contrast .block--image, html.a11y-contrast .block--contact { background: #000 !important; }
 html.a11y-contrast .hero h1 span, html.a11y-contrast .page-hero h1 { animation: none; filter: none; opacity: 1; }
 html.a11y-contrast .hero, html.a11y-contrast .page-hero, html.a11y-contrast .citation, html.a11y-contrast .callout { background: #000 !important; }
-html.a11y-contrast .hero::before, html.a11y-contrast .page-hero::before, html.a11y-contrast .hero__arch::before { display: none; }
+html.a11y-contrast .hero::before, html.a11y-contrast .page-hero::before { display: none; }
 html.a11y-contrast :focus-visible { outline: 3px solid #ff8c00 !important; outline-offset: 3px; }
 html.a11y-contrast .actionbar { background: #fff; box-shadow: 0 -2px 0 #000; }
 html.a11y-contrast .actionbar__btn { border: 1px solid #000; }
