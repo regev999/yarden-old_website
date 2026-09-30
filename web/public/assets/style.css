@@ -12,6 +12,9 @@
 @font-face { font-family: "IBM Plex Sans Hebrew"; font-style: normal; font-weight: 400; font-display: swap; src: url("/assets/fonts/IBMPlexSansHebrew-Regular.woff2") format("woff2"); }
 @font-face { font-family: "IBM Plex Sans Hebrew"; font-style: normal; font-weight: 500; font-display: swap; src: url("/assets/fonts/IBMPlexSansHebrew-Medium.woff2") format("woff2"); }
 @font-face { font-family: "IBM Plex Sans Hebrew"; font-style: normal; font-weight: 600; font-display: swap; src: url("/assets/fonts/IBMPlexSansHebrew-SemiBold.woff2") format("woff2"); }
+/* Karantina (SIL OFL, see fonts/LICENSE-Karantina.txt): only for the podcast's wordmark, as in its artwork */
+@font-face { font-family: "Karantina"; font-style: normal; font-weight: 700; font-display: swap; src: url("/assets/fonts/Karantina-Bold-hebrew.woff2") format("woff2"); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+@font-face { font-family: "Karantina"; font-style: normal; font-weight: 700; font-display: swap; src: url("/assets/fonts/Karantina-Bold-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 
 :root {
   /* Palette — the five blues */
@@ -31,6 +34,9 @@
   --on-ink: #e8eef7;
   --on-ink-soft: #a9b8cf;
   --white: #ffffff;
+  /* From the podcast's artwork: its mustard accent and electric blue lines */
+  --pod: #c5b518;
+  --electric: #5b86ff;
 
   --font: "IBM Plex Sans Hebrew", "Arial Hebrew", "Segoe UI", sans-serif;
   /* Scale: 1.333 (perfect fourth) from 18px body; display is fluid */
@@ -653,6 +659,39 @@ img.is-missing, .figure.is-missing, .gallery figure.is-missing { display: none; 
 .split > .about__side { position: sticky; top: calc(var(--header-h) + 84px); }
 @media (max-width: 900px) { .split > .about__side { position: static; } .about__side .portrait { width: min(72vw, 280px); } }
 
+/* The podcast's identity (its artwork: condensed white type, mustard accent, flowing blue lines) */
+.podmark { font-family: "Karantina", var(--font); font-weight: 700; line-height: .86; letter-spacing: .005em; margin: 0; text-wrap: nowrap; }
+.podmark > span { display: block; }
+.podmark > span + span { color: var(--pod); }
+.page-hero .podmark { font-size: clamp(4.4rem, 2.4rem + 7.4vw, 9.6rem); color: var(--white); }
+
+/* Flowing lines on dark panels */
+.field { position: absolute; inset: 0; z-index: -1; pointer-events: none; background: var(--electric); opacity: .38; -webkit-mask: url("/assets/art/field.svg") center / cover no-repeat; mask: url("/assets/art/field.svg") center / cover no-repeat; }
+.block--contact, .section--ink, .podcard { position: relative; isolation: isolate; overflow: hidden; }
+.block--contact .field { opacity: .2; }
+.podcard .field { inset: 0 0 auto; height: 420px; opacity: .42; }
+
+/* Home: the podcast as a small version of its cover */
+.podcard { align-self: start; padding: clamp(28px, 4vw, 48px); border-radius: var(--r-panel); background: var(--ink); color: var(--on-ink); }
+.podcard .podmark { font-size: clamp(3.6rem, 2.4rem + 4vw, 6rem); margin-bottom: 18px; color: var(--white); }
+.podcard__lead { margin: 0 0 28px; color: var(--on-ink-soft); }
+.podcard .episode p { color: var(--on-ink); }
+.podcard .actions { margin-top: 8px; }
+
+/* A photo at the centre of a page hero's lens (the podcast page) */
+.portrait.page-hero__portrait {
+  --pw: clamp(210px, 20vw, 300px);
+  position: absolute; top: 50%; inset-inline-end: calc(var(--lens) * .22 - var(--pw) / 2);
+  width: var(--pw); translate: 0 -50%;
+  animation: focus-in 2s .15s cubic-bezier(.2, .6, .1, 1) both;
+}
+.page-hero:has(.page-hero__portrait)::after { display: none; }
+.portrait.page-hero__portrait::after { border-color: rgba(185, 203, 245, .22); }
+@media (max-width: 980px) {
+  .portrait.page-hero__portrait { position: relative; top: auto; inset: auto; translate: none; width: 120px; margin: 0 30px 40px; }
+  .page-hero:has(.page-hero__portrait) .wrap::before { display: none; }
+}
+
 /* Videos: balanced rows by count, captions from YouTube titles */
 .films:has(> :nth-child(5):last-child) { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .films:has(> :nth-child(5):last-child) > :nth-child(-n + 2) { grid-column: span 3; }
@@ -766,7 +805,7 @@ img.is-missing, .figure.is-missing, .gallery figure.is-missing { display: none; 
 .whatsapp:hover { color: #fff; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero h1 span, .page-hero h1, .hero::before, .page-hero::before, .page-hero::after, .hero__portrait { animation: none; }
+  .hero h1 span, .page-hero h1, .hero::before, .page-hero::before, .page-hero::after, .hero__portrait, .page-hero__portrait { animation: none; }
   * { transition: none !important; }
 }
 @media print { .site-header, .whatsapp, .block--contact, .site-footer, .toc, .a11y-btn { display: none; } .hero, .page-hero { background: none; color: #000; } .page-hero h1, .hero h1 { color: #000; } }

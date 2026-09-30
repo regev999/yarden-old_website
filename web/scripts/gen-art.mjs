@@ -196,6 +196,33 @@ const art = {
   },
 };
 
+// A texture for the dark panels: ribbons of fine lines that twist and fold,
+// like the flowing lines in the podcast's artwork.
+function field() {
+  const W = 1200, H = 600;
+  const ribbon = (n, { cy, amp, f1, p1, width, wf, wp, fold, fp, jitter }) => {
+    let s = '';
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1) - 0.5;
+      const pts = [];
+      for (let x = -40; x <= W + 40; x += 15) {
+        const u = x / W;
+        const c = cy + amp * Math.sin(u * TAU * f1 + p1) + amp * 0.35 * Math.sin(u * TAU * f1 * 2.3 + p1 * 1.7);
+        const w = width * (0.55 + 0.45 * Math.sin(u * TAU * wf + wp));
+        const k = Math.cos(u * TAU * fold + fp);
+        pts.push([x, c + t * w * k + jitter * Math.sin(u * 22 + t * 9)]);
+      }
+      s += `<path d="M${pts.map(([x, y]) => `${Math.round(x)} ${Math.round(y * 10) / 10}`).join('L')}"/>`;
+    }
+    return s;
+  };
+  const body = ribbon(46, { cy: H * 0.56, amp: 110, f1: 0.8, p1: 0.5, width: 300, wf: 1.1, wp: 0.3, fold: 0.7, fp: 0.2, jitter: 6 })
+    + ribbon(26, { cy: H * 0.3, amp: 70, f1: 1.15, p1: 2.4, width: 180, wf: 0.9, wp: 1.8, fold: 1.05, fp: 1.1, jitter: 4 });
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" fill="none" stroke="#000" stroke-width="1" stroke-linecap="round">`
+    + `<style>*{vector-effect:non-scaling-stroke}</style>${body}</svg>\n`;
+}
+writeFileSync(path.join(out, 'field.svg'), field());
+
 for (const [key, { hero, icon }] of Object.entries(art)) {
   writeFileSync(path.join(out, `${key}.svg`), svg(hero(), 1.3));
   writeFileSync(path.join(out, `${key}-icon.svg`), svg(icon(), 1.8));
