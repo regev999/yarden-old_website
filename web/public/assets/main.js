@@ -20,38 +20,55 @@
     });
   }
   // Header: a hairline once the page moves; on phones and tablets it steps aside
-  // while reading down and comes back on the way up
+  // after a real scroll down and comes back after a real scroll up. Small moves,
+  // the bounce at either end and the browser's own toolbar resizing the page
+  // never make it jump.
   (function () {
     var root = document.documentElement;
     var header = document.querySelector('.site-header');
     var small = window.matchMedia('(max-width: 1140px)');
+    var HIDE_AFTER = 64;   // px of continuous scrolling down
+    var SHOW_AFTER = 40;   // px of continuous scrolling up
     var lastY = window.scrollY;
+    var travel = 0;        // distance in the current direction
     var holdUntil = 0;
     var queued = false;
-    var hide = function (on) { root.classList.toggle('header-hidden', on); };
+    var hidden = function () { return root.classList.contains('header-hidden'); };
+    var hide = function (on) { if (hidden() !== on) root.classList.toggle('header-hidden', on); travel = 0; };
     var update = function () {
       queued = false;
       var y = window.scrollY;
+      var max = document.documentElement.scrollHeight - window.innerHeight;
       root.classList.toggle('scrolled', y > 4);
-      if (Date.now() < holdUntil) { lastY = y; return; }
-      if (!small.matches || root.classList.contains('menu-open') || y < 140) { hide(false); lastY = y; return; }
-      if (Math.abs(y - lastY) < 10) return;
-      hide(y > lastY);
+      if (Date.now() < holdUntil) { lastY = y; travel = 0; return; }
+      if (!small.matches || root.classList.contains('menu-open') || y < 160) { hide(false); lastY = y; return; }
+      // Rubber-band past either end: ignore
+      if (y < 0 || y > max) { lastY = Math.max(0, Math.min(y, max)); return; }
+      var dy = y - lastY;
       lastY = y;
+      if (!dy) return;
+      travel = (dy > 0) === (travel > 0) ? travel + dy : dy;
+      if (travel > HIDE_AFTER && !hidden()) hide(true);
+      else if (travel < -SHOW_AFTER && hidden()) hide(false);
     };
     window.addEventListener('scroll', function () {
       if (!queued) { queued = true; requestAnimationFrame(update); }
     }, { passive: true });
+    // The toolbar of mobile browsers showing or hiding moves the page a little: not a scroll
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', function () { holdUntil = Date.now() + 300; });
+    }
     small.addEventListener('change', update);
     update();
     // A jump within the page decides once, so the heading lands just under what stays on screen
     document.addEventListener('click', function (e) {
       var a = e.target.closest('a[href^="#"]');
       if (!a || !small.matches || a.hash.length < 2) return;
-      var target = document.getElementById(decodeURIComponent(a.hash.slice(1)));
+      var target;
+      try { target = document.getElementById(decodeURIComponent(a.hash.slice(1))); } catch (err) { return; }
       if (!target) return;
       var top = target.getBoundingClientRect().top;
-      hide(top > 0 && window.scrollY + top > 140);
+      hide(top > 0 && window.scrollY + top > 160);
       holdUntil = Date.now() + 1000;
     });
     // Keyboard users reaching the header always see it
@@ -143,14 +160,23 @@
     nav.appendChild(inner);
     hero.after(nav);
     var current = null;
+    var settle = 0;
+    // Slide the chip row to the current section only once the page has stopped
+    // moving, so it never competes with the page's own scrolling
+    var centre = function () {
+      if (!current) return;
+      var r = current.getBoundingClientRect();
+      var box = inner.getBoundingClientRect();
+      inner.scrollBy({ left: (r.left + r.width / 2) - (box.left + box.width / 2), behavior: 'smooth' });
+    };
+    window.addEventListener('scroll', function () { clearTimeout(settle); settle = setTimeout(centre, 180); }, { passive: true });
     var mark = function (a) {
       if (a === current) return;
       if (current) current.removeAttribute('aria-current');
       current = a;
       a.setAttribute('aria-current', 'true');
-      var r = a.getBoundingClientRect();
-      var box = inner.getBoundingClientRect();
-      inner.scrollBy({ left: (r.left + r.width / 2) - (box.left + box.width / 2), behavior: 'smooth' });
+      clearTimeout(settle);
+      settle = setTimeout(centre, 180);
     };
     inner.addEventListener('click', function (e) { var a = e.target.closest('a'); if (a) mark(a); });
     if (!('IntersectionObserver' in window)) return;

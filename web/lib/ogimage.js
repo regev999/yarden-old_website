@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { absUrl } from './html';
 import { ogKey } from './og';
+import { fileHash } from './versions';
 
 let made;
 function generated() {
@@ -16,6 +17,8 @@ function generated() {
 export function ogImageFor(pagePath, explicit) {
   if (explicit && !explicit.includes('/wp-content/uploads/')) return explicit;
   const key = ogKey(pagePath);
-  if (generated().has(key)) return absUrl(`/og/${key}.jpg`);
-  return generated().has('default') ? absUrl('/og/default.jpg') : explicit || '';
+  // Versioned, so WhatsApp and Facebook fetch a changed image again instead of their old copy
+  const url = (k) => absUrl(`/og/${k}.jpg`) + (fileHash(`/og/${k}.jpg`) ? `?v=${fileHash(`/og/${k}.jpg`)}` : '');
+  if (generated().has(key)) return url(key);
+  return generated().has('default') ? url('default') : explicit || '';
 }

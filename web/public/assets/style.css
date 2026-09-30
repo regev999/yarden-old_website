@@ -952,6 +952,10 @@ html.a11y-contrast .actionbar__btn { border: 1px solid #000; }
    A hairline once the page moves under it. On phones and tablets it steps aside
    while reading down and comes back on the way up (main.js sets the classes). */
 html.scrolled .site-header { box-shadow: 0 1px 0 var(--rule); }
+/* Nothing on a page can push it sideways (clip, unlike hidden, keeps sticky parts working) */
+main, .site-footer { overflow-x: clip; }
+/* With the menu open, the page behind it stays put (on body: on html it would unstick the header) */
+html.menu-open body { overflow: hidden; }
 @media (max-width: 1140px) {
   .site-header, .toc { transition: top .32s cubic-bezier(.2, .6, .1, 1), box-shadow .2s; }
   html.header-hidden .site-header { top: calc(-1 * var(--header-h) - 1px); }

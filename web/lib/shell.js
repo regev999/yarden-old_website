@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { EMAIL, PHONE, PHONE_INTL, SITE_NAME, SITE_URL, absUrl, esc } from './html';
+import { versionAssets } from './versions';
 
 /** ?v=<hash> on each asset, so browsers fetch it again as soon as it changes (assets are cached for 30 days). */
 const assetVersions = {};
@@ -155,7 +156,7 @@ ${ldScript(ld)}${extraHead}
 <a class="skip" href="#main">דילוג לתוכן</a>
 ${headerHtml(path, book)}
 <main id="main">
-${main}
+${versionAssets(main)}
 </main>
 ${footerHtml()}
 ${actionBarHtml(book)}
