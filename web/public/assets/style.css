@@ -244,8 +244,10 @@ strong, b { font-weight: 600; }
 
 /* Sections -----------------------------------------------------------------*/
 .section { padding-block: var(--section); }
-.section--mist { background: var(--mist); }
-.section--ink { background: var(--ink); color: var(--on-ink); }
+.section--mist { background: var(--mist); margin-inline: clamp(8px, 1.2vw, 16px); border-radius: var(--r-panel); }
+.section--ink { background: var(--ink); color: var(--on-ink); margin-inline: clamp(8px, 1.2vw, 16px); border-radius: var(--r-panel); }
+.hero + .section { padding-top: 8px !important; }
+.section--mist + .section--ink, .section--ink + .section--mist, .section--mist + .section--mist { margin-top: 8px; }
 .section--ink a:not(.btn) { color: var(--paper); }
 .section--ink .quiet, .section--ink .lead { color: var(--on-ink-soft); }
 .section__title { max-width: 14em; margin-bottom: clamp(40px, 5vw, 72px); }
@@ -255,8 +257,10 @@ strong, b { font-weight: 600; }
 @media (max-width: 900px) { .split { grid-template-columns: 1fr; } .split > h2, .split > .heading { position: static; } }
 .split .body { max-width: var(--measure); }
 .split .body > p:first-child { font-size: var(--t-lead); line-height: 1.6; color: var(--ink); }
-.plain-list { list-style: none; margin: 32px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-.plain-list li { padding: 8px 16px; border-radius: var(--pill); background: var(--mist); }
+.plain-list { list-style: none; margin: 32px 0 0; padding: 0; display: grid; gap: 10px; }
+.plain-list li { position: relative; padding: 18px 22px; padding-inline-start: 56px; border-radius: var(--r-card); background: var(--paper); }
+.section:not(.section--mist) .plain-list li { background: var(--mist); }
+.plain-list li::before { content: ""; position: absolute; inset-inline-start: 22px; top: 1.45em; width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--cobalt); }
 
 /* Voices — one testimony at a time */
 .voice { margin: 0; max-width: 26em; }
@@ -271,7 +275,7 @@ strong, b { font-weight: 600; }
 
 /* Methods — rows that open into their page */
 .methods { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.methods a { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 8px clamp(32px, 7vw, 112px); align-items: center; padding: 28px clamp(20px, 3vw, 36px); border-radius: var(--r-card); background: var(--paper); color: var(--ink); text-decoration: none; transition: background .2s; }
+.methods a { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 8px clamp(32px, 7vw, 112px); align-items: center; padding: 28px clamp(20px, 3vw, 36px); border-radius: var(--r-card); background: var(--mist); color: var(--ink); text-decoration: none; transition: background .2s; }
 .section--mist .methods a { background: var(--paper); }
 .methods a:hover { background: var(--halo); }
 .methods__name { font-size: var(--t-h3); font-weight: 300; line-height: 1.25; letter-spacing: -0.015em; }
@@ -285,8 +289,10 @@ strong, b { font-weight: 600; }
 .about .body { max-width: var(--measure); }
 .about .body > p:first-child { font-size: var(--t-lead); line-height: 1.6; }
 
-.issue-list { list-style: none; margin: 32px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-.issue-list li { padding: 8px 16px; border-radius: var(--pill); background: var(--paper); border: 1px solid var(--rule); }
+.issue-list { list-style: none; margin: 32px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15em), 1fr)); gap: 8px; }
+.issue-list li { position: relative; padding: 12px 18px; padding-inline-start: 44px; border-radius: var(--r-ctl); background: var(--mist); line-height: 1.5; }
+.section--mist .issue-list li { background: var(--paper); }
+.issue-list li::before { content: ""; position: absolute; inset-inline-start: 18px; top: 1.15em; width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--cobalt); }
 .vision { margin-top: 32px; padding: 24px 28px; border-radius: var(--r-card); background: var(--mist); color: var(--ink-soft); }
 .epigraph { margin: 32px 0; }
 .epigraph p { font-size: var(--t-lead); font-weight: 300; line-height: 1.5; margin: 0 0 8px; }
@@ -315,6 +321,11 @@ strong, b { font-weight: 600; }
 .entries a { display: flex; flex-direction: column; height: 100%; padding: 26px 28px; border-radius: var(--r-card); background: var(--white); border: 1px solid var(--rule); color: var(--ink); text-decoration: none; transition: border-color .2s, background .2s; }
 .block--tint .entries a, .section--mist .entries a { border-color: transparent; }
 .entries a:hover { border-color: var(--cobalt); }
+.entries__thumb { position: relative; display: block; margin: -12px -14px 20px; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: var(--mist); }
+.entries__thumb img { width: 100%; height: 100%; object-fit: cover; transition: scale .4s; }
+.entries a:hover .entries__thumb img { scale: 1.03; }
+.entries__thumb--video::after { content: ""; position: absolute; inset: 0; margin: auto; width: 48px; height: 48px; border-radius: 50%; background: rgba(249, 250, 252, .92) center/16px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M5 3l10 6-10 6z' fill='%230f2140'/%3E%3C/svg%3E"); }
+.entries__thumb:has(img.is-missing) { display: none; }
 .entries h3 { font-size: 1.3rem; font-weight: 500; line-height: 1.4; letter-spacing: -0.01em; margin: 0 0 10px; }
 .entries a:hover h3 { color: var(--cobalt); }
 .entries p { margin: 0; color: var(--slate); font-size: 1rem; line-height: 1.65; }
@@ -548,6 +559,9 @@ img.is-missing, .figure.is-missing, .gallery figure.is-missing { display: none; 
 .readmore__btn:hover { border-color: var(--cobalt); }
 .readmore__btn::after { content: ""; width: 10px; height: 10px; border-inline-end: 1.8px solid var(--cobalt); border-bottom: 1.8px solid var(--cobalt); rotate: 45deg; translate: 0 -2px; transition: rotate .2s; }
 .readmore:not(.is-closed) .readmore__btn::after { rotate: 225deg; translate: 0 2px; }
+
+/* Reading progress on articles (main.js) */
+.progress { position: fixed; top: 0; inset-inline: 0; z-index: 60; height: 3px; background: var(--cobalt); transform-origin: right; transform: scaleX(var(--p, 0)); pointer-events: none; }
 
 /* Long reading */
 .prose { overflow-wrap: anywhere; }

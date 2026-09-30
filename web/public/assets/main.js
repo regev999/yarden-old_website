@@ -111,6 +111,22 @@
     heads.forEach(function (h) { io.observe(h); });
   })();
 
+  // Reading progress on articles
+  var article = document.querySelector('.article');
+  if (article) {
+    var bar = document.createElement('div');
+    bar.className = 'progress';
+    bar.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(bar);
+    var tick = function () {
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight * 0.6;
+      bar.style.setProperty('--p', Math.min(1, Math.max(0, -r.top / (total > 0 ? total : 1))).toFixed(3));
+    };
+    window.addEventListener('scroll', tick, { passive: true });
+    tick();
+  }
+
   // Long blocks of text open on request instead of filling the screen
   document.querySelectorAll('main > section.block .prose').forEach(function (p) {
     if (p.closest('.article, details, .quote, .readmore') || p.textContent.length < 1400) return;

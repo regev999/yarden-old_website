@@ -90,8 +90,13 @@ export function entriesHtml(posts, single = false) {
   if (!posts.length) return '';
   const rows = posts.map((p) => {
     const ex = excerptOf(p, 140);
-    const meta = heDate(p.date) + (p.is_video && ex.length < 40 ? ' · סרטון' : '');
-    return `<li><a href="${esc(p.path)}"><h3>${esc(p.title)}</h3>${ex ? `<p>${esc(ex)}</p>` : ''}<small>${esc(meta)}</small></a></li>`;
+    const yt = youtubeId(p.body);
+    const img = !yt && /<img[^>]+src="(\/wp-content\/uploads\/[^"]+)"/.exec(p.body || '')?.[1];
+    const thumb = single ? '' : yt
+      ? `<span class="entries__thumb entries__thumb--video"><img src="https://i.ytimg.com/vi/${yt}/mqdefault.jpg" alt="" loading="lazy" decoding="async"></span>`
+      : img ? `<span class="entries__thumb"><img src="${esc(img)}" alt="" loading="lazy" decoding="async"></span>` : '';
+    const meta = heDate(p.date) + (p.is_video && ex.length < 40 ? ', סרטון' : '');
+    return `<li><a href="${esc(p.path)}">${thumb}<h3>${esc(p.title)}</h3>${ex ? `<p>${esc(ex)}</p>` : ''}<small>${esc(meta)}</small></a></li>`;
   });
   return `<ul class="entries${single ? ' entries--single' : ''}">${rows.join('')}</ul>`;
 }
