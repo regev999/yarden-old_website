@@ -918,6 +918,24 @@ html.a11y-links a:not(.btn) { text-decoration: underline !important; text-decora
 html.a11y-spacing body { letter-spacing: .03em; word-spacing: .12em; }
 html.a11y-spacing p, html.a11y-spacing li, html.a11y-spacing dd { line-height: 2 !important; }
 html.a11y-motion *, html.a11y-motion *::before, html.a11y-motion *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+
+/* The yellow: the podcast artwork's mustard, carried across the site as its
+   one warm accent. On ink it may colour words; on paper and mist it is only
+   a mark (a bar, a dot), since yellow text on light is hard to read. */
+.hero h1 span + span { color: var(--pod); }
+.brand::before { background: radial-gradient(circle, var(--pod) 0 5px, transparent 6px), repeating-radial-gradient(circle, transparent 0 7px, rgba(46, 87, 196, .45) 7.5px 8.5px, transparent 9px 11px); }
+.section__title::after, .split > h2::after, .split > .heading::after, .about__side h2::after, .block--contact h2::after, .page-hero h1:not(.podmark)::after {
+  content: ""; display: block; width: 48px; height: 4px; margin-top: .45em; border-radius: 2px; background: var(--pod);
+}
+.page-hero h1:not(.podmark)::after { margin-top: 24px; }
+.way__kind::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-inline-end: 10px; border-radius: 50%; background: var(--pod); vertical-align: .1em; }
+.way--ink .way__kind { color: var(--pod); }
+.voice blockquote::before { color: var(--pod); }
+.plain-list li::before, .issue-list li::before { background: var(--pod); box-shadow: none; }
+@media (max-width: 760px) { .page-hero[data-art] .wrap::before { background: var(--pod); } }
+.stats b::after { content: ""; display: block; width: 28px; height: 3px; margin-top: 10px; border-radius: 2px; background: var(--pod); }
+@media (max-width: 640px) { .stats b::after { display: none; } }
+
 html.a11y-contrast { --paper: #ffffff; --mist: #ffffff; --ink: #000000; --ink-soft: #000000; --slate: #1a1a1a; --rule: #000000; --cobalt: #0033cc; --cobalt-deep: #001f80; --on-ink: #ffffff; --on-ink-soft: #ffffff; }
 html.a11y-contrast .section--ink, html.a11y-contrast .way--ink, html.a11y-contrast .block--image, html.a11y-contrast .block--contact { background: #000 !important; }
 html.a11y-contrast .hero h1 span, html.a11y-contrast .page-hero h1 { animation: none; filter: none; opacity: 1; }

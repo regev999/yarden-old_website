@@ -64,14 +64,14 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" fil
     <stop offset="1" stop-color="#2e57c4" stop-opacity="0"/>
   </radialGradient>
   <radialGradient id="warm" cx="50%" cy="50%" r="50%">
-    <stop offset="0" stop-color="#f6e2b8" stop-opacity=".55"/>
-    <stop offset=".35" stop-color="#f6e2b8" stop-opacity=".12"/>
-    <stop offset="1" stop-color="#f6e2b8" stop-opacity="0"/>
+    <stop offset="0" stop-color="#f1dc6a" stop-opacity=".6"/>
+    <stop offset=".35" stop-color="#e6cf3a" stop-opacity=".16"/>
+    <stop offset="1" stop-color="#e6cf3a" stop-opacity="0"/>
   </radialGradient>
   <linearGradient id="thread" x1="0" y1="0" x2="${W}" y2="0" gradientUnits="userSpaceOnUse">
     <stop offset="0" stop-color="#5b86ff" stop-opacity="0"/>
     <stop offset=".22" stop-color="#5b86ff"/>
-    <stop offset=".5" stop-color="#ffffff"/>
+    <stop offset=".5" stop-color="#fff6c8"/>
     <stop offset=".78" stop-color="#b9cbf5"/>
     <stop offset="1" stop-color="#b9cbf5" stop-opacity="0"/>
   </linearGradient>
