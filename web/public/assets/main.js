@@ -111,6 +111,23 @@
     heads.forEach(function (h) { io.observe(h); });
   })();
 
+  // Long testimonials: a button to read the whole thing, only where it's cut off
+  document.querySelectorAll('.quote:not(.is-open) blockquote').forEach(function (q) {
+    if (q.scrollHeight <= q.clientHeight + 8) { q.style.webkitMaskImage = 'none'; q.style.maskImage = 'none'; return; }
+    var fig = q.closest('.quote');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'quote__more';
+    b.setAttribute('aria-expanded', 'false');
+    b.textContent = 'להמשך ההמלצה';
+    q.after(b);
+    b.addEventListener('click', function () {
+      var open = fig.classList.toggle('is-open');
+      b.setAttribute('aria-expanded', String(open));
+      b.textContent = open ? 'לקצר' : 'להמשך ההמלצה';
+    });
+  });
+
   // Reading progress on articles
   var article = document.querySelector('.article');
   if (article) {

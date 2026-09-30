@@ -199,7 +199,7 @@ function linkCard(href, title) {
   const ext = /^https?:/.test(href) ? ' target="_blank" rel="noopener"' : '';
   const clean = title.replace(/\s*[-–:]?\s*(לצפייה|לינק למאמר|קישור לרכישת הספר)?\s*[-–:]?\s*לחץ כאן\s*$/, '').replace(/[\s:–-]+$/, '').trim();
   return `<ul class="linkcards"><li><a class="linkcard linkcard--${kind}" href="${href}"${ext}><span class="linkcard__icon" aria-hidden="true"></span>`
-    + `<span class="linkcard__title">${clean || where}</span><span class="linkcard__where">${where}</span></a></li></ul>`;
+    + `<span class="linkcard__title">${clean || where}</span><span class="linkcard__where">${where}</span></a></li></ul><!--lc-->`;
 }
 
 /**
@@ -218,9 +218,10 @@ export function tidyLegacy(html) {
     // Headings that end with a colon
     .replace(/(<h[23] class="heading">(?:(?!<\/h[23]>)[^<])*?)\s*:\s*(<\/h[23]>)/g, '$1$2');
   // A row of columns that only hold link cards becomes one list of cards
-  out = out.replace(/<div class="cols[^"]*">((?:\s*<div class="col">\s*<ul class="linkcards">(?:(?!<\/ul>).)*<\/ul>\s*<\/div>)+)\s*<\/div>/g,
-    (m, inner) => '<ul class="linkcards">' + [...inner.matchAll(/<li>(?:(?!<\/li>).)*<\/li>/g)].map((x) => x[0]).join('') + '</ul>');
-  out = out.replace(/<\/ul>\s*<ul class="linkcards">/g, '');
+  out = out.replace(/<div class="cols[^"]*">((?:\s*<div class="col">\s*<ul class="linkcards">(?:(?!<\/ul>).)*<\/ul><!--lc-->\s*<\/div>)+)\s*<\/div>/g,
+    (m, inner) => '<ul class="linkcards">' + [...inner.matchAll(/<li>(?:(?!<\/li>).)*<\/li>/g)].map((x) => x[0]).join('') + '</ul><!--lc-->');
+  // Merge only the card lists made here, never a list the page already had
+  out = out.replace(/<\/ul><!--lc-->\s*<ul class="linkcards">/g, '').replaceAll('<!--lc-->', '');
   // Keep only the last contact form section
   const parts = out.split(/(?=<section\b)/);
   const withForm = parts.map((s, i) => (/data-form="contact"/.test(s) ? i : -1)).filter((i) => i >= 0);

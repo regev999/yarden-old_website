@@ -493,6 +493,14 @@ img.is-missing, .figure.is-missing, .gallery figure.is-missing { display: none; 
 @media (max-width: 640px) { .model > summary { gap: 14px; padding: 22px; } .model > summary::after { width: 40px; height: 40px; } .model > .prose { padding-inline: 22px !important; } }
 .model > .prose { padding: 0 clamp(24px, 3vw, 36px) clamp(28px, 3vw, 40px); max-width: calc(var(--measure) + 72px); }
 
+/* Many short items (people, FAQs): two columns, each opens in place */
+.models--grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); align-items: start; }
+.models--grid .model > summary { padding: 22px 26px; }
+.models--grid .model h3 { font-size: 1.4rem; font-weight: 400; }
+.models--grid .model__sum { font-size: 1rem; }
+.models--grid .model > summary::after { width: 40px; height: 40px; }
+.models--grid .model > .prose { padding: 0 26px 26px; font-size: 1.0625rem; }
+
 /* Timeline: a real sequence */
 .timeline { list-style: none; margin: 0; padding: 0; position: relative; display: grid; gap: 0; max-width: 52em; }
 .timeline::before { content: ""; position: absolute; inset-block: 14px 14px; inset-inline-start: 9px; width: 1px; background: var(--halo); }
@@ -565,8 +573,12 @@ img.is-missing, .figure.is-missing, .gallery figure.is-missing { display: none; 
 .offer dd { margin: 0; }
 .offer .btn { align-self: flex-start; margin-top: auto; }
 
+/* Components placed inside running text keep their own layout */
+.prose :is(.chips, .facets, .steps, .linkcards, .stats) { padding: 0; margin: 1.2em 0; }
+.prose :is(.chips, .facets, .steps, .linkcards, .stats) li { margin: 0; }
+
 /* Rhythm between components inside a section */
-.wrap > :is(.facets, .steps, .offers, .stats, .chips, .models, .films, .cols, .timeline, .linkcards, .figure, .prose, .callout, .quotes, .readmore, .actions, .video) + :is(.facets, .steps, .offers, .stats, .chips, .models, .films, .cols, .timeline, .linkcards, .figure, .prose, .callout, .quotes, .readmore, .actions, .video, h3.heading, .section-intro) { margin-top: clamp(28px, 4vw, 48px); }
+.wrap > :is(.split, .facets, .steps, .offers, .stats, .chips, .models, .films, .cols, .timeline, .linkcards, .figure, .prose, .callout, .quotes, .readmore, .actions, .video, .gallery) + :is(.facets, .steps, .offers, .stats, .chips, .models, .films, .cols, .timeline, .linkcards, .figure, .prose, .callout, .quotes, .readmore, .actions, .video, .gallery, h3.heading, .section-intro) { margin-top: clamp(28px, 4vw, 48px); }
 
 /* Long text that opens on request (added by main.js) */
 .readmore { position: relative; }

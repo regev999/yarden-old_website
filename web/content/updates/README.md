@@ -68,6 +68,8 @@ Expandable items with a summary (models, approaches, FAQs, long theory):
 <div class="prose"><p>Full text…</p></div></details>
 </div>
 ```
+Many short expandable items (people, FAQs): `<div class="models models--grid">` lays them out in two columns.
+
 Short tags (issues a therapy helps with, audiences): `<ul class="chips"><li>חרדה</li>…</ul>`
 
 A few true numbers from the text: `<ul class="stats"><li><b>50</b><span>קבוצות וידאו תרפיה</span></li>…</ul>`
