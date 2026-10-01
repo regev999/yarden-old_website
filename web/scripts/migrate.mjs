@@ -94,7 +94,8 @@ if (await seedOnce('redirects')) {
 // 3. Content updates (content/updates/): each one is applied once.
 //    Each update is content/updates/<id>.json (path, file, contact, description)
 //    plus the page body in <id>.body.html. An update can also only set a
-//    page's "canonical", or mark an old post as a "duplicate_of" another page.
+//    page's "canonical", mark an old post as a "duplicate_of" another page, or
+//    add "products" to the shop.
 //    The page as it was is saved to revisions, so it can be restored in the admin.
 const upDir = path.join(root, 'content', 'updates');
 const only = process.env.ONLY_UPDATE; // apply just this one (local preview)
@@ -106,7 +107,14 @@ for (const u of updates) {
   const key = `content_update:${u.id}`;
   // FORCE_CONTENT_UPDATES=1 re-applies them (for working on an update locally).
   if (!process.env.FORCE_CONTENT_UPDATES && !only && (await sql.query('SELECT 1 FROM settings WHERE key = $1', [key])).length) continue;
-  if (u.duplicate_of) {
+  if (u.products) {
+    // Products for the shop, added once (never overwriting one edited in the admin)
+    for (const pr of u.products) {
+      await sql.query(`INSERT INTO products(slug, title, description, price_agorot, max_payments, page_path, position, active)
+                       VALUES($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (slug) DO NOTHING`,
+        [pr.slug, pr.title, pr.description || '', Math.round(pr.price * 100), pr.max_payments || 1, pr.page_path || '', pr.position || 0, !!pr.active]);
+    }
+  } else if (u.duplicate_of) {
     // An old post that repeats another page: its canonical and the sitemap point to the original.
     const done = await sql.query('UPDATE posts SET duplicate_of = $2 WHERE path = $1 RETURNING id', [u.path, u.duplicate_of]);
     if (!done.length) { console.warn(`[migrate] update ${u.id}: no post at ${u.path}`); continue; }
