@@ -932,6 +932,12 @@ html.a11y-motion *, html.a11y-motion *::before, html.a11y-motion *::after { anim
 @keyframes vt-in { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
 
+/* A course card's own payment button, with the price and a way to just ask */
+.buy-inline { display: grid; justify-items: start; gap: 10px; scroll-margin-top: calc(var(--header-h) + 24px); }
+.buy-inline small { color: var(--slate); font-size: var(--t-small); line-height: 1.5; }
+.offer .buy-inline { margin-top: auto; }
+.buy-inline + .buy-status, .buy-inline .buy-status { margin: 0; }
+
 /* The yellow: the podcast artwork's mustard, carried across the site as its
    one warm accent. On ink it may colour words; on paper and mist it is only
    a mark (a bar, a dot), since yellow text on light is hard to read. */

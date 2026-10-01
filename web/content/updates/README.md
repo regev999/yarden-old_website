@@ -11,7 +11,8 @@ Use the id format `2026-09-<latin-slug>`.
 An update can also carry no body and only point search engines elsewhere:
 `{ "id", "path", "canonical": "/other-page/" }` for a page that repeats another one,
 or `{ "id", "path", "duplicate_of": "/original/" }` for an old post that does.
-`{ "id", "path": "/", "products": [{ slug, title, description, price (₪), max_payments, page_path, position, active }] }` adds shop products once (an existing slug is left as edited in the admin).
+`{ "id", "path": "/", "products": [{ slug, title, description, price (₪), max_payments, page_path, position, active }] }` adds shop products once (an existing slug is left as edited in the admin; `was_title` corrects a product still named as an earlier update made it).
+`{ "id", "path", "replace": [[from, to], …] }` makes exact replacements in the page as it is now, so edits made in the admin stay.
 
 Preview one update locally: `DATABASE_URL=... ONLY_UPDATE=<id> node scripts/migrate.mjs`.
 

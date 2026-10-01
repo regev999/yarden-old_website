@@ -110,6 +110,11 @@ for (const u of updates) {
   if (u.products) {
     // Products for the shop, added once (never overwriting one edited in the admin)
     for (const pr of u.products) {
+      // A product still exactly as an earlier update made it can be corrected
+      if (pr.was_title) {
+        await sql.query('UPDATE products SET title = $2, description = $3, updated_at = now() WHERE slug = $1 AND title = $4',
+          [pr.slug, pr.title, pr.description || '', pr.was_title]);
+      }
       await sql.query(`INSERT INTO products(slug, title, description, price_agorot, max_payments, page_path, position, active)
                        VALUES($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (slug) DO NOTHING`,
         [pr.slug, pr.title, pr.description || '', Math.round(pr.price * 100), pr.max_payments || 1, pr.page_path || '', pr.position || 0, !!pr.active]);
@@ -121,6 +126,19 @@ for (const u of updates) {
   } else {
     const [page] = await sql.query('SELECT * FROM pages WHERE path = $1', [u.path]);
     if (!page) { console.warn(`[migrate] update ${u.id}: no page at ${u.path}`); continue; }
+    if (u.replace) {
+      // Exact replacements inside the page as it is now, so edits made in the admin stay
+      let main = page.main;
+      for (const [from, to] of u.replace) {
+        if (main.includes(to)) continue;
+        if (!main.includes(from)) { console.warn(`[migrate] update ${u.id}: text not found on ${u.path}, skipped`); continue; }
+        main = main.split(from).join(to);
+      }
+      if (main !== page.main) {
+        await sql.query("INSERT INTO revisions(path, kind, content, note, username) VALUES($1, 'page', $2, $3, 'system')", [u.path, JSON.stringify(page), 'לפני עדכון']);
+        await sql.query('UPDATE pages SET main = $2, updated_at = now() WHERE path = $1', [u.path, main]);
+      }
+    }
     if (u.file) {
       const main = readFileSync(path.join(upDir, u.file), 'utf8') + (u.contact ? '\n' + contact : '');
       await sql.query("INSERT INTO revisions(path, kind, content, note, username) VALUES($1, 'page', $2, $3, 'system')",

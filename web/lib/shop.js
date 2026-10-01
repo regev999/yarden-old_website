@@ -138,10 +138,35 @@ export function buySectionHtml(products) {
 </div></section>`;
 }
 
-/** Put the buy section where the page asks for it (<!--yk:buy-->), else just before the contact block. */
+/**
+ * Payment on a page, for its active products:
+ * - A course card's own button marked data-buy="<slug>" becomes the secure
+ *   payment button, right under the price and dates it already shows.
+ *   Links marked data-buy-goto="<slug>" (the hero's "register", say) lead to it.
+ * - Products with no such button get the "הרשמה ותשלום" section, where the
+ *   page asks for it (<!--yk:buy-->) or else just before the contact block.
+ * Until Cardcom is connected or a product is switched on, the marked buttons
+ * stay as they are (a link to the contact form).
+ */
 export async function withBuySection(html, path) {
   if (!(await isConfigured())) return html;
-  const section = buySectionHtml(await productsForPage(path).catch(() => []));
+  const products = await productsForPage(path).catch(() => []);
+  if (!products.length) return html;
+  const inline = new Set();
+  for (const p of products) {
+    const slug = p.slug.replace(/[^\w-]/g, '');
+    const button = new RegExp(`<a\\b([^>]*?)\\sdata-buy="${slug}"([^>]*)>[\\s\\S]*?<\\/a>`, 'g');
+    if (!button.test(html)) continue;
+    inline.add(p.id);
+    html = html
+      .replace(button, (m, a, b) => {
+        const cls = /class="([^"]*)"/.exec(a + b)?.[1] || 'btn';
+        return `<span class="buy-inline" id="buy-${slug}"><button class="${esc(cls)}" type="button" data-checkout="${esc(slug)}">להרשמה ותשלום מאובטח</button>`
+          + `<small>${esc(shekels(p.price_agorot))} ₪, ${esc(installmentsText(p.price_agorot, p.max_payments))}. <a href="#contact" data-product="course">או השאירו פרטים</a></small></span>`;
+      })
+      .replace(new RegExp(`(<a\\b[^>]*?)href="#contact"([^>]*\\sdata-buy-goto="${slug}")`, 'g'), `$1href="#buy-${slug}"$2`);
+  }
+  const section = buySectionHtml(products.filter((p) => !inline.has(p.id)));
   if (!section) return html;
   if (html.includes('<!--yk:buy-->')) return html.replace('<!--yk:buy-->', section);
   const at = html.indexOf('<section class="section section--ink block--contact"');

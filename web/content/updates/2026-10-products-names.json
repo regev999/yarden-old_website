@@ -1,0 +1,17 @@
+{
+  "id": "2026-10-products-names",
+  "path": "/",
+  "products": [
+    {
+      "slug": "focusing-course",
+      "was_title": "קורס התמקדות שנתי",
+      "title": "קורס התמקדות לנשים מהמגזר החרדי",
+      "description": "קורס מעשי וחוויתי בזום, בימי שלישי 20:00–23:00. פתוח למטפלות מגישות טיפול שונות ולקהל הרחב ללא ניסיון טיפולי.",
+      "price": 6200,
+      "max_payments": 10,
+      "page_path": "/קורסים/",
+      "position": 1,
+      "active": false
+    }
+  ]
+}
