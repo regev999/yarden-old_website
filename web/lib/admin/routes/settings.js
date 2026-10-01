@@ -8,7 +8,7 @@ import { USERNAME, EMAIL } from './auth';
 
 const back = (msg, type = 'ok', hash = '') => redirect('/admin/settings/' + hash, msg, type);
 
-const STEPS = { password: 'סיסמה', code: 'קוד מהאפליקציה', recovery: 'קוד גיבוי', reset: 'איפוס סיסמה', setup: 'יצירת החשבון' };
+const STEPS = { password: 'סיסמה', code: 'קוד מהאפליקציה', recovery: 'קוד גיבוי', reset: 'איפוס סיסמה', setup: 'יצירת החשבון', 'setup-key': 'איפוס עם קוד ההתקנה' };
 
 /** Two-step sign-in: off, being set up (QR on screen), or on. */
 function twoStepPanel(ctx, u) {

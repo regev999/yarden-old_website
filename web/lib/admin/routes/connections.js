@@ -5,7 +5,7 @@
  */
 import { createLowProfile, isConfigured as cardcomReady } from '../../cardcom';
 import { describe, canStoreSecrets, save } from '../../integrations';
-import { mailReady, sendMail } from '../../mail';
+import { mailMethod, mailReady, sendMail } from '../../mail';
 import { isConfigured as ravmesserReady, testConnection as ravmesserTest } from '../../ravmesser';
 import { siteBase } from '../../shop';
 import { logActivity, publishChanges } from '../common';
@@ -34,7 +34,7 @@ const state = (on, yes, no) => `<p class="conn-state ${on ? 'conn-state--on' : '
 export const page = {
   async GET(ctx) {
     const d = await describe();
-    const [cardcom, mail, rav] = await Promise.all([cardcomReady(), mailReady(), ravmesserReady()]);
+    const [cardcom, mail, rav, method] = await Promise.all([cardcomReady(), mailReady(), ravmesserReady(), mailMethod()]);
     const docNow = d.CARDCOM_CREATE_DOCUMENT.value === 'false' ? 'none' : (d.CARDCOM_DOCUMENT_TYPE.value || 'TaxInvoiceAndReceipt');
     const docLocked = d.CARDCOM_CREATE_DOCUMENT.fromServer || d.CARDCOM_DOCUMENT_TYPE.fromServer;
     const noKey = canStoreSecrets() ? '' : '<p class="notice notice--error">אי אפשר לשמור סיסמאות: חסר בשרת משתנה שממנו נגזר מפתח ההצפנה (ADMIN_SETUP_KEY או SETTINGS_SECRET).</p>';
@@ -62,11 +62,17 @@ export const page = {
 </section>
 
 <section class="panel" id="mail">
-  <h2>מיילים (Resend)</h2>
-  ${state(mail, 'מחובר: התראות על לידים ומכירות, ואיפוס סיסמה', 'לא מחובר: לא נשלחים מיילים מהאתר')}
+  <h2>מיילים</h2>
+  ${state(mail, 'פעיל: התראות על לידים ומכירות, ואיפוס סיסמה', 'כבוי: לא נשלחים מיילים מהאתר')}
   <form method="post" class="stack narrow-form" autocomplete="off">${csrfField(ctx)}<input type="hidden" name="service" value="mail">
-    ${field(d, 'RESEND_API_KEY', 'מפתח API של Resend', { secret: true, hint: 'נרשמים בחינם ב־resend.com ← API Keys ← Create API Key.' })}
-    ${field(d, 'MAIL_FROM', 'כתובת השולח', { placeholder: 'אתר ירדן כרם <site@yardenkerem.co.il>', hint: 'כתובת בדומיין שאומת ב־Resend. בלי זה המיילים יוצאים מכתובת הבדיקה של Resend.' })}
+    <label>איך המיילים יוצאים
+      <select name="MAIL_METHOD"${d.MAIL_METHOD.fromServer ? ' disabled' : ''}>
+        <option value="server"${method === 'server' ? ' selected' : ''}>דרך שרת הדואר של האחסון (פרוג'ינטר), בלי הגדרות</option>
+        <option value="resend"${method === 'resend' ? ' selected' : ''}>דרך Resend (צריך מפתח)</option>
+        <option value="off"${method === 'off' ? ' selected' : ''}>כבוי</option>
+      </select></label>
+    ${field(d, 'MAIL_FROM', 'כתובת השולח', { placeholder: 'אתר ירדן כרם <no-reply@yarden.to-web.co.il>', hint: 'מומלץ כתובת בדומיין של האתר. אם המיילים מגיעים לספאם, אפשר ליצור תיבה בפרוג׳ינטר ולכתוב אותה כאן.' })}
+    ${field(d, 'RESEND_API_KEY', 'מפתח API של Resend (רק אם בוחרים ב־Resend)', { secret: true })}
     <div class="actions">
       <button class="btn" type="submit" name="action" value="save">שמירה</button>
       <button class="btn btn--quiet" type="submit" name="action" value="test">שליחת מייל בדיקה אליי</button>
@@ -140,17 +146,18 @@ export const page = {
       if (action === 'save') {
         const from = f('MAIL_FROM', 200);
         if (from && !/^[^<>]*<[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+>$|^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(from)) return back('כתובת השולח לא תקינה. למשל: אתר ירדן כרם <site@yardenkerem.co.il>', 'error');
-        const values = keep({ RESEND_API_KEY: f('RESEND_API_KEY', 200), MAIL_FROM: from });
+        const how = f('MAIL_METHOD', 10);
+        const values = keep({ RESEND_API_KEY: f('RESEND_API_KEY', 200), MAIL_FROM: from, MAIL_METHOD: ['server', 'resend', 'off'].includes(how) ? how : undefined });
         if (values.RESEND_API_KEY && !canStoreSecrets()) return back('אי אפשר לשמור את המפתח: חסר מפתח הצפנה בשרת.', 'error');
         await save(values);
         await logActivity(ctx, 'עדכן את חיבור המיילים', '');
         return back('נשמר. מומלץ לשלוח מייל בדיקה.');
       }
       if (action === 'test') {
-        if (!(await mailReady())) return back('קודם שומרים מפתח API של Resend.', 'error');
+        if (!(await mailReady())) return back((await mailMethod()) === 'off' ? 'המיילים כבויים. בחרו איך הם יוצאים ושמרו.' : 'קודם שומרים מפתח API של Resend.', 'error');
         const sent = await sendMail({ to: ctx.user.email, subject: 'בדיקת מיילים מהאתר', text: 'אם המייל הזה הגיע, שליחת המיילים מהאתר עובדת.\n' });
         return sent ? back(`נשלח מייל בדיקה אל ${ctx.user.email}. אם לא הגיע תוך דקה, בדקו בספאם.`)
-          : back('השליחה נכשלה. בדקו את המפתח, ושכתובת השולח בדומיין שאומת ב־Resend.', 'error');
+          : back((await mailMethod()) === 'resend' ? 'השליחה נכשלה. בדקו את המפתח, ושכתובת השולח בדומיין שאומת ב־Resend.' : 'השליחה נכשלה: שרת הדואר של האחסון לא קיבל את ההודעה. נסו כתובת שולח אחרת, או בחרו Resend.', 'error');
       }
     }
 

@@ -15,6 +15,7 @@ export const FIELDS = {
   CARDCOM_API_PASSWORD: { service: 'cardcom', secret: true },
   CARDCOM_DOCUMENT_TYPE: { service: 'cardcom' },
   CARDCOM_CREATE_DOCUMENT: { service: 'cardcom' },
+  MAIL_METHOD: { service: 'mail' },
   RESEND_API_KEY: { service: 'mail', secret: true },
   MAIL_FROM: { service: 'mail' },
   RAVMESSER_CLIENT_ID: { service: 'ravmesser' },

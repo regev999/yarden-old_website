@@ -137,15 +137,38 @@ export const verify = {
 
 export const forgot = {
   async GET(ctx) {
-    const noMail = (await mailReady()) ? '' : '<p class="notice notice--warn">שליחת מיילים מהאתר עוד לא מחוברת, ולכן קישור האיפוס לא יישלח. פנו למי שמתחזק את האתר.</p>';
+    const noMail = (await mailReady()) ? '' : '<p class="notice notice--warn">שליחת מיילים מהאתר כבויה, ולכן קישור האיפוס לא יישלח. אפשר לאפס עם קוד ההתקנה, למטה.</p>';
     return html(authPage(ctx, 'איפוס סיסמה', `${noMail}<p class="muted">כתבו את המייל או שם המשתמש של החשבון, ונשלח קישור לבחירת סיסמה חדשה.</p>
 <form method="post" class="stack">
   <label>מייל או שם משתמש <input name="who" required autocomplete="username" autofocus dir="ltr"></label>
   <button class="btn" type="submit">שליחת קישור לאיפוס</button>
 </form>
+<details class="auth-card__more"${(await mailReady()) ? '' : ' open'}><summary>המייל לא מגיע? איפוס עם קוד ההתקנה</summary>
+<form method="post" class="stack"><input type="hidden" name="action" value="setup-key">
+  <label>קוד ההתקנה <input name="setup_key" required autocomplete="off" dir="ltr"><small>הקוד שקיבלתם כשהאתר הותקן (ADMIN_SETUP_KEY בשרת).</small></label>
+  <button class="btn btn--quiet" type="submit">המשך לבחירת סיסמה חדשה</button>
+</form></details>
 <p class="auth-card__alt"><a href="/admin/login/">חזרה לכניסה</a></p>`));
   },
   async POST(ctx) {
+    // The setup code works as a recovery key for the one account: it lives only
+    // on the server and with the site's owner. Limited, logged, and 2FA still applies.
+    if (ctx.form.get('action') === 'setup-key') {
+      const expected = process.env.ADMIN_SETUP_KEY || '';
+      const limited = await takeAttempt('reset-key|' + ipHash(ctx.request), 5, 900);
+      const ok = !limited && expected && sameSecret(sha256(String(ctx.form.get('setup_key') || '').trim()), sha256(expected));
+      const u = ok ? await one('SELECT id, username FROM users ORDER BY id LIMIT 1') : null;
+      if (!u) {
+        await logSignin(ctx.request, { username: '', ok: false, step: 'setup-key' });
+        return html(authPage(ctx, 'איפוס סיסמה', `<p class="notice notice--error" role="alert">${limited ? 'יותר מדי ניסיונות. נסו שוב בעוד רבע שעה.' : 'קוד ההתקנה שגוי.'}</p>
+<p><a class="btn" href="/admin/forgot/">חזרה</a></p>`), 400);
+      }
+      const t = token();
+      await q('DELETE FROM password_resets WHERE user_id = $1', [u.id]);
+      await q(`INSERT INTO password_resets(token_hash, user_id, expires_at) VALUES($1, $2, now() + interval '15 minutes')`, [sha256(t), u.id]);
+      await logSignin(ctx.request, { username: u.username, ok: true, step: 'setup-key' });
+      return redirect(`/admin/reset/?token=${t}`);
+    }
     const who = String(ctx.form.get('who') || '').trim();
     const key = 'reset|' + ipHash(ctx.request);
     if (who && !(await takeAttempt(key, 5, 3600))) {
