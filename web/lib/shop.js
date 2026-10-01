@@ -123,9 +123,9 @@ export function siteBase(request) {
 
 /* ------------------------------------------------------ the buy section */
 
-/** Offers with a live price and a button, for a page's active products (only once Cardcom is connected). */
+/** Offers with a live price and a button, for a page's active products (the caller checks Cardcom is connected). */
 export function buySectionHtml(products) {
-  if (!products.length || !isConfigured()) return '';
+  if (!products.length) return '';
   const offers = products.map((p) => `<article class="offer offer--buy">
 <h3>${esc(p.title)}</h3>${p.description ? `<p>${esc(p.description)}</p>` : ''}
 <p class="price"><b>${shekels(p.price_agorot)} ₪</b><span>${esc(installmentsText(p.price_agorot, p.max_payments))}</span></p>
@@ -140,7 +140,7 @@ export function buySectionHtml(products) {
 
 /** Put the buy section where the page asks for it (<!--yk:buy-->), else just before the contact block. */
 export async function withBuySection(html, path) {
-  if (!isConfigured()) return html;
+  if (!(await isConfigured())) return html;
   const section = buySectionHtml(await productsForPage(path).catch(() => []));
   if (!section) return html;
   if (html.includes('<!--yk:buy-->')) return html.replace('<!--yk:buy-->', section);

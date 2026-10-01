@@ -322,3 +322,8 @@ code { background: var(--mist); padding: 1px 6px; border-radius: 4px; font-size:
 .buyer { display: grid; gap: 1px; min-width: 180px; }
 .buyer a { justify-self: start; font-size: .9rem; text-decoration: none; }
 .order-note { margin: 4px 0 0; max-width: 18em; }
+
+/* Connections screen */
+.conn-state { margin: -4px 0 16px; color: var(--slate); font-weight: 500; }
+.conn-state--on { color: var(--ok); }
+.field-error { color: var(--err); }

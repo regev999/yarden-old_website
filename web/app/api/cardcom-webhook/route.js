@@ -36,14 +36,14 @@ async function fulfil(order, email, phone, name) {
     : order.payment_link_id ? await one('SELECT ravmesser_list FROM payment_links WHERE id = $1', [order.payment_link_id]) : null;
   const listId = source?.ravmesser_list || '';
   if (!listId) return { fulfillment: 'not_required' };
-  if (!ravmesserReady()) return { fulfillment: 'pending', note: 'רב־מסר לא מחובר (חסרים RAVMESSER_CLIENT_ID/SECRET/USER_TOKEN)' };
+  if (!(await ravmesserReady())) return { fulfillment: 'pending', note: 'רב־מסר לא מחובר (ניהול ← חיבורים)' };
   if (!email) return { fulfillment: 'failed', note: 'אין מייל של הקונה לרישום לרשימה' };
   const r = await addSubscriber({ listId, email, name, phone });
   return r.ok ? { fulfillment: 'sent', fulfilled_at: new Date().toISOString() } : { fulfillment: 'failed', note: r.error };
 }
 
 export async function POST(request) {
-  if (!isConfigured()) return ok();
+  if (!(await isConfigured())) return ok();
   if (bodyTooLarge(request, 64 * 1024)) return ok();
   // Each notice makes a call to Cardcom; a flood from one address shouldn't
   if (await takeAttempt('webhook|' + ipHash(request), 60, 300)) return Response.json({ ok: false }, { status: 429 });

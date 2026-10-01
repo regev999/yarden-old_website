@@ -1,7 +1,7 @@
 // node --import ./test/register.mjs test/shop.test.mjs
 import assert from 'node:assert/strict';
 import { shekels, parseShekels, installmentsText, linkState, siteBase, buySectionHtml } from '../lib/shop.js';
-import { parseResult } from '../lib/cardcom.js';
+import { isConfigured, parseResult } from '../lib/cardcom.js';
 
 assert.equal(shekels(180000), '1,800');
 assert.equal(shekels(35050), '350.50');
@@ -34,9 +34,11 @@ assert.equal(siteBase(req('http://127.0.0.1:46001/api/checkout/', { host: 'yarde
 assert.equal(siteBase(req('http://127.0.0.1:46001/api/checkout/', { host: 'www.yardenkerem.co.il' })), 'https://www.yardenkerem.co.il');
 assert.equal(siteBase(req('http://127.0.0.1:46001/api/checkout/', { host: 'evil.example' })), 'https://www.yardenkerem.co.il');
 
-// No buy button while Cardcom isn't connected
-assert.equal(buySectionHtml([{ slug: 'p-1', title: 'x', price_agorot: 100, max_payments: 1 }]), '');
+// No buy button while Cardcom isn't connected (pages check before adding the section)
+assert.equal(buySectionHtml([]), '');
+assert.equal(await isConfigured(), false);
 process.env.CARDCOM_TERMINAL_NUMBER = '1000';
 process.env.CARDCOM_API_NAME = 'test';
+assert.equal(await isConfigured(), true);
 assert.match(buySectionHtml([{ slug: 'p-1', title: 'קורס <b>', description: '', price_agorot: 180000, max_payments: 3 }]), /id="buy"[\s\S]*קורס &lt;b&gt;[\s\S]*1,800 ₪[\s\S]*data-checkout="p-1"/);
 console.log('shop ok');

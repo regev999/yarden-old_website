@@ -1,5 +1,5 @@
 import { q, one, getSetting, setSetting } from '../../db';
-import { sendMail } from '../../mail';
+import { mailReady, sendMail } from '../../mail';
 import { deviceName, endOtherSessions, passwordProblem, setPassword, verifyPassword } from '../auth';
 import { publishChanges, logActivity } from '../common';
 import { matchCode, newRecoveryCodes, newSecret, otpauthUrl, qrSvg, spaced } from '../totp';
@@ -89,14 +89,14 @@ export const page = {
   async GET(ctx) {
     const notify = await getSetting('notify_email', process.env.NOTIFY_EMAIL || '');
     const ga = await getSetting('ga_id', '');
-    const mailReady = !!process.env.RESEND_API_KEY;
+    const mailOn = await mailReady();
     const u = await one('SELECT username, totp_enabled, totp_secret, totp_since, recovery_codes FROM users WHERE id = $1', [ctx.user.id]);
     const body = `<div class="settings-grid">
   ${twoStepPanel(ctx, u)}
   ${await sessionsPanel(ctx)}
   <section class="panel">
     <h2>התראות על לידים</h2>
-    ${mailReady ? '' : '<p class="notice notice--warn">שליחת מיילים עוד לא מחוברת: צריך להגדיר RESEND_API_KEY במשתני הסביבה של האפליקציה בשרת. הלידים נשמרים כאן בכל מקרה.</p>'}
+    ${mailOn ? '' : '<p class="notice notice--warn">שליחת מיילים עוד לא מחוברת. הלידים נשמרים כאן בכל מקרה. <a href="/admin/connections/#mail">לחיבור המיילים</a></p>'}
     <form method="post" class="stack">${csrfField(ctx)}<input type="hidden" name="action" value="notify">
       <label>לאיזה מייל לשלוח כל ליד חדש <input name="notify_email" type="email" value="${esc(notify)}" dir="ltr">
         <small>השאירו ריק כדי לא לקבל מיילים. הלידים נשמרים כאן בכל מקרה.</small></label>
@@ -182,7 +182,7 @@ export const page = {
         const to = (await getSetting('notify_email', process.env.NOTIFY_EMAIL || '')) || ctx.user.email;
         const ok = await sendMail({ to, subject: 'בדיקת מייל מהאתר', text: 'זו הודעת בדיקה מאזור הניהול של האתר.\nאם היא הגיעה, התראות הלידים ואיפוס הסיסמה יעבדו.' });
         return ok ? back(`נשלחה הודעת בדיקה אל ${to}. אם היא לא מגיעה תוך כמה דקות, בדקו בספאם.`)
-          : back('השליחה נכשלה. צריך להגדיר RESEND_API_KEY ו־MAIL_FROM במשתני הסביבה של האפליקציה בשרת (ולאמת את הדומיין ב־Resend).', 'error');
+          : back('השליחה נכשלה. בדקו את מפתח Resend וכתובת השולח במסך החיבורים (ושהדומיין מאומת ב־Resend).', 'error');
       }
       case 'totp-start': {
         await q('UPDATE users SET totp_secret = $1 WHERE id = $2 AND NOT totp_enabled', [newSecret(), ctx.user.id]);

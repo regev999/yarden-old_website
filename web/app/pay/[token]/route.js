@@ -40,8 +40,9 @@ export async function GET(request, { params }) {
 </div></div></section>`);
   }
 
-  if (!state.ok || !isConfigured()) {
-    const msg = !isConfigured() ? 'התשלום באתר עוד לא הופעל.' : state.message;
+  const ready = await isConfigured();
+  if (!state.ok || !ready) {
+    const msg = !ready ? 'התשלום באתר עוד לא הופעל.' : state.message;
     return page('תשלום', `${hero('התשלום לא זמין', msg)}
 <section class="block"><div class="wrap"><div class="paybox">
 <p>אם קיבלתם את הקישור מירדן, כדאי לפנות אליה ישירות ולבקש קישור חדש.</p>

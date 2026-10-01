@@ -8,20 +8,29 @@
  * is nothing to store or renew. A failure here never touches the payment; it
  * only marks the order's delivery as failed, with the reason, in the admin.
  */
+import { settings } from './integrations';
 
-function config() {
+async function config() {
+  const v = await settings(['RAVMESSER_CLIENT_ID', 'RAVMESSER_CLIENT_SECRET', 'RAVMESSER_USER_TOKEN']);
   return {
     baseUrl: (process.env.RAVMESSER_BASE_URL || 'https://graph.responder.live/v2').replace(/\/$/, ''),
-    clientId: process.env.RAVMESSER_CLIENT_ID || '',
-    clientSecret: process.env.RAVMESSER_CLIENT_SECRET || '',
-    userToken: process.env.RAVMESSER_USER_TOKEN || '',
+    clientId: v.RAVMESSER_CLIENT_ID,
+    clientSecret: v.RAVMESSER_CLIENT_SECRET,
+    userToken: v.RAVMESSER_USER_TOKEN,
     subscribePath: process.env.RAVMESSER_SUBSCRIBE_PATH || '/subscribers',
   };
 }
 
-export function isConfigured() {
-  const c = config();
+export async function isConfigured() {
+  const c = await config();
   return !!(c.clientId && c.clientSecret && c.userToken);
+}
+
+/** For the admin's "check the connection" button: can we get an access token? */
+export async function testConnection() {
+  const c = await config();
+  if (!c.clientId || !c.clientSecret || !c.userToken) return { ok: false, error: 'חסרים פרטים' };
+  try { const r = await accessToken(c); return { ok: r.ok, error: r.error }; } catch (e) { return { ok: false, error: String(e?.message || e) }; }
 }
 
 async function accessToken(c) {
@@ -45,8 +54,8 @@ async function accessToken(c) {
 
 /** Add a subscriber to one list (or several, comma-separated). Returns { ok, error }. */
 export async function addSubscriber({ listId, email, name, phone }) {
-  const c = config();
-  if (!isConfigured()) return { ok: false, error: 'Rav-Messer credentials not set' };
+  const c = await config();
+  if (!c.clientId || !c.clientSecret || !c.userToken) return { ok: false, error: 'Rav-Messer credentials not set' };
   if (!listId) return { ok: false, error: 'missing list id' };
   if (!email) return { ok: false, error: 'missing email' };
   try {

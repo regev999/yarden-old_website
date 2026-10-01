@@ -8,35 +8,38 @@
  *                           server; the webhook's own body is never trusted
  *                           for the money.
  *
- * Credentials come from the app's environment variables and never reach the
- * browser. Nothing happens until CARDCOM_TERMINAL_NUMBER and CARDCOM_API_NAME
- * are set. Docs: https://secure.cardcom.solutions/Api/v11/Docs
+ * Credentials come from the admin's "חיבורים" screen or the app's server
+ * variables (lib/integrations.js) and never reach the browser. Nothing happens
+ * until a terminal number and API name are set.
+ * Docs: https://secure.cardcom.solutions/Api/v11/Docs
  */
+import { settings } from './integrations';
 
-export function cardcomConfig() {
+export async function cardcomConfig() {
+  const v = await settings(['CARDCOM_TERMINAL_NUMBER', 'CARDCOM_API_NAME', 'CARDCOM_API_PASSWORD', 'CARDCOM_CREATE_DOCUMENT', 'CARDCOM_DOCUMENT_TYPE']);
   return {
     baseUrl: (process.env.CARDCOM_BASE_URL || 'https://secure.cardcom.solutions/api/v11').replace(/\/$/, ''),
-    terminalNumber: Number(process.env.CARDCOM_TERMINAL_NUMBER || 0),
-    apiName: process.env.CARDCOM_API_NAME || '',
+    terminalNumber: Number(v.CARDCOM_TERMINAL_NUMBER || 0),
+    apiName: v.CARDCOM_API_NAME,
     // Needed for issuing the document (invoice/receipt) and for refunds
-    apiPassword: process.env.CARDCOM_API_PASSWORD || '',
+    apiPassword: v.CARDCOM_API_PASSWORD,
     // A document (חשבונית מס קבלה) on every successful charge, emailed to the
     // buyer. Needs the documents module on the terminal; without it Cardcom
     // refuses Create with code 650, so it can be turned off with "false".
-    createDocument: (process.env.CARDCOM_CREATE_DOCUMENT || 'true') !== 'false',
+    createDocument: (v.CARDCOM_CREATE_DOCUMENT || 'true') !== 'false',
     // TaxInvoiceAndReceipt (חשבונית מס קבלה), TaxInvoice or Receipt (קבלה)
-    documentType: process.env.CARDCOM_DOCUMENT_TYPE || 'TaxInvoiceAndReceipt',
+    documentType: v.CARDCOM_DOCUMENT_TYPE || 'TaxInvoiceAndReceipt',
   };
 }
 
 /** Terminal and API name are set: checkout can run. */
-export function isConfigured() {
-  const c = cardcomConfig();
+export async function isConfigured() {
+  const c = await cardcomConfig();
   return !!(c.terminalNumber && c.apiName);
 }
 
 async function post(path, payload) {
-  const c = cardcomConfig();
+  const c = await cardcomConfig();
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 20000);
   try {
@@ -57,7 +60,7 @@ async function post(path, payload) {
 
 /** Open a payment page. Returns { ok, url, lowProfileId } or { ok: false, error, raw }. */
 export async function createLowProfile({ amountShekel, productName, orderId, successUrl, failedUrl, webhookUrl, maxPayments, language = 'he', coinId = 1 }) {
-  const c = cardcomConfig();
+  const c = await cardcomConfig();
   const payload = {
     TerminalNumber: c.terminalNumber,
     ApiName: c.apiName,
@@ -100,7 +103,7 @@ export async function createLowProfile({ amountShekel, productName, orderId, suc
 
 /** The authoritative result for a payment page. */
 export async function getLpResult(lowProfileId) {
-  const c = cardcomConfig();
+  const c = await cardcomConfig();
   const body = { TerminalNumber: c.terminalNumber, ApiName: c.apiName, LowProfileId: lowProfileId };
   if (c.apiPassword) body.ApiPassword = c.apiPassword;
   return post('LowProfile/GetLpResult', body);

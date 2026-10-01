@@ -31,7 +31,7 @@ export async function POST(request) {
   if (bodyTooLarge(request, 16 * 1024)) return reply(413, { error: 'בקשה לא תקינה.' });
   const key = 'checkout|' + ipHash(request);
   if (await takeAttempt(key, 12, 300)) return reply(429, { error: 'יותר מדי ניסיונות. אפשר לנסות שוב בעוד כמה דקות.' });
-  if (!isConfigured()) return reply(503, { error: 'התשלום באתר עוד לא הופעל. אפשר ליצור קשר בטלפון או בוואטסאפ.' });
+  if (!(await isConfigured())) return reply(503, { error: 'התשלום באתר עוד לא הופעל. אפשר ליצור קשר בטלפון או בוואטסאפ.' });
 
   let body;
   try { body = await request.json(); } catch { return reply(400, { error: 'בקשה לא תקינה.' }); }

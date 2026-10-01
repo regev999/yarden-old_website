@@ -16,6 +16,7 @@ const ICONS = {
   sales: '<path d="M5 3h14v18l-2.3-1.5L14.3 21 12 19.5 9.7 21l-2.4-1.5L5 21V3Zm2 2v12.3l.3-.2 2.4 1.5 2.3-1.5 2.3 1.5 2.4-1.5.3.2V5H7Zm2 3h6v1.6H9V8Zm0 3h6v1.6H9V11Z"/>',
   products: '<path d="M3 11.6V4h7.6l10 10-7.6 7.6-10-10Zm2-5.6v4.8l8 8 4.8-4.8-8-8H5Zm2.5 3.6a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2Z"/>',
   'pay-links': '<path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.5-3.5a1 1 0 1 1 1.4 1.4l-3.5 3.5a1 1 0 0 1-1.4 0ZM8 18a4 4 0 0 1-2.8-6.8l2.1-2.1 1.4 1.4-2.1 2.1a2 2 0 0 0 2.8 2.8l2.1-2.1 1.4 1.4-2.1 2.1A4 4 0 0 1 8 18Zm8.7-3.1-1.4-1.4 2.1-2.1a2 2 0 0 0-2.8-2.8l-2.1 2.1-1.4-1.4 2.1-2.1a4 4 0 0 1 5.6 5.6l-2.1 2.1Z"/>',
+  connections: '<path d="M9 2h2v5h2V2h2v5h1a1 1 0 0 1 1 1v4a5 5 0 0 1-4 4.9V22h-2v-5.1A5 5 0 0 1 7 12V8a1 1 0 0 1 1-1h1V2Zm0 7v3a3 3 0 0 0 6 0V9H9Z"/>',
   settings: '<path d="M11 3h2l.5 2.4 1.6.7 2-1.4 1.4 1.4-1.4 2 .7 1.6L20 11v2l-2.4.5-.7 1.6 1.4 2-1.4 1.4-2-1.4-1.6.7L13 21h-2l-.5-2.4-1.6-.7-2 1.4-1.4-1.4 1.4-2-.7-1.6L4 13v-2l2.4-.5.7-1.6-1.4-2 1.4-1.4 2 1.4 1.6-.7L11 3Zm1 6a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/>',
 };
 
@@ -42,7 +43,7 @@ export async function adminPage(ctx, { title, active, body, actions = '', script
     ['תוכן', [['pages', '/admin/pages/', 'עמודים'], ['posts', '/admin/posts/', 'מאמרים ובלוג'],
       ['testimonials', '/admin/testimonials/', 'המלצות'], ['media', '/admin/media/', 'תמונות וקבצים']]],
     ['מכירות', [['sales', '/admin/sales/', 'מכירות', newSales], ['products', '/admin/products/', 'מוצרים'], ['pay-links', '/admin/pay-links/', 'קישורי תשלום']]],
-    ['אתר', [['seo', '/admin/seo/', 'קידום (SEO)'], ['redirects', '/admin/redirects/', 'הפניות 301 ו־404'], ['settings', '/admin/settings/', 'הגדרות']]],
+    ['אתר', [['seo', '/admin/seo/', 'קידום (SEO)'], ['redirects', '/admin/redirects/', 'הפניות 301 ו־404'], ['connections', '/admin/connections/', 'חיבורים'], ['settings', '/admin/settings/', 'הגדרות']]],
   ];
   const nav = groups.map(([label, items]) => (label ? `<p class="side__group">${esc(label)}</p>` : '') + '<ul>'
     + items.map(([key, href, text, badge]) => `<li><a href="${href}"${key === active ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[key]}</svg><span>${esc(text)}</span>${badge ? `<span class="side__badge">${badge}</span>` : ''}</a></li>`).join('')

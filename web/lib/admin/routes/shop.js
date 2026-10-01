@@ -14,10 +14,10 @@ import { adminPage, csrfField, esc, heDate, html, qs, redirect, SECURITY_HEADERS
 const option = (k, label, cur) => `<option value="${esc(k)}"${String(k) === String(cur) ? ' selected' : ''}>${esc(label)}</option>`;
 
 /** Shown on every shop screen until Cardcom is connected. */
-function setupNotice() {
-  if (isConfigured()) return '';
+async function setupNotice() {
+  if (await isConfigured()) return '';
   return `<p class="notice notice--warn">הסליקה עוד לא מחוברת, ולכן כפתורי התשלום לא מוצגים באתר. אפשר כבר להכין מוצרים וקישורים.
-  כדי לחבר: להגדיר במשתני הסביבה של האפליקציה בשרת את <span dir="ltr">CARDCOM_TERMINAL_NUMBER</span>, <span dir="ltr">CARDCOM_API_NAME</span> ו־<span dir="ltr">CARDCOM_API_PASSWORD</span>, ולהפעיל אותה מחדש.</p>`;
+  <a href="/admin/connections/">לחיבור קארדקום</a></p>`;
 }
 
 /* ================================================================= sales */
@@ -69,7 +69,7 @@ export const sales = {
     ${showFulfil ? `<td>${esc(FULFILLMENT[o.fulfillment] || o.fulfillment)}</td>` : ''}</tr>`).join('')}
   </tbody></table></div>
   <p class="muted">${rows.length} שורות${rows.length === 500 ? ' (מוצגות 500 האחרונות)' : ''}. "ממתין" הוא מי שפתח את עמוד התשלום ולא סיים; כשהשאיר פרטים, אפשר לחזור אליו.</p>`;
-    const body = `${setupNotice()}<section class="summary summary--3">
+    const body = `${await setupNotice()}<section class="summary summary--3">
   <div class="summary__item"><b>${shekels(month.sum)} ₪</b><span>${month.n} מכירות החודש</span></div>
   <div class="summary__item"><b>${shekels(all.sum)} ₪</b><span>${all.n} מכירות בסך הכל</span></div>
   <a class="summary__item" href="/admin/sales/?status=pending"><b>${open.n}</b><span>התחילו לשלם ולא סיימו (שבועיים אחרונים)</span></a>
@@ -114,7 +114,7 @@ export const products = {
       const id = parseInt(editParam, 10) || 0;
       const p = (id && (await one('SELECT * FROM products WHERE id = $1', [id])))
         || { id: 0, title: '', description: '', price_agorot: '', max_payments: 1, page_path: '', ravmesser_list: '', active: true, slug: '' };
-      const body = `<p class="back"><a href="/admin/products/">חזרה לכל המוצרים</a></p>${setupNotice()}
+      const body = `<p class="back"><a href="/admin/products/">חזרה לכל המוצרים</a></p>${await setupNotice()}
 <form method="post" class="panel stack narrow-form" data-track-changes>${csrfField(ctx)}<input type="hidden" name="action" value="save"><input type="hidden" name="id" value="${p.id}">
   <label>שם המוצר <input name="title" value="${esc(p.title)}" required maxlength="120" placeholder="למשל: קורס התמקדות שנתי">
     <small>מופיע באתר, בעמוד התשלום ובחשבונית.</small></label>
@@ -127,7 +127,7 @@ export const products = {
   <label>באיזה עמוד להציג את הכפתור <select name="page_path">${await pageOptions(p.page_path)}</select>
     <small>אזור "הרשמה ותשלום" מתווסף לעמוד, לפני בלוק יצירת הקשר.</small></label>
   <label>מזהה רשימה ברב־מסר (לא חובה) <input name="ravmesser_list" value="${esc(p.ravmesser_list)}" dir="ltr" maxlength="120">
-    <small>מי שישלם יתווסף לרשימה הזו אוטומטית.${ravmesserReady() ? '' : ' (רב־מסר עוד לא מחובר לאתר.)'}</small></label>
+    <small>מי שישלם יתווסף לרשימה הזו אוטומטית.${(await ravmesserReady()) ? '' : ' (רב־מסר עוד לא מחובר לאתר.)'}</small></label>
   <label class="check"><input type="checkbox" name="active" value="1"${p.active ? ' checked' : ''}> פעיל (מוצג באתר ואפשר לשלם עליו)</label>
   ${p.slug ? `<p class="muted small">מזהה לכפתור מותאם: <code dir="ltr">data-checkout="${esc(p.slug)}"</code></p>` : ''}
   <button class="btn" type="submit">שמירה</button>
@@ -136,7 +136,7 @@ export const products = {
     }
     const list = await q(`SELECT p.*, (SELECT count(*)::int FROM orders o WHERE o.product_id = p.id AND o.status = 'paid') AS sold,
       (SELECT title FROM pages WHERE path = p.page_path) AS page_title FROM products p ORDER BY p.active DESC, p.position, p.id`);
-    const body = `${setupNotice()}<p class="muted">מוצר הוא משהו שמשלמים עליו באתר: קורס, סדנה, סדרת מפגשים. המחיר כאן הוא המחיר שנגבה, ואזור התשלום מופיע בעמוד שבוחרים לו.</p>
+    const body = `${await setupNotice()}<p class="muted">מוצר הוא משהו שמשלמים עליו באתר: קורס, סדנה, סדרת מפגשים. המחיר כאן הוא המחיר שנגבה, ואזור התשלום מופיע בעמוד שבוחרים לו.</p>
 ${list.length ? `<div class="table-wrap"><table class="table">
   <thead><tr><th>מוצר</th><th>מחיר</th><th>עמוד באתר</th><th>נמכר</th><th>מצב</th><th></th></tr></thead><tbody>
   ${list.map((p) => `<tr><td><a href="?edit=${p.id}">${esc(p.title)}</a>${p.description ? `<br><span class="muted small">${esc(p.description)}</span>` : ''}</td>
@@ -174,7 +174,7 @@ ${list.length ? `<div class="table-wrap"><table class="table">
       }
       publishChanges();
       await logActivity(ctx, id ? 'עדכן מוצר' : 'הוסיף מוצר', title, '/admin/products/');
-      return redirect('/admin/products/', isConfigured() && pagePath ? 'המוצר נשמר ומוצג בעמוד תוך דקה.' : 'המוצר נשמר.');
+      return redirect('/admin/products/', (await isConfigured()) && pagePath ? 'המוצר נשמר ומוצג בעמוד תוך דקה.' : 'המוצר נשמר.');
     }
     if (action === 'toggle' && id) {
       await q('UPDATE products SET active = NOT active, updated_at = now() WHERE id = $1', [id]);
@@ -202,7 +202,7 @@ export const payLinks = {
       const l = (id && (await one('SELECT * FROM payment_links WHERE id = $1', [id])))
         || { id: 0, token: newLinkToken(), title: '', description: '', amount_agorot: '', max_payments: 1, max_uses: null, expires_at: null, ravmesser_list: '', internal_note: '', active: true };
       const expires = l.expires_at ? new Date(l.expires_at).toISOString().slice(0, 10) : '';
-      const body = `<p class="back"><a href="/admin/pay-links/">חזרה לכל הקישורים</a></p>${setupNotice()}
+      const body = `<p class="back"><a href="/admin/pay-links/">חזרה לכל הקישורים</a></p>${await setupNotice()}
 <form method="post" class="panel stack narrow-form" data-track-changes>${csrfField(ctx)}<input type="hidden" name="action" value="save"><input type="hidden" name="id" value="${l.id}">
   <label>על מה משלמים <input name="title" value="${esc(l.title)}" required maxlength="120" placeholder="למשל: דמי הרשמה לקורס התמקדות">
     <small>מופיע בעמוד התשלום ובחשבונית.</small></label>
@@ -227,7 +227,7 @@ export const payLinks = {
     }
     const list = await q(`SELECT l.*, (SELECT count(*)::int FROM orders o WHERE o.payment_link_id = l.id AND o.status = 'paid') AS paid
       FROM payment_links l ORDER BY l.created_at DESC`);
-    const body = `${setupNotice()}<p class="muted">גבייה בלי מוצר ובלי עמוד: דמי הרשמה, מקדמה, או מחיר מוסכם ללקוחה אחת. יוצרים קישור ושולחים אותו בוואטסאפ או במייל.</p>
+    const body = `${await setupNotice()}<p class="muted">גבייה בלי מוצר ובלי עמוד: דמי הרשמה, מקדמה, או מחיר מוסכם ללקוחה אחת. יוצרים קישור ושולחים אותו בוואטסאפ או במייל.</p>
 ${list.length ? `<div class="table-wrap"><table class="table">
   <thead><tr><th>על מה</th><th>סכום</th><th>שולם</th><th>תוקף</th><th>מצב</th><th>קישור</th><th></th></tr></thead><tbody>
   ${list.map((l) => {

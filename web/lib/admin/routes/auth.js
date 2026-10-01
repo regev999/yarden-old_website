@@ -1,6 +1,6 @@
 /** Login, logout, password reset and first-run account setup. */
 import { q, one } from '../../db';
-import { sendMail } from '../../mail';
+import { mailReady, sendMail } from '../../mail';
 import { clearAttempts, ipHash, ipHint, sameSecret, sha256, takeAttempt, token } from '../../security';
 import { siteBase } from '../../shop';
 import { currentPending, currentSession, deviceName, endPending, endSession, hashPassword, knownDevice, logSignin, passwordProblem, setPassword, startPending, startSession, userCount, verifyPassword } from '../auth';
@@ -20,7 +20,7 @@ async function signedIn(ctx, userId, step) {
   const u = await one('SELECT username, email FROM users WHERE id = $1', [userId]);
   const known = await knownDevice(ctx.request, u.username);
   await logSignin(ctx.request, { username: u.username, ok: true, step });
-  if (!known && process.env.RESEND_API_KEY) {
+  if (!known && (await mailReady())) {
     const when = new Date().toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', dateStyle: 'short', timeStyle: 'short' });
     const where = ipHint(ctx.request);
     await sendMail({
@@ -137,7 +137,7 @@ export const verify = {
 
 export const forgot = {
   async GET(ctx) {
-    const noMail = process.env.RESEND_API_KEY ? '' : '<p class="notice notice--warn">שליחת מיילים מהאתר עוד לא מחוברת, ולכן קישור האיפוס לא יישלח. פנו למי שמתחזק את האתר.</p>';
+    const noMail = (await mailReady()) ? '' : '<p class="notice notice--warn">שליחת מיילים מהאתר עוד לא מחוברת, ולכן קישור האיפוס לא יישלח. פנו למי שמתחזק את האתר.</p>';
     return html(authPage(ctx, 'איפוס סיסמה', `${noMail}<p class="muted">כתבו את המייל או שם המשתמש של החשבון, ונשלח קישור לבחירת סיסמה חדשה.</p>
 <form method="post" class="stack">
   <label>מייל או שם משתמש <input name="who" required autocomplete="username" autofocus dir="ltr"></label>
