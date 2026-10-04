@@ -20,12 +20,14 @@
       if (e.target.closest('a[href]') && nav.classList.contains('is-open')) setOpen(false);
     });
     window.matchMedia('(min-width: 1141px)').addEventListener('change', function (m) { if (m.matches) setOpen(false); });
-    // A section's name opens its list from the keyboard, like its arrow button
+    // In the phone menu a section's name opens its list too (tap or keyboard), like its + button
     nav.querySelectorAll('.nav__label').forEach(function (label) {
+      var toggle = label.parentNode.querySelector('.nav__toggle');
+      var shown = function () { return toggle && getComputedStyle(toggle).display !== 'none'; };
+      label.addEventListener('click', function () { if (shown()) toggle.click(); });
       label.addEventListener('keydown', function (e) {
         if (e.key !== 'Enter' && e.key !== ' ') return;
-        var toggle = label.parentNode.querySelector('.nav__toggle');
-        if (toggle && getComputedStyle(toggle).display !== 'none') { e.preventDefault(); toggle.click(); }
+        if (shown()) { e.preventDefault(); toggle.click(); }
       });
     });
     document.addEventListener('keydown', function (e) {
