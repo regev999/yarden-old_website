@@ -160,9 +160,10 @@ export async function withBuySection(html, path) {
     inline.add(p.id);
     html = html
       .replace(button, (m, a, b) => {
-        const cls = /class="([^"]*)"/.exec(a + b)?.[1] || 'btn';
-        return `<span class="buy-inline" id="buy-${slug}"><button class="${esc(cls)}" type="button" data-checkout="${esc(slug)}">להרשמה ותשלום מאובטח</button>`
-          + `<small>${esc(shekels(p.price_agorot))} ₪, ${esc(installmentsText(p.price_agorot, p.max_payments))}. <a href="#contact" data-product="course">או השאירו פרטים</a></small></span>`;
+        const attr = (name, fallback) => new RegExp(`\\s${name}="([^"]*)"`).exec(a + b)?.[1] || fallback;
+        // data-buy-label: the button's own words (already escaped in the page), e.g. "תשלום והזמנת פגישה"
+        return `<span class="buy-inline" id="buy-${slug}"><button class="${esc(attr('class', 'btn'))}" type="button" data-checkout="${esc(slug)}">${attr('data-buy-label', 'להרשמה ותשלום מאובטח')}</button>`
+          + `<small>${esc(shekels(p.price_agorot))} ₪, ${esc(installmentsText(p.price_agorot, p.max_payments))}. <a href="#contact" data-product="${attr('data-product', 'course')}">או השאירו פרטים</a></small></span>`;
       })
       .replace(new RegExp(`(<a\\b[^>]*?)href="#contact"([^>]*\\sdata-buy-goto="${slug}")`, 'g'), `$1href="#buy-${slug}"$2`);
   }

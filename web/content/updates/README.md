@@ -8,6 +8,8 @@ Each redesigned page is two files here:
 `scripts/migrate.mjs` applies each update once (it runs on every start/build). The page as it was is saved to the revisions table, so it can be restored from the admin.
 Use the id format `2026-09-<latin-slug>`.
 
+With `"title"` (and optionally `"seo_title"`) the update renames the page, and if no page exists at `path` yet it creates one there (a new page, linked from the menu in `lib/shell.js` if it belongs there).
+
 An update can also carry no body and only point search engines elsewhere:
 `{ "id", "path", "canonical": "/other-page/" }` for a page that repeats another one,
 or `{ "id", "path", "duplicate_of": "/original/" }` for an old post that does.

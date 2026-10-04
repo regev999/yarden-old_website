@@ -127,7 +127,12 @@ for (const u of updates) {
     const done = await sql.query('UPDATE posts SET duplicate_of = $2 WHERE path = $1 RETURNING id', [u.path, u.duplicate_of]);
     if (!done.length) { console.warn(`[migrate] update ${u.id}: no post at ${u.path}`); continue; }
   } else {
-    const [page] = await sql.query('SELECT * FROM pages WHERE path = $1', [u.path]);
+    let [page] = await sql.query('SELECT * FROM pages WHERE path = $1', [u.path]);
+    if (!page && u.file && u.title) {
+      // A new page: created here, then filled from its file below
+      await sql.query("INSERT INTO pages(path, title, main) VALUES($1, $2, '') ON CONFLICT (path) DO NOTHING", [u.path, u.title]);
+      [page] = await sql.query('SELECT * FROM pages WHERE path = $1', [u.path]);
+    }
     if (!page) { console.warn(`[migrate] update ${u.id}: no page at ${u.path}`); continue; }
     if (u.replace || u.remove) {
       // Exact replacements inside the page as it is now, so edits made in the admin stay
@@ -153,10 +158,14 @@ for (const u of updates) {
     }
     if (u.file) {
       const main = readFileSync(path.join(upDir, u.file), 'utf8') + (u.contact ? '\n' + contact : '');
-      await sql.query("INSERT INTO revisions(path, kind, content, note, username) VALUES($1, 'page', $2, $3, 'system')",
-        [u.path, JSON.stringify(page), 'לפני עדכון העיצוב']);
-      await sql.query('UPDATE pages SET main = $2, description = COALESCE($3, description), updated_at = now() WHERE path = $1',
-        [u.path, main, u.description ?? null]);
+      if (page.main) {
+        await sql.query("INSERT INTO revisions(path, kind, content, note, username) VALUES($1, 'page', $2, $3, 'system')",
+          [u.path, JSON.stringify(page), 'לפני עדכון העיצוב']);
+      }
+      // "title" and "seo_title" rename the page (a program that changed its name, say)
+      await sql.query(`UPDATE pages SET main = $2, description = COALESCE($3, description), title = COALESCE($4, title),
+                       seo_title = COALESCE($5, seo_title), updated_at = now() WHERE path = $1`,
+        [u.path, main, u.description ?? null, u.title ?? null, u.seo_title ?? null]);
     }
     // "canonical": the page this one repeats (it then leaves the sitemap)
     if ('canonical' in u) await sql.query('UPDATE pages SET canonical = $2 WHERE path = $1', [u.path, u.canonical || null]);

@@ -1,0 +1,26 @@
+{
+  "id": "2026-10-shop-programs",
+  "path": "/",
+  "products": [
+    {
+      "slug": "therapy-personal",
+      "title": "פגישת טיפול אישי",
+      "description": "פגישה של שעה בפוקוסינג, בקליניקה בהרצליה או בזום.",
+      "price": 450,
+      "max_payments": 1,
+      "page_path": "/טיפול-אישי/",
+      "position": 4,
+      "active": true
+    },
+    {
+      "slug": "inner-freedom-map",
+      "title": "The Inner Freedom Map",
+      "description": "תכנית דיגיטלית של 15 שבועות בהתמקדות, עם גישה ללא הגבלת זמן.",
+      "price": 2400,
+      "max_payments": 10,
+      "page_path": "/פוקוסינג-לחיי-היום-יום/",
+      "position": 5,
+      "active": false
+    }
+  ]
+}

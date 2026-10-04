@@ -7,6 +7,8 @@
 const BY_PATH = {
   '/התמקדות/': 'focus',
   '/טיפולים-פרטניים/': 'focus',
+  '/טיפול-אישי/': 'focus',
+  '/focusing-parts-map/': 'rings',
   '/טיפול-פרטני/': 'focus',
   '/פגישות-1-על-1/': 'focus',
   '/אודות/': 'focus',
