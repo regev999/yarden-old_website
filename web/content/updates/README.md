@@ -12,7 +12,9 @@ An update can also carry no body and only point search engines elsewhere:
 `{ "id", "path", "canonical": "/other-page/" }` for a page that repeats another one,
 or `{ "id", "path", "duplicate_of": "/original/" }` for an old post that does.
 `{ "id", "path": "/", "products": [{ slug, title, description, price (₪), max_payments, page_path, position, active }] }` adds shop products once (an existing slug is left as edited in the admin; `was_title` corrects a product still named as an earlier update made it).
+`{ "id", "path": "/", "products_off": [slug, …] }` takes products off sale (switched back on from the admin).
 `{ "id", "path", "replace": [[from, to], …] }` makes exact replacements in the page as it is now, so edits made in the admin stay.
+`{ "id", "path", "remove": [text, [from, through], …] }` removes an exact text, or everything from `from` up to and including the next `through` (a whole card or section, even if its inside was edited in the admin).
 
 Preview one update locally: `DATABASE_URL=... ONLY_UPDATE=<id> node scripts/migrate.mjs`.
 

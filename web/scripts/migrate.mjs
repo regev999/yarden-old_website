@@ -94,8 +94,8 @@ if (await seedOnce('redirects')) {
 // 3. Content updates (content/updates/): each one is applied once.
 //    Each update is content/updates/<id>.json (path, file, contact, description)
 //    plus the page body in <id>.body.html. An update can also only set a
-//    page's "canonical", mark an old post as a "duplicate_of" another page, or
-//    add "products" to the shop.
+//    page's "canonical", mark an old post as a "duplicate_of" another page,
+//    add "products" to the shop or take some off sale ("products_off").
 //    The page as it was is saved to revisions, so it can be restored in the admin.
 const upDir = path.join(root, 'content', 'updates');
 const only = process.env.ONLY_UPDATE; // apply just this one (local preview)
@@ -119,6 +119,9 @@ for (const u of updates) {
                        VALUES($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (slug) DO NOTHING`,
         [pr.slug, pr.title, pr.description || '', Math.round(pr.price * 100), pr.max_payments || 1, pr.page_path || '', pr.position || 0, !!pr.active]);
     }
+  } else if (u.products_off) {
+    // Products taken off sale: their buttons go back to being links to the contact form
+    await sql.query('UPDATE products SET active = false, updated_at = now() WHERE slug = ANY($1::text[]) AND active', [u.products_off]);
   } else if (u.duplicate_of) {
     // An old post that repeats another page: its canonical and the sitemap point to the original.
     const done = await sql.query('UPDATE posts SET duplicate_of = $2 WHERE path = $1 RETURNING id', [u.path, u.duplicate_of]);
@@ -126,13 +129,22 @@ for (const u of updates) {
   } else {
     const [page] = await sql.query('SELECT * FROM pages WHERE path = $1', [u.path]);
     if (!page) { console.warn(`[migrate] update ${u.id}: no page at ${u.path}`); continue; }
-    if (u.replace) {
+    if (u.replace || u.remove) {
       // Exact replacements inside the page as it is now, so edits made in the admin stay
       let main = page.main;
-      for (const [from, to] of u.replace) {
+      for (const [from, to] of u.replace || []) {
         if (main.includes(to)) continue;
         if (!main.includes(from)) { console.warn(`[migrate] update ${u.id}: text not found on ${u.path}, skipped`); continue; }
         main = main.split(from).join(to);
+      }
+      // Removals: an exact text, or [from, through] to cut from the first "from" up to and
+      // including the next "through" (whatever was edited in between in the admin goes too)
+      for (const r of u.remove || []) {
+        const [from, through] = Array.isArray(r) ? r : [r, ''];
+        const start = main.indexOf(from);
+        const end = start < 0 ? -1 : main.indexOf(through, start + from.length);
+        if (end < 0) { console.warn(`[migrate] update ${u.id}: text not found on ${u.path}, skipped`); continue; }
+        main = main.slice(0, start) + main.slice(end + through.length);
       }
       if (main !== page.main) {
         await sql.query("INSERT INTO revisions(path, kind, content, note, username) VALUES($1, 'page', $2, $3, 'system')", [u.path, JSON.stringify(page), 'לפני עדכון']);

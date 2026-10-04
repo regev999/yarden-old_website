@@ -1,0 +1,14 @@
+{
+  "id": "2026-10-complex-trauma-off",
+  "path": "/טראומה-מורכבת/",
+  "remove": [
+    [
+      "<div class=\"actions\"><a class=\"btn btn--paper\" href=\"#register\"",
+      "פרטים והרשמה</a></div>\n"
+    ],
+    [
+      "\n<section class=\"block block--tint\" id=\"register\">",
+      "שליחת מייל</a>\n</article>\n</div>\n</div></section>"
+    ]
+  ]
+}
