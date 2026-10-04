@@ -122,6 +122,13 @@ for (const u of updates) {
   } else if (u.products_off) {
     // Products taken off sale: their buttons go back to being links to the contact form
     await sql.query('UPDATE products SET active = false, updated_at = now() WHERE slug = ANY($1::text[]) AND active', [u.products_off]);
+  } else if (u.retire) {
+    // A page or post taken off the site: its address sends visitors on (301), and it leaves the
+    // sitemap and the blog. The content stays in the admin (a page as hidden, a post as a draft).
+    await sql.query(`INSERT INTO redirects(source, target, note) VALUES($1, $2, $3)
+                     ON CONFLICT (source) DO UPDATE SET target = EXCLUDED.target, note = EXCLUDED.note`, [u.path, u.retire, u.note || 'הוסר מהאתר']);
+    await sql.query('UPDATE pages SET noindex = true, updated_at = now() WHERE path = $1', [u.path]);
+    await sql.query("UPDATE posts SET status = 'draft' WHERE path = $1", [u.path]);
   } else if (u.duplicate_of) {
     // An old post that repeats another page: its canonical and the sitemap point to the original.
     const done = await sql.query('UPDATE posts SET duplicate_of = $2 WHERE path = $1 RETURNING id', [u.path, u.duplicate_of]);
@@ -155,6 +162,7 @@ for (const u of updates) {
         await sql.query("INSERT INTO revisions(path, kind, content, note, username) VALUES($1, 'page', $2, $3, 'system')", [u.path, JSON.stringify(page), 'לפני עדכון']);
         await sql.query('UPDATE pages SET main = $2, updated_at = now() WHERE path = $1', [u.path, main]);
       }
+      if (!u.file && u.description) await sql.query('UPDATE pages SET description = $2 WHERE path = $1', [u.path, u.description]);
     }
     if (u.file) {
       const main = readFileSync(path.join(upDir, u.file), 'utf8') + (u.contact ? '\n' + contact : '');

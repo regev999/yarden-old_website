@@ -16,6 +16,8 @@ or `{ "id", "path", "duplicate_of": "/original/" }` for an old post that does.
 `{ "id", "path": "/", "products": [{ slug, title, description, price (₪), max_payments, page_path, position, active }] }` adds shop products once (an existing slug is left as edited in the admin; `was_title` corrects a product still named as an earlier update made it).
 `{ "id", "path": "/", "products_off": [slug, …] }` takes products off sale (switched back on from the admin).
 `{ "id", "path", "replace": [[from, to], …] }` makes exact replacements in the page as it is now, so edits made in the admin stay.
+`{ "id", "path", "retire": "/other-page/" }` takes a page or post off the site: its address redirects (301) to the other page, and it leaves the sitemap and the blog (the content stays in the admin: a page as hidden from search, a post as a draft).
+A `replace`/`remove` update can also set the page's `"description"`.
 `{ "id", "path", "remove": [text, [from, through], …] }` removes an exact text, or everything from `from` up to and including the next `through` (a whole card or section, even if its inside was edited in the admin).
 
 Preview one update locally: `DATABASE_URL=... ONLY_UPDATE=<id> node scripts/migrate.mjs`.

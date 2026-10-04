@@ -1,0 +1,10 @@
+{
+  "id": "2026-10-photo-off-therapies",
+  "path": "/טיפולים-פרטניים/",
+  "remove": [
+    [
+      "<div class=\"col\"><article class=\"card\"><h3 class=\"card__title\">פוטותרפיה</h3>",
+      "על פוטותרפיה</a></article></div>\n"
+    ]
+  ]
+}

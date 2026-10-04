@@ -1,0 +1,25 @@
+{
+  "id": "2026-10-photo-off-courses",
+  "path": "/קורסים/",
+  "description": "קורס התמקדות מעשי וחוויתי בזום, עם תכנית לימודים מלאה.",
+  "replace": [
+    [
+      "<p class=\"page-hero__sub\">קורס התמקדות מעשי וחוויתי בזום, וקורס פוטותרפיה שנתי במרכז הישראלי לרפואת גוף נפש.</p>",
+      "<p class=\"page-hero__sub\">קורס התמקדות מעשי וחוויתי בזום.</p>"
+    ],
+    [
+      "<p class=\"section-intro\">הפרטים על קורס הפוטותרפיה, ועל קורס ההתמקדות במרכז \"גוף נפש\", נמצאים באתר המרכז.</p>",
+      "<p class=\"section-intro\">הפרטים על קורס ההתמקדות במרכז \"גוף נפש\" נמצאים באתר המרכז.</p>"
+    ]
+  ],
+  "remove": [
+    [
+      "<section class=\"block\" id=\"courses\">",
+      "</div></section>\n\n"
+    ],
+    [
+      "<li><a class=\"linkcard linkcard--article\" href=\"https://www.mindbody.co.il/courses_/%d7%a4%d7%95%d7%98%d7%95%d7%aa%d7%a8%d7%a4%d7%99%d7%94",
+      "</a></li>\n"
+    ]
+  ]
+}
