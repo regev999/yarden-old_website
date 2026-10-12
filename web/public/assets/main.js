@@ -138,6 +138,66 @@
     window.addEventListener('resize', fit);
   }
 
+  // Galleries (letters from students, press clippings): a picture opens large, and tapping it
+  // shows it at full size to read. Esc, the close button or a tap outside the picture closes it.
+  var galleries = document.querySelectorAll('.gallery');
+  if (galleries.length && typeof HTMLDialogElement === 'function') {
+    var viewer = document.createElement('dialog');
+    viewer.className = 'viewer';
+    viewer.setAttribute('aria-label', 'תמונה בגדול');
+    viewer.innerHTML = '<div class="viewer__frame"><img alt=""></div><p class="viewer__caption"></p>'
+      + '<button type="button" class="viewer__close" aria-label="סגירה"></button>'
+      + '<button type="button" class="viewer__prev" aria-label="התמונה הקודמת"></button>'
+      + '<button type="button" class="viewer__next" aria-label="התמונה הבאה"></button>';
+    document.body.appendChild(viewer);
+    var frame = viewer.querySelector('.viewer__frame');
+    var big = frame.querySelector('img');
+    var caption = viewer.querySelector('.viewer__caption');
+    var shown = [], at = 0, opener = null;
+    // The original upload, not the resized copy the page shows
+    var original = function (img) {
+      var src = img.getAttribute('src') || '';
+      if (src.indexOf('/_next/image?') === 0) return new URLSearchParams(src.split('?')[1]).get('url') || src;
+      return src;
+    };
+    var show = function (i) {
+      at = (i + shown.length) % shown.length;
+      frame.classList.remove('is-zoomed');
+      big.src = original(shown[at]);
+      big.alt = shown[at].alt || '';
+      caption.textContent = (shown[at].alt || '') + (shown.length > 1 ? ' (' + (at + 1) + ' מתוך ' + shown.length + ')' : '');
+    };
+    viewer.querySelector('.viewer__close').addEventListener('click', function () { viewer.close(); });
+    viewer.querySelector('.viewer__prev').addEventListener('click', function () { show(at - 1); });
+    viewer.querySelector('.viewer__next').addEventListener('click', function () { show(at + 1); });
+    big.addEventListener('click', function () { frame.classList.toggle('is-zoomed'); });
+    viewer.addEventListener('click', function (e) { if (e.target === viewer || e.target === frame) viewer.close(); });
+    viewer.addEventListener('keydown', function (e) {
+      // Right to left: the next picture is to the left
+      if (e.key === 'ArrowLeft') show(at + 1);
+      if (e.key === 'ArrowRight') show(at - 1);
+    });
+    viewer.addEventListener('close', function () { big.removeAttribute('src'); if (opener) opener.focus(); });
+    galleries.forEach(function (gallery) {
+      var imgs = Array.prototype.slice.call(gallery.querySelectorAll('img'));
+      imgs.forEach(function (img, i) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'gallery__zoom';
+        btn.setAttribute('aria-label', 'הגדלה: ' + (img.alt || 'תמונה'));
+        img.parentNode.insertBefore(btn, img);
+        btn.appendChild(img);
+        btn.addEventListener('click', function () {
+          shown = imgs.filter(function (x) { return !x.closest('.is-missing'); });
+          opener = btn;
+          viewer.classList.toggle('viewer--single', shown.length < 2);
+          show(shown.indexOf(img));
+          viewer.showModal();
+        });
+      });
+    });
+  }
+
   // Click-to-play YouTube (lighter pages, no tracking until played)
   function playVideo(box) {
     var play = box.querySelector('.video__play');
