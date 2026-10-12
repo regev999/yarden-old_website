@@ -5,6 +5,7 @@ export const SITE_TITLE = 'ירדן כרם - התמקדות, הקומי, Somatic
 const TAGLINE = 'התמקדות, הקומי, Somatic Experiencing';
 
 export const NAV = [
+  ['דף הבית', '/'],
   ['טיפול', [
     ['כל סוגי הטיפול', '/טיפולים-פרטניים/'], ['התמקדות', '/התמקדות/'],
     ['Somatic Experiencing', '/טיפול-בטראומה-2/'], ['הקומי', '/הקומי/'],
