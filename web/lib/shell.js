@@ -20,6 +20,7 @@ export const SITE_TITLE = 'ירדן כרם - התמקדות, הקומי, Somatic
 const TAGLINE = 'התמקדות, הקומי, Somatic Experiencing';
 
 export const NAV = [
+  ['דף הבית', '/'],
   ['טיפול', [
     ['טיפול אישי', '/טיפול-אישי/'], ['כל סוגי הטיפול', '/טיפולים-פרטניים/'], ['התמקדות', '/התמקדות/'],
     ['Somatic Experiencing', '/טיפול-בטראומה-2/'], ['הקומי', '/הקומי/'],
@@ -141,9 +142,11 @@ export function pageDocument({ path, title, seoTitle, description, canonical, og
   const docTitle = fullTitle(title, seoTitle, path);
   const plainDesc = fullDescription(description, main) || `${SITE_NAME} – ${TAGLINE}. טיפול אישי וקורסים בגישת ההתמקדות, בהרצליה ובזום.`;
   const desc = esc(plainDesc);
-  const canon = absUrl(canonical || path);
+  // A post copied from the Focusing for Freedom blog names its original there, a full address
+  const external = /^https?:\/\//.test(canonical || '');
+  const canon = external ? esc(canonical) : absUrl(canonical || path);
   // Pages kept out of search get no structured data; the rest describe the site, Yarden and the page
-  const graph = noindex ? null : siteLd({ path: canonical || path, name: title || SITE_NAME, description: plainDesc, extra: ld });
+  const graph = noindex ? null : siteLd({ path: external ? path : canonical || path, name: title || SITE_NAME, description: plainDesc, extra: ld });
   // Pages without the contact block (legal pages) send "book a session" to the contact page
   const book = main.includes('id="contact"') ? '#contact' : '/צור-קשר/#contact';
   return `<!doctype html>

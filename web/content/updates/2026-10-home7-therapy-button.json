@@ -1,0 +1,14 @@
+{
+  "id": "2026-10-home7-therapy-button",
+  "path": "/",
+  "replace": [
+    [
+      "<a class=\"btn\" href=\"#contact\" data-product=\"therapy\">קביעת פגישת טיפול</a>",
+      "<a class=\"btn\" href=\"/טיפול-אישי/\" data-product=\"therapy\">קביעת פגישת טיפול</a>"
+    ],
+    [
+      "<a class=\"btn btn--paper\" href=\"#contact\" data-product=\"therapy\">קביעת פגישת טיפול</a>",
+      "<a class=\"btn btn--paper\" href=\"/טיפול-אישי/\" data-product=\"therapy\">קביעת פגישת טיפול</a>"
+    ]
+  ]
+}

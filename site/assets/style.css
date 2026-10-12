@@ -129,7 +129,8 @@ strong, b { font-weight: 600; }
   .header-cta { margin-inline-start: auto; }
   .menu-btn { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px; border: 1px solid var(--ink); border-radius: var(--radius-sm); background: none; color: var(--ink); font: 500 1rem var(--font); cursor: pointer; }
   .menu-btn[aria-expanded="true"] { background: var(--ink); color: var(--paper); }
-  .nav { position: fixed; inset: 68px 0 0; margin: 0; background: var(--paper); padding: 24px 16px 48px; overflow-y: auto; opacity: 0; visibility: hidden; transition: opacity .2s, visibility .2s; }
+  /* Explicit height: the header's backdrop-filter makes it the containing block, so a bottom inset would size the menu to the header. */
+  .nav { position: fixed; inset: 68px 0 auto; height: calc(100vh - 68px); height: calc(100dvh - 68px); margin: 0; background: var(--paper); padding: 24px 16px 48px; overflow-y: auto; opacity: 0; visibility: hidden; transition: opacity .2s, visibility .2s; }
   .nav.is-open { opacity: 1; visibility: visible; }
   .nav > ul { flex-direction: column; gap: 0; max-width: 560px; margin-inline: auto; }
   .nav > ul > li { border-bottom: 1px solid var(--rule); }

@@ -5,7 +5,8 @@ import { SITE_URL, TITLE_SUFFIX, plain, postMainHtml, youtubeId } from '../../ht
 import { pageDocument } from '../../shell';
 import { htmlForEditor, sanitizeHtml } from '../sanitize';
 import { logActivity, makeSlug, publishChanges, saveRevision, uniquePath } from '../common';
-import { adminPage, csrfField, esc, html, wallDate, pager, qs, redirect, SECURITY_HEADERS } from '../ui';
+import { adminPage, csrfField, esc, heDate, html, wallDate, pager, qs, redirect, SECURITY_HEADERS } from '../ui';
+import { SOURCE_NAME, lastSync, syncBlog } from '../../blogsync';
 
 const PER_PAGE = 30;
 const show = (p) => { try { return decodeURI(p); } catch { return p; } };
@@ -17,15 +18,21 @@ export const list = {
     const text = (ctx.query.get('q') || '').trim();
     const cat = ctx.query.get('cat') || '';
     const status = ctx.query.get('status') || '';
-    const all = await q('SELECT id, path, title, body, categories, status, is_video, duplicate_of, date FROM posts ORDER BY date DESC');
+    const all = await q('SELECT id, path, title, body, categories, status, is_video, duplicate_of, source_id, date FROM posts ORDER BY date DESC');
     const counts = { all: all.length, published: all.filter((r) => r.status === 'published').length, draft: all.filter((r) => r.status === 'draft').length };
     const rows = all.filter((r) => (!status || r.status === status) && (!cat || r.categories.includes(cat))
       && (!text || `${r.title} ${plain(r.body)}`.toLowerCase().includes(text.toLowerCase())));
     const pages = Math.max(1, Math.ceil(rows.length / PER_PAGE));
     const pageNo = Math.min(pages, Math.max(1, parseInt(ctx.query.get('p') || '1', 10) || 1));
     const shown = rows.slice((pageNo - 1) * PER_PAGE, pageNo * PER_PAGE);
+    const sync = await lastSync();
+    const syncState = !sync ? 'עוד לא היה סנכרון.'
+      : sync.ok ? `הסנכרון האחרון: ${esc(heDate(sync.at))}.` : `הסנכרון האחרון (${esc(heDate(sync.at))}) נכשל: ${esc(sync.error)}`;
     const tab = (v, label, n) => `<a href="${esc(qs({ status: v }))}"${status === v ? ' aria-current="page"' : ''}>${label} <span>${n}</span></a>`;
-    const body = `<nav class="tabs" aria-label="סטטוס">${tab('', 'הכל', counts.all)}${tab('published', 'מפורסמים', counts.published)}${tab('draft', 'טיוטות', counts.draft)}</nav>
+    const body = `<form method="post" class="panel inline-form">${csrfField(ctx)}<input type="hidden" name="action" value="sync">
+  <p class="small"><b>הבלוג של ${SOURCE_NAME}</b>: פוסטים חדשים ועריכות משם מגיעים לכאן לבד, כל 15 דקות. ${syncState}</p>
+  <button class="btn btn--quiet" type="submit">סנכרון עכשיו</button></form>
+<nav class="tabs" aria-label="סטטוס">${tab('', 'הכל', counts.all)}${tab('published', 'מפורסמים', counts.published)}${tab('draft', 'טיוטות', counts.draft)}</nav>
 <form class="filters" method="get"><input type="hidden" name="status" value="${esc(status)}">
   <label class="filters__search">חיפוש בכותרת ובטקסט <input type="search" name="q" value="${esc(text)}"></label>
   <label>נושא <select name="cat" data-autosubmit><option value="">כל הנושאים</option>${Object.entries(cats).map(([s, n]) => `<option value="${esc(s)}"${s === cat ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
@@ -35,13 +42,23 @@ ${!shown.length ? '<p class="empty">לא נמצאו מאמרים. <a href="/admi
 ${shown.map((r) => {
   const edit = `/admin/post-edit/?id=${r.id}`;
   return `<tr data-href="${edit}"><td><a href="${edit}" class="strong">${esc(r.title)}</a>
-    ${r.status === 'draft' ? '<span class="tag">טיוטה</span>' : ''}${r.duplicate_of ? '<span class="tag tag--closed" title="עותק כפול מהאתר הקודם, לא מוצג ברשימות">עותק כפול</span>' : ''}${r.is_video ? '<span class="tag">סרטון</span>' : ''}
+    ${r.status === 'draft' ? '<span class="tag">טיוטה</span>' : ''}${r.duplicate_of ? '<span class="tag tag--closed" title="עותק כפול מהאתר הקודם, לא מוצג ברשימות">עותק כפול</span>' : ''}${r.is_video ? '<span class="tag">סרטון</span>' : ''}${r.source_id ? `<span class="tag" title="מגיע מהבלוג של ${SOURCE_NAME} ומתעדכן ממנו">מהבלוג של ${SOURCE_NAME}</span>` : ''}
     <div class="muted small clip">${esc(plain(r.body, 110))}</div></td>
     <td class="small">${esc(r.categories.map((s) => cats[s] || s).join(', '))}</td>
     <td class="nowrap small">${esc(wallDate(r.date))}</td>
     <td class="nowrap">${r.status === 'published' ? `<a href="${esc(r.path)}" target="_blank" rel="noopener" class="small">צפייה</a>` : ''}</td></tr>`;
 }).join('')}</tbody></table></div>${pager(pageNo, pages, { q: text, cat, status })}`}`;
     return html(await adminPage(ctx, { title: 'מאמרים ובלוג', active: 'posts', body, actions: '<a class="btn" href="/admin/post-edit/">מאמר חדש</a>' }));
+  },
+
+  /** "סנכרון עכשיו": copy new and edited posts from the Focusing for Freedom blog right away. */
+  async POST(ctx) {
+    if (ctx.form.get('action') !== 'sync') return redirect('/admin/posts/');
+    const r = await syncBlog();
+    await logActivity(ctx, 'סנכרן את הבלוג', SOURCE_NAME, '/admin/posts/');
+    if (!r.ok) return redirect('/admin/posts/', `הסנכרון נכשל: ${r.error}`, 'error');
+    const done = [r.added && `נוספו ${r.added}`, r.updated && `עודכנו ${r.updated}`, r.hidden && `הוסתרו ${r.hidden}`].filter(Boolean);
+    return redirect('/admin/posts/', done.length ? `הסנכרון הסתיים: ${done.join(', ')}.` : 'הסנכרון הסתיים. אין פוסטים חדשים או עריכות.');
   },
 };
 
@@ -87,6 +104,8 @@ async function editorPage(ctx, v, errors = []) {
   const tagText = v.tags.map((s) => tagNames[s] || v.tag_names?.[s] || s).join(', ');
   const body = `<p class="back"><a href="/admin/posts/">חזרה לכל המאמרים</a></p>
 ${errors.map((e) => `<p class="notice notice--error" role="alert">${esc(e)}</p>`).join('')}
+${v.source_url ? `<p class="notice notice--warn">המאמר הזה מגיע מהבלוג של ${SOURCE_NAME} ומתעדכן ממנו לבד. עריכה כאן נשארת רק עד שהמאמר ייערך שם, וכדי להוריד אותו מורידים אותו שם.
+  <a href="${esc(v.source_url)}" target="_blank" rel="noopener">המאמר המקורי</a></p>` : ''}
 <form method="post" class="editor-layout" data-track-changes id="post-form">${csrfField(ctx)}<input type="hidden" name="id" value="${v.id || 0}">
   <div class="editor-main">
     <input class="title-input" name="title" value="${esc(v.title)}" placeholder="כותרת המאמר" required aria-label="כותרת" data-slug-source>

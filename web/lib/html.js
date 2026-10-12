@@ -148,8 +148,10 @@ export function entriesHtml(posts, single = false) {
   if (!posts.length) return '';
   const rows = posts.map((p) => {
     const ex = excerptOf(p, 140);
-    const yt = youtubeId(p.body) || /data-yt="([\w-]{11})"/.exec(p.body || '')?.[1];
-    const img = yt ? `https://i.ytimg.com/vi/${yt}/mqdefault.jpg` : /<img[^>]+src="(\/wp-content\/uploads\/[^"]+)"/.exec(p.body || '')?.[1];
+    // A picture opening the post (the cover of a post from the Focusing for Freedom blog) comes first
+    const cover = /^<figure><img[^>]+src="(\/(?:wp-content|files)\/uploads\/[^"]+)"/.exec(p.body || '')?.[1];
+    const yt = !cover && (youtubeId(p.body) || /data-yt="([\w-]{11})"/.exec(p.body || '')?.[1]);
+    const img = cover || (yt ? `https://i.ytimg.com/vi/${yt}/mqdefault.jpg` : /<img[^>]+src="(\/(?:wp-content|files)\/uploads\/[^"]+)"/.exec(p.body || '')?.[1]);
     // The subject's motif is always underneath, so a picture that fails to load leaves a designed cover
     const thumb = single ? '' : `<span class="entries__thumb entries__thumb--art${yt ? ' entries__thumb--video' : ''}" data-art="${artForPost(p)}" style="${artVariant(p.path)}" aria-hidden="true">`
       + `${img ? `<img src="${esc(img)}" alt="" loading="lazy" decoding="async">` : ''}</span>`;

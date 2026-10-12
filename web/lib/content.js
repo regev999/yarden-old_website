@@ -13,7 +13,7 @@ import {
 import { titleVideos } from './videos';
 import { withBuySection } from './shop';
 
-const POST_COLS = 'id, path, title, body, format, excerpt, seo_title, description, og_image, noindex, categories, tags, status, is_video, duplicate_of, date, modified';
+const POST_COLS = 'id, path, title, body, format, excerpt, seo_title, description, og_image, noindex, categories, tags, status, is_video, duplicate_of, source_url, date, modified';
 
 let contactCache;
 /** The contact section that closes most pages (same markup as the migrated pages). */

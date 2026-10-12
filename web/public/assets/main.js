@@ -113,6 +113,31 @@
     });
   }
 
+  // More ways in (home): where the cards are a row to swipe through, dots show which are in view.
+  // Visitors on a keyboard tab through the cards themselves, so the dots are for pointers only.
+  var also = document.querySelector('.also ul');
+  if (also && also.children.length > 1 && 'IntersectionObserver' in window) {
+    var cards = Array.prototype.slice.call(also.children);
+    var dots = document.createElement('div');
+    dots.className = 'also__dots';
+    dots.setAttribute('aria-hidden', 'true');
+    cards.forEach(function (card) {
+      var dot = document.createElement('button');
+      dot.type = 'button';
+      dot.tabIndex = -1;
+      dot.addEventListener('click', function () { card.scrollIntoView({ block: 'nearest', inline: 'start' }); });
+      dots.appendChild(dot);
+    });
+    also.after(dots);
+    var seen = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { dots.children[cards.indexOf(e.target)].classList.toggle('is-on', e.intersectionRatio >= 0.6); });
+    }, { root: also, threshold: [0.6] });
+    cards.forEach(function (card) { seen.observe(card); });
+    var fit = function () { dots.hidden = also.scrollWidth <= also.clientWidth + 1; };
+    fit();
+    window.addEventListener('resize', fit);
+  }
+
   // Click-to-play YouTube (lighter pages, no tracking until played)
   function playVideo(box) {
     var play = box.querySelector('.video__play');
