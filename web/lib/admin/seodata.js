@@ -1,13 +1,12 @@
 /** SEO fields of every public page and post, and the checks shown in the admin. */
 import { q } from '../db';
-import { plain } from '../html';
-import { SITE_TITLE } from '../shell';
+import { TITLE_SUFFIX, fullTitle, plain } from '../html';
 
 export const TITLE_MAX = 60; // for the page-name part of the title
 export const DESC_MIN = 70;
 export const DESC_MAX = 160;
-// Every title ends with the site name, exactly as on the old site; length checks look only at the part before it.
-export const SITE_SUFFIX = ' - ' + SITE_TITLE;
+// Every title ends with the site name; length checks look only at the part before it.
+export const SITE_SUFFIX = TITLE_SUFFIX;
 
 const TYPES = { page: 'עמוד', post: 'פוסט', category: 'קטגוריה', tag: 'תגית' };
 
@@ -34,8 +33,8 @@ export async function seoRows() {
   const pages = await q(`SELECT path, kind, title, seo_title, description, noindex, main, updated_at FROM pages WHERE kind IN ('page', 'category', 'tag')`);
   const posts = await q(`SELECT id, path, title, seo_title, description, noindex FROM posts WHERE status = 'published'`);
   const rows = [
-    ...pages.map((p) => ({ path: p.path, type: TYPES[p.kind], kind: 'page', title: p.seo_title || `${p.title} - ${SITE_TITLE}`, description: p.description, h1: h1Of(p.main), noindex: p.noindex })),
-    ...posts.map((p) => ({ path: p.path, type: TYPES.post, kind: 'post', id: p.id, title: p.seo_title || `${p.title} - ${SITE_TITLE}`, description: p.description, h1: p.title, noindex: p.noindex })),
+    ...pages.map((p) => ({ path: p.path, type: TYPES[p.kind], kind: 'page', title: fullTitle(p.title, p.seo_title, p.path), description: p.description, h1: h1Of(p.main), noindex: p.noindex })),
+    ...posts.map((p) => ({ path: p.path, type: TYPES.post, kind: 'post', id: p.id, title: fullTitle(p.title, p.seo_title, p.path), description: p.description, h1: p.title, noindex: p.noindex })),
   ];
   for (const r of rows) r.issues = issuesOf(r);
   return rows;

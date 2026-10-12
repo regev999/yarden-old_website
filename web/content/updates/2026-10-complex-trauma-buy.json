@@ -1,0 +1,10 @@
+{
+  "id": "2026-10-complex-trauma-buy",
+  "path": "/טראומה-מורכבת/",
+  "replace": [
+    [
+      "<a class=\"btn\" href=\"#contact\" data-product=\"course\">להרשמה</a>",
+      "<a class=\"btn\" href=\"#contact\" data-product=\"course\" data-buy=\"trauma-course\">להרשמה</a>"
+    ]
+  ]
+}

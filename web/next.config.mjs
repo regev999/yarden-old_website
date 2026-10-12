@@ -5,6 +5,8 @@ const securityHeaders = [
   { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
   { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+  // A floor for every page: no plugins, no <base> hijacking, no framing by other sites
+  { key: 'Content-Security-Policy', value: "object-src 'none'; base-uri 'self'; frame-ancestors 'self'" },
 ];
 
 const nextConfig = {
@@ -20,6 +22,8 @@ const nextConfig = {
   async headers() {
     return [
       { source: '/:path*', headers: securityHeaders },
+      // A staging copy (NOINDEX_ALL=1 at build time) stays out of search engines.
+      ...(process.env.NOINDEX_ALL ? [{ source: '/:path*', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] }] : []),
       { source: '/admin/:path*', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }, { key: 'Cache-Control', value: 'no-store' }] },
       { source: '/assets/:path*', headers: [{ key: 'Cache-Control', value: 'public, max-age=2592000' }] },
     ];

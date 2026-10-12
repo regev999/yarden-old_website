@@ -1,0 +1,18 @@
+{
+  "id": "2026-10-courses-buy",
+  "path": "/קורסים/",
+  "replace": [
+    [
+      "<a class=\"btn btn--paper\" href=\"#contact\" data-product=\"course\">הרשמה לקורס</a>",
+      "<a class=\"btn btn--paper\" href=\"#contact\" data-product=\"course\" data-buy-goto=\"focusing-course\">הרשמה לקורס</a>"
+    ],
+    [
+      "<a class=\"btn\" href=\"#contact\" data-product=\"course\">להרשמה</a>",
+      "<a class=\"btn\" href=\"#contact\" data-product=\"course\" data-buy=\"focusing-course\">להרשמה</a>"
+    ],
+    [
+      "<a class=\"btn\" href=\"#contact\" data-product=\"course\">להרשמה לקורס ההתמקדות</a>",
+      "<a class=\"btn\" href=\"#contact\" data-product=\"course\" data-buy-goto=\"focusing-course\">להרשמה לקורס ההתמקדות</a>"
+    ]
+  ]
+}

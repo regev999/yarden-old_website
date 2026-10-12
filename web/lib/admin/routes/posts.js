@@ -1,8 +1,8 @@
 /** Articles and blog: list, editor (new / edit / publish / draft / delete) and preview. */
 import { q, one } from '../../db';
 import { contactHtml, terms } from '../../content';
-import { SITE_URL, plain, postMainHtml, youtubeId } from '../../html';
-import { pageDocument, SITE_TITLE } from '../../shell';
+import { SITE_URL, TITLE_SUFFIX, plain, postMainHtml, youtubeId } from '../../html';
+import { pageDocument } from '../../shell';
 import { htmlForEditor, sanitizeHtml } from '../sanitize';
 import { logActivity, makeSlug, publishChanges, saveRevision, uniquePath } from '../common';
 import { adminPage, csrfField, esc, html, wallDate, pager, qs, redirect, SECURITY_HEADERS } from '../ui';
@@ -115,7 +115,7 @@ ${errors.map((e) => `<p class="notice notice--error" role="alert">${esc(e)}</p>`
     </section>
     <section class="panel stack"><h2>גוגל</h2>
       <label>תיאור קצר <textarea name="excerpt" rows="3" data-count="160" data-min="70" placeholder="משפט או שניים שיופיעו בגוגל וברשימות">${esc(v.excerpt || '')}</textarea><small data-counter></small></label>
-      <label>כותרת לגוגל (לא חובה) <input name="seo_title" value="${esc(v.seo_title || '')}" placeholder="${esc((v.title || 'כותרת המאמר') + ' - ' + SITE_TITLE)}"></label>
+      <label>כותרת לגוגל (לא חובה) <input name="seo_title" value="${esc(v.seo_title || '')}" placeholder="${esc((v.title || 'כותרת המאמר') + TITLE_SUFFIX)}"></label>
     </section>
     ${isNew ? '' : `<section class="panel"><h2>גרסאות קודמות</h2>
       <p class="small"><a href="/admin/revisions/${esc(qs({ path: v.path }))}">היסטוריית שינויים ושחזור</a></p>
@@ -171,13 +171,19 @@ export const edit = {
     }
     for (const [slug, name] of Object.entries(p.tag_names)) {
       await q(`INSERT INTO terms(kind, slug, name) VALUES('tag', $1, $2) ON CONFLICT DO NOTHING`, [slug, name]);
+      // A new tag gets its page, listing its posts, so the tag's link on the post leads somewhere
+      const main = `<header class="page-hero"><div class="wrap"><p class="crumb">תגית</p><h1>${esc(name)}</h1></div></header>
+<section class="block"><div class="wrap"><!--yk:list--><!--/yk:list--></div></section>
+${contactHtml()}`;
+      await q(`INSERT INTO pages(path, kind, title, description, main) VALUES($1, 'tag', $2, $3, $4) ON CONFLICT (path) DO NOTHING`,
+        [`/tag/${slug}/`, name, `תגית: ${name} – ירדן כרם`, main]);
     }
     const description = p.excerpt || plain(p.body, 155);
     const vals = [p.path, p.title, p.body, p.excerpt, p.seo_title, description, JSON.stringify(p.categories), JSON.stringify(p.tags), p.status, p.is_video, p.date];
     let id;
     if (post) {
       await saveRevision(ctx, 'post', post, wasPublished ? 'עריכת מאמר' : 'עריכת טיוטה');
-      await q(`UPDATE posts SET path=$1, title=$2, body=$3, format='rich', excerpt=$4, seo_title=$5, description=$6, categories=$7, tags=$8, status=$9, is_video=$10, date=$11, modified=now() WHERE id=$12`, [...vals, post.id]);
+      await q(`UPDATE posts SET path=$1, title=$2, body=$3, format='rich', excerpt=$4, seo_title=$5, description=$6, categories=$7, tags=$8, status=$9, is_video=$10, date=$11, modified=(now() AT TIME ZONE 'Asia/Jerusalem') WHERE id=$12`, [...vals, post.id]);
       id = post.id;
     } else {
       [{ id }] = await q(`INSERT INTO posts(path, title, body, format, excerpt, seo_title, description, categories, tags, status, is_video, date, modified)

@@ -1,0 +1,14 @@
+{
+  "id": "2026-10-podcast4-episodes",
+  "path": "/פודקאסט/",
+  "replace": [
+    [
+      "<figure class=\"film\"><div class=\"video\" data-yt=\"1jbUwFVDHcM\"><button type=\"button\" class=\"video__play\" aria-label=\"הפעלת סרטון: פרק 13, שיחה עם אשרת קוטלר\" style=\"background-image:url(https://i.ytimg.com/vi/1jbUwFVDHcM/hqdefault.jpg)\"><span class=\"video__icon\" aria-hidden=\"true\"></span></button></div><figcaption><h3>שיחה עם אשרת קוטלר</h3><p>פרק 13</p></figcaption></figure>",
+      "<figure class=\"film\"><div class=\"video\" data-yt=\"aCYdXNZZpuA\"><button type=\"button\" class=\"video__play\" aria-label=\"הפעלת סרטון: פרק 13, התמקדות ומיניות: שיחה עם קטי קמחי\" style=\"background-image:url(https://i.ytimg.com/vi/aCYdXNZZpuA/hqdefault.jpg)\"><span class=\"video__icon\" aria-hidden=\"true\"></span></button></div><figcaption><h3>התמקדות ומיניות: שיחה עם קטי קמחי</h3><p>פרק 13</p></figcaption></figure>\n<figure class=\"film\"><div class=\"video\" data-yt=\"1jbUwFVDHcM\"><button type=\"button\" class=\"video__play\" aria-label=\"הפעלת סרטון: פרק 14, שיחה עם אשרת קוטלר\" style=\"background-image:url(https://i.ytimg.com/vi/1jbUwFVDHcM/hqdefault.jpg)\"><span class=\"video__icon\" aria-hidden=\"true\"></span></button></div><figcaption><h3>שיחה עם אשרת קוטלר</h3><p>פרק 14</p></figcaption></figure>"
+    ],
+    [
+      "<figure class=\"film\"><div class=\"video\" data-yt=\"XHTzIAGLnHI\"><button type=\"button\" class=\"video__play\" aria-label=\"הפעלת סרטון: פרק 12, איך להבין את הדברים עד הסוף: סשן עם איריס גולדפינגר\" style=\"background-image:url(https://i.ytimg.com/vi/XHTzIAGLnHI/hqdefault.jpg)\"><span class=\"video__icon\" aria-hidden=\"true\"></span></button></div><figcaption><h3>איך להבין את הדברים עד הסוף: סשן עם איריס גולדפינגר</h3><p>פרק 12</p></figcaption></figure>",
+      "<figure class=\"film\"><div class=\"video\" data-yt=\"XHTzIAGLnHI\"><button type=\"button\" class=\"video__play\" aria-label=\"הפעלת סרטון: פרק 12, איך להבין את הדברים עד הסוף: סשן עם איריס גולדפינגר\" style=\"background-image:url(https://i.ytimg.com/vi/XHTzIAGLnHI/hqdefault.jpg)\"><span class=\"video__icon\" aria-hidden=\"true\"></span></button></div><figcaption><h3>איך להבין את הדברים עד הסוף: סשן עם איריס גולדפינגר</h3><p>פרק 12</p></figcaption></figure>\n<figure class=\"film\"><div class=\"video\" data-yt=\"QCpcL40_rOA\"><button type=\"button\" class=\"video__play\" aria-label=\"הפעלת סרטון: פרק 15, טיפול בפוקוסינג ושיחה עם שרון שגב, חברת קיבוץ בארי וניצולת הטבח\" style=\"background-image:url(https://i.ytimg.com/vi/QCpcL40_rOA/hqdefault.jpg)\"><span class=\"video__icon\" aria-hidden=\"true\"></span></button></div><figcaption><h3>טיפול בפוקוסינג ושיחה עם שרון שגב, חברת קיבוץ בארי וניצולת הטבח</h3><p>פרק 15</p></figcaption></figure>"
+    ]
+  ]
+}

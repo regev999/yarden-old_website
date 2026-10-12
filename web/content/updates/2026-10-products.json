@@ -1,0 +1,36 @@
+{
+  "id": "2026-10-products",
+  "path": "/",
+  "products": [
+    {
+      "slug": "focusing-course",
+      "title": "קורס התמקדות שנתי",
+      "description": "לימוד גישת ההתמקדות לאורך שנה, בזום, בימי שלישי 20:00–23:00. למטפלים מגישות שונות ולקהל הרחב.",
+      "price": 6200,
+      "max_payments": 10,
+      "page_path": "/קורסים/",
+      "position": 1,
+      "active": false
+    },
+    {
+      "slug": "trauma-course",
+      "title": "קורס הטראומה השלם",
+      "description": "15 שיעורים בזום, בימי שני 16:00–19:30. ההקלטות נשארות לצפייה 3 חודשים. כולל סשן אישי עם ירדן ותעודה.",
+      "price": 4500,
+      "max_payments": 10,
+      "page_path": "/טראומה-מורכבת/",
+      "position": 2,
+      "active": false
+    },
+    {
+      "slug": "therapy-session",
+      "title": "פגישה אישית",
+      "description": "מפגש של שעה בקליניקה בהרצליה.",
+      "price": 450,
+      "max_payments": 1,
+      "page_path": "/טיפולים-פרטניים/",
+      "position": 3,
+      "active": false
+    }
+  ]
+}

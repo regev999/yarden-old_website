@@ -4,7 +4,7 @@
  */
 import { currentSession, cookieValue, userCount } from './auth';
 import { html, json, redirect, SECURITY_HEADERS } from './ui';
-import { sameOrigin } from '../security';
+import { bodyTooLarge, sameOrigin, sameSecret } from '../security';
 import * as authRoutes from './routes/auth';
 import * as dashboard from './routes/dashboard';
 import * as leads from './routes/leads';
@@ -15,21 +15,27 @@ import * as testimonials from './routes/testimonials';
 import * as media from './routes/media';
 import * as seo from './routes/seo';
 import * as redirectsRoutes from './routes/redirects';
+import * as shop from './routes/shop';
+import * as connections from './routes/connections';
 
 const PUBLIC = {
-  'login': authRoutes.login, 'forgot': authRoutes.forgot, 'reset': authRoutes.reset, 'setup': authRoutes.setup,
+  'login': authRoutes.login, 'verify': authRoutes.verify, 'forgot': authRoutes.forgot, 'reset': authRoutes.reset, 'setup': authRoutes.setup,
 };
 const PRIVATE = {
   '': dashboard.home, 'logout': authRoutes.logout,
   'leads': leads.list, 'lead': leads.oneLead, 'export': leads.exportCsv,
-  'settings': settings.page,
+  'settings': settings.page, 'connections': connections.page,
   'posts': posts.list, 'post-edit': posts.edit, 'preview': posts.preview,
   'pages': pages.list, 'page-edit': pages.edit, 'page-save': pages.save, 'revisions': pages.revisions,
   'testimonials': testimonials.page,
   'media': media.page,
   'seo': seo.page, 'links': seo.links,
   'redirects': redirectsRoutes.page,
+  'sales': shop.sales, 'sales-export': shop.salesExport, 'products': shop.products, 'pay-links': shop.payLinks,
 };
+
+// The screen that takes file uploads (up to 4 MB each, a few at a time)
+const UPLOADS = new Set(['media']);
 
 async function readBody(request) {
   const type = request.headers.get('content-type') || '';
@@ -58,10 +64,12 @@ export async function handle(request, segments) {
   if (method === 'POST') {
     // Every change must come from the admin's own pages.
     if (!sameOrigin(request)) return html('<p>הבקשה נחסמה.</p>', 403);
-    Object.assign(ctx, await readBody(request));
+    // Photos and files may be large; anything else is a form or a page's text
+    if (bodyTooLarge(request, UPLOADS.has(name) ? 12 * 1024 * 1024 : 2 * 1024 * 1024)) return html('<p>הבקשה גדולה מדי.</p>', 413);
   }
 
   if (PRIVATE[name]) {
+    // Signed in before anything else is read from the request
     const s = await currentSession(request);
     if (!s) {
       if (!(await userCount())) return redirect('/admin/setup/');
@@ -71,9 +79,14 @@ export async function handle(request, segments) {
     }
     ctx.user = s.user;
     ctx.csrf = s.csrf;
-    if (method === 'POST') {
-      const sent = ctx.form?.get('csrf') ?? ctx.json?.csrf ?? request.headers.get('x-csrf') ?? '';
-      if (!sent || sent !== s.csrf) {
+    ctx.sessionId = s.sessionId;
+  }
+
+  if (method === 'POST') {
+    Object.assign(ctx, await readBody(request));
+    if (PRIVATE[name]) {
+      const sent = String(ctx.form?.get('csrf') ?? ctx.json?.csrf ?? request.headers.get('x-csrf') ?? '');
+      if (!sameSecret(sent, ctx.csrf)) {
         if (ctx.json !== undefined || ctx.query.get('format') === 'json') return json({ ok: false, error: 'הבקשה לא תקינה. רעננו את העמוד ונסו שוב.' }, 400);
         return html('<p>פג תוקף הטופס. חזרו לדף הקודם, רעננו ונסו שוב.</p>', 400);
       }

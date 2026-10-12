@@ -1,0 +1,19 @@
+{
+  "id": "2026-10-courses-off",
+  "path": "/קורסים/",
+  "remove": [
+    [
+      "<div class=\"actions\"><a class=\"btn btn--paper\" href=\"#contact\" data-product=\"course\"",
+      "הרשמה לקורס</a></div>\n"
+    ],
+    [
+      "<article class=\"offer\">\n<h3>קורס התמקדות לנשים מהמגזר החרדי</h3>",
+      "</article>\n"
+    ],
+    "להרשמה לקורס ההתמקדות אפשר להשאיר פרטים בטופס בתחתית העמוד. ",
+    [
+      "<div class=\"actions\"><a class=\"btn\" href=\"#contact\" data-product=\"course\"",
+      "להרשמה לקורס ההתמקדות</a></div>\n"
+    ]
+  ]
+}

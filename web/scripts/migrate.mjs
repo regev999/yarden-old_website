@@ -1,21 +1,21 @@
 /**
- * Runs before every build on Vercel (see package.json "build").
+ * Runs before every build and on every start (see package.json "build" and "start").
  * Creates the tables and, on the very first run, loads the migrated content.
  * Never overwrites content that already exists, so edits made in the admin
  * survive every deploy.
  */
-import { neon } from '@neondatabase/serverless';
-import { readFileSync } from 'node:fs';
+import { connect } from '../lib/sqlclient.mjs';
+import { readFileSync, readdirSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 if (!url) {
-  console.warn('[migrate] DATABASE_URL is not set: skipping. Connect a Neon database in Vercel (Storage) and redeploy.');
+  console.warn('[migrate] DATABASE_URL is not set: skipping. Connect a Postgres database and redeploy.');
   process.exit(0);
 }
-const sql = neon(url);
+const sql = connect(url);
 const read = (f) => JSON.parse(readFileSync(path.join(root, 'content', f), 'utf8'));
 
 // 1. Schema (statements separated by ";" at line ends)
@@ -27,9 +27,19 @@ async function empty(table) {
   const rows = await sql.query(`SELECT 1 FROM ${table} LIMIT 1`);
   return rows.length === 0;
 }
+// Each table is seeded once in its life: a table the admin has emptied on
+// purpose (all testimonials removed, say) stays empty on the next start.
+async function seedOnce(table) {
+  const key = `seeded:${table}`;
+  if ((await sql.query('SELECT 1 FROM settings WHERE key = $1', [key])).length) return false;
+  const fresh = await empty(table);
+  await sql.query('INSERT INTO settings(key, value) VALUES($1, $2) ON CONFLICT (key) DO NOTHING', [key, new Date().toISOString()]);
+  return fresh;
+}
+
 
 // 2. Seed each table once, in one statement per table.
-if (await empty('pages')) {
+if (await seedOnce('pages')) {
   const pages = read('pages.json').map((p) => ({ ...p, ld: p.ld ?? null }));
   await sql.query(
     `INSERT INTO pages (path, kind, title, seo_title, description, og_type, og_image, canonical, noindex, ld, main)
@@ -40,7 +50,7 @@ if (await empty('pages')) {
   console.log(`[migrate] pages: ${pages.length}`);
 }
 
-if (await empty('posts')) {
+if (await seedOnce('posts')) {
   const posts = read('posts.json').map((p) => ({
     path: p.path, title: p.title, body: p.body, excerpt: p.excerpt || '', seo_title: p.seo_title || '',
     description: p.description || '', og_image: p.og_image || '', categories: p.categories, tags: p.tags,
@@ -55,7 +65,7 @@ if (await empty('posts')) {
   console.log(`[migrate] posts: ${posts.length}`);
 }
 
-if (await empty('terms')) {
+if (await seedOnce('terms')) {
   const terms = [
     ...read('categories.json').map((c) => ({ kind: 'category', slug: c.slug, name: c.name })),
     ...read('tags.json').map((t) => ({ kind: 'tag', slug: t.slug, name: t.name })),
@@ -65,7 +75,7 @@ if (await empty('terms')) {
      ON CONFLICT DO NOTHING`, [JSON.stringify(terms)]);
 }
 
-if (await empty('testimonials')) {
+if (await seedOnce('testimonials')) {
   const t = read('testimonials.json');
   await sql.query(
     `INSERT INTO testimonials (name, role, body, show_on_home, position)
@@ -73,7 +83,7 @@ if (await empty('testimonials')) {
      AS x(name text, role text, body text, show_on_home boolean, position int)`, [JSON.stringify(t)]);
 }
 
-if (await empty('redirects')) {
+if (await seedOnce('redirects')) {
   const r = read('redirects.json').map((x) => ({ source: x.from, target: x.to, note: x.note }));
   await sql.query(
     `INSERT INTO redirects (source, target, note) SELECT source, target, note FROM jsonb_to_recordset($1::jsonb)
@@ -81,4 +91,100 @@ if (await empty('redirects')) {
   console.log(`[migrate] redirects: ${r.length}`);
 }
 
+// 3. Content updates (content/updates/): each one is applied once.
+//    Each update is content/updates/<id>.json (path, file, contact, description)
+//    plus the page body in <id>.body.html. An update can also only set a
+//    page's "canonical", mark an old post as a "duplicate_of" another page,
+//    add "products" to the shop or take some off sale ("products_off").
+//    The page as it was is saved to revisions, so it can be restored in the admin.
+const upDir = path.join(root, 'content', 'updates');
+const only = process.env.ONLY_UPDATE; // apply just this one (local preview)
+const updates = readdirSync(upDir).filter((f) => f.endsWith('.json')).sort()
+  .map((f) => JSON.parse(readFileSync(path.join(upDir, f), 'utf8')))
+  .filter((u) => !only || u.id === only);
+const contact = readFileSync(path.join(root, 'content', 'contact.html'), 'utf8');
+for (const u of updates) {
+  const key = `content_update:${u.id}`;
+  // FORCE_CONTENT_UPDATES=1 re-applies them (for working on an update locally).
+  if (!process.env.FORCE_CONTENT_UPDATES && !only && (await sql.query('SELECT 1 FROM settings WHERE key = $1', [key])).length) continue;
+  if (u.products) {
+    // Products for the shop, added once (never overwriting one edited in the admin)
+    for (const pr of u.products) {
+      // A product still exactly as an earlier update made it can be corrected
+      if (pr.was_title) {
+        await sql.query('UPDATE products SET title = $2, description = $3, updated_at = now() WHERE slug = $1 AND title = $4',
+          [pr.slug, pr.title, pr.description || '', pr.was_title]);
+      }
+      await sql.query(`INSERT INTO products(slug, title, description, price_agorot, max_payments, page_path, position, active)
+                       VALUES($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (slug) DO NOTHING`,
+        [pr.slug, pr.title, pr.description || '', Math.round(pr.price * 100), pr.max_payments || 1, pr.page_path || '', pr.position || 0, !!pr.active]);
+    }
+  } else if (u.products_off) {
+    // Products taken off sale: their buttons go back to being links to the contact form
+    await sql.query('UPDATE products SET active = false, updated_at = now() WHERE slug = ANY($1::text[]) AND active', [u.products_off]);
+  } else if (u.retire) {
+    // A page or post taken off the site: its address sends visitors on (301), and it leaves the
+    // sitemap and the blog. The content stays in the admin (a page as hidden, a post as a draft).
+    await sql.query(`INSERT INTO redirects(source, target, note) VALUES($1, $2, $3)
+                     ON CONFLICT (source) DO UPDATE SET target = EXCLUDED.target, note = EXCLUDED.note`, [u.path, u.retire, u.note || 'הוסר מהאתר']);
+    await sql.query('UPDATE pages SET noindex = true, updated_at = now() WHERE path = $1', [u.path]);
+    await sql.query("UPDATE posts SET status = 'draft' WHERE path = $1", [u.path]);
+  } else if (u.duplicate_of) {
+    // An old post that repeats another page: its canonical and the sitemap point to the original.
+    const done = await sql.query('UPDATE posts SET duplicate_of = $2 WHERE path = $1 RETURNING id', [u.path, u.duplicate_of]);
+    if (!done.length) { console.warn(`[migrate] update ${u.id}: no post at ${u.path}`); continue; }
+  } else {
+    let [page] = await sql.query('SELECT * FROM pages WHERE path = $1', [u.path]);
+    if (!page && u.file && u.title) {
+      // A new page: created here, then filled from its file below
+      await sql.query("INSERT INTO pages(path, title, main) VALUES($1, $2, '') ON CONFLICT (path) DO NOTHING", [u.path, u.title]);
+      [page] = await sql.query('SELECT * FROM pages WHERE path = $1', [u.path]);
+    }
+    if (!page) { console.warn(`[migrate] update ${u.id}: no page at ${u.path}`); continue; }
+    if (u.replace || u.remove) {
+      // Exact replacements inside the page as it is now, so edits made in the admin stay
+      let main = page.main;
+      for (const [from, to] of u.replace || []) {
+        if (main.includes(to)) continue;
+        if (!main.includes(from)) { console.warn(`[migrate] update ${u.id}: text not found on ${u.path}, skipped`); continue; }
+        main = main.split(from).join(to);
+      }
+      // Removals: an exact text, or [from, through] to cut from the first "from" up to and
+      // including the next "through" (whatever was edited in between in the admin goes too)
+      for (const r of u.remove || []) {
+        const [from, through] = Array.isArray(r) ? r : [r, ''];
+        const start = main.indexOf(from);
+        const end = start < 0 ? -1 : main.indexOf(through, start + from.length);
+        if (end < 0) { console.warn(`[migrate] update ${u.id}: text not found on ${u.path}, skipped`); continue; }
+        main = main.slice(0, start) + main.slice(end + through.length);
+      }
+      if (main !== page.main) {
+        await sql.query("INSERT INTO revisions(path, kind, content, note, username) VALUES($1, 'page', $2, $3, 'system')", [u.path, JSON.stringify(page), 'לפני עדכון']);
+        await sql.query('UPDATE pages SET main = $2, updated_at = now() WHERE path = $1', [u.path, main]);
+      }
+      if (!u.file && u.description) await sql.query('UPDATE pages SET description = $2 WHERE path = $1', [u.path, u.description]);
+    }
+    if (u.file) {
+      const main = readFileSync(path.join(upDir, u.file), 'utf8') + (u.contact ? '\n' + contact : '');
+      if (page.main) {
+        await sql.query("INSERT INTO revisions(path, kind, content, note, username) VALUES($1, 'page', $2, $3, 'system')",
+          [u.path, JSON.stringify(page), 'לפני עדכון העיצוב']);
+      }
+      // "title" and "seo_title" rename the page (a program that changed its name, say)
+      await sql.query(`UPDATE pages SET main = $2, description = COALESCE($3, description), title = COALESCE($4, title),
+                       seo_title = COALESCE($5, seo_title), updated_at = now() WHERE path = $1`,
+        [u.path, main, u.description ?? null, u.title ?? null, u.seo_title ?? null]);
+    }
+    // "canonical": the page this one repeats (it then leaves the sitemap)
+    if ('canonical' in u) await sql.query('UPDATE pages SET canonical = $2 WHERE path = $1', [u.path, u.canonical || null]);
+  }
+  await sql.query('INSERT INTO settings(key, value) VALUES($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value', [key, new Date().toISOString()]);
+  console.log(`[migrate] update ${u.id}: ${u.path}`);
+}
+
+// Pages are cached by Next (unstable_cache) and hold the asset versions of the
+// build that made them; start every run with a fresh cache.
+rmSync(path.join(root, '.next', 'cache', 'fetch-cache'), { recursive: true, force: true });
+
 console.log('[migrate] done');
+await sql.end?.();

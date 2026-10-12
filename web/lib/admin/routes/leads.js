@@ -1,6 +1,7 @@
 import { q, one } from '../../db';
 import { LEAD_SOURCES, LEAD_STATUSES } from '../../leads';
-import { adminPage, csrfField, esc, heDate, html, qs, redirect, SECURITY_HEADERS } from '../ui';
+import { adminPage, csrfField, esc, heDate, html, pager, qs, redirect, SECURITY_HEADERS } from '../ui';
+import { asText, csvRow } from '../common';
 
 function filters(query) {
   const status = query.get('status') in LEAD_STATUSES ? query.get('status') : '';
@@ -22,7 +23,11 @@ const option = (k, label, cur) => `<option value="${esc(k)}"${k === cur ? ' sele
 export const list = {
   async GET(ctx) {
     const f = filters(ctx.query);
-    const leads = await q(`SELECT * FROM leads${f.where} ORDER BY created_at DESC LIMIT 500`, f.args);
+    const PER = 100;
+    const total = (await one(`SELECT count(*)::int AS n FROM leads${f.where}`, f.args)).n;
+    const pages = Math.max(1, Math.ceil(total / PER));
+    const pageNo = Math.min(pages, Math.max(1, parseInt(ctx.query.get('p') || '1', 10) || 1));
+    const leads = await q(`SELECT * FROM leads${f.where} ORDER BY created_at DESC LIMIT ${PER} OFFSET ${(pageNo - 1) * PER}`, f.args);
     const query = qs({ status: f.status, source: f.source, q: f.text });
     const table = !leads.length
       ? `<p class="empty">${f.where ? 'אין לידים שמתאימים לסינון.' : 'עוד לא הגיעו לידים. כשמישהו ימלא טופס באתר, הוא יופיע כאן.'}</p>`
@@ -37,7 +42,8 @@ export const list = {
           <td>${esc(LEAD_SOURCES[l.product || l.kind] || '')}</td>
           <td><span class="tag tag--${esc(l.status)}">${esc(LEAD_STATUSES[l.status] || l.status)}</span></td></tr>`;
       }).join('')}</tbody></table></div>
-      <p class="muted">${leads.length} לידים${leads.length === 500 ? ' (מוצגים 500 האחרונים)' : ''}</p>`;
+      ${pager(pageNo, pages, { status: f.status, source: f.source, q: f.text })}
+      <p class="muted">${total} לידים</p>`;
     const body = `<form class="filters" method="get">
   <label>סטטוס <select name="status" data-autosubmit><option value="">הכל</option>${Object.entries(LEAD_STATUSES).map(([k, v]) => option(k, v, f.status)).join('')}</select></label>
   <label>מקור <select name="source" data-autosubmit><option value="">הכל</option>${Object.entries(LEAD_SOURCES).map(([k, v]) => option(k, v, f.source)).join('')}</select></label>
@@ -68,7 +74,7 @@ export const oneLead = {
       <dt>מקור</dt><dd>${esc(LEAD_SOURCES[lead.product || lead.kind] || '')}</dd>
       ${lead.phone ? `<dt>טלפון</dt><dd dir="ltr">${esc(lead.phone)}</dd>` : ''}
       ${lead.email ? `<dt>מייל</dt><dd dir="ltr">${esc(lead.email)}</dd>` : ''}
-      ${lead.page ? `<dt>נשלח מהעמוד</dt><dd><a href="${esc(lead.page)}" target="_blank" rel="noopener">${esc(lead.page === '/' ? 'דף הבית' : lead.page.replace(/^\/|\/$/g, ''))}</a></dd>` : ''}
+      ${/^\/(?![/\\])/.test(lead.page || '') ? `<dt>נשלח מהעמוד</dt><dd><a href="${esc(lead.page)}" target="_blank" rel="noopener">${esc(lead.page === '/' ? 'דף הבית' : lead.page.replace(/^\/|\/$/g, ''))}</a></dd>` : ''}
     </dl>
     ${lead.message ? `<h2>ההודעה</h2><p class="message">${esc(lead.message).replace(/\n/g, '<br>')}</p>` : ''}
     <div class="actions">
@@ -111,17 +117,11 @@ export const exportCsv = {
   async GET(ctx) {
     const f = filters(ctx.query);
     const rows = await q(`SELECT * FROM leads${f.where} ORDER BY created_at DESC`, f.args);
-    // Cells that start with = + - @ would run as formulas in Excel; prefix them.
-    const cell = (v) => {
-      let s = String(v ?? '');
-      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
-      return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-    };
     const lines = [['תאריך', 'שם', 'טלפון', 'מייל', 'מקור', 'סטטוס', 'הודעה', 'הערות', 'עמוד']];
     for (const l of rows) {
-      lines.push([heDate(l.created_at), l.name, l.phone, l.email, LEAD_SOURCES[l.product || l.kind] || '', LEAD_STATUSES[l.status] || l.status, l.message, l.notes, l.page]);
+      lines.push([heDate(l.created_at), l.name, asText(l.phone), l.email, LEAD_SOURCES[l.product || l.kind] || '', LEAD_STATUSES[l.status] || l.status, l.message, l.notes, l.page]);
     }
-    const csv = '﻿' + lines.map((r) => r.map(cell).join(',')).join('\r\n') + '\r\n';
+    const csv = '﻿' + lines.map(csvRow).join('\r\n') + '\r\n';
     const day = new Date().toISOString().slice(0, 10);
     return new Response(csv, { headers: { ...SECURITY_HEADERS, 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="leads-${day}.csv"` } });
   },
