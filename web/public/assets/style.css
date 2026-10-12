@@ -290,7 +290,7 @@ strong, b { font-weight: 600; }
 .toc a:hover { background: var(--halo); }
 .toc a[aria-current="true"] { background: var(--ink); color: var(--paper); }
 
-/* Home: the two ways in -----------------------------------------------------*/
+/* Home: the ways in ---------------------------------------------------------*/
 .ways { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .way { display: flex; flex-direction: column; gap: 28px; padding: clamp(32px, 5vw, 64px); border-radius: var(--r-panel); min-height: 540px; }
 .way--ink { background: var(--ink-2); color: var(--on-ink); }
@@ -305,36 +305,39 @@ strong, b { font-weight: 600; }
 .way .actions { margin-top: auto; }
 @media (max-width: 900px) { .ways { grid-template-columns: 1fr; } .way { min-height: 0; } }
 
-/* More ways in: large square cards; narrower screens swipe through them, with dots (main.js) */
-.also { margin-top: clamp(48px, 6vw, 80px); }
-.also > p { margin: 0 0 20px; font-size: var(--t-h3); font-weight: 300; line-height: 1.3; }
-.also ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
-.also li { display: flex; }
-.also li a { flex: 1; display: flex; flex-direction: column; gap: 14px; min-height: clamp(260px, 28vw, 380px); padding: clamp(24px, 3vw, 40px); border-radius: var(--r-panel); background: var(--mist); color: var(--ink); text-decoration: none; transition: background .2s; }
-.also li a:hover { background: var(--halo); }
-.also b { font-weight: 300; font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.25rem); line-height: 1.2; }
-.also span { color: var(--ink-soft); }
-.also li a::after {
-  content: ""; flex: none; align-self: flex-end; width: 48px; height: 48px; margin-top: auto; border-radius: 50%;
-  background: var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f9fafc' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 12H5M11 6l-6 6 6 6'/%3E%3C/svg%3E") center / 20px no-repeat;
-  transition: background-color .2s, transform .2s;
+/* More than two ways: all the same size, three to a row (a short last row centred),
+   two on tablets, and on phones a row to swipe through, with dots under it (main.js) */
+.ways__dots { display: none; }
+@media (min-width: 761px) {
+  .ways:has(> :nth-child(3)) { grid-auto-rows: 1fr; }
+  .ways:has(> :nth-child(3)) > .way { min-height: 0; padding: clamp(28px, 3vw, 44px); }
+  .ways:has(> :nth-child(3)) .way h2 { font-size: clamp(2rem, 1.3rem + 1.4vw, 2.75rem); }
 }
-.also li a:hover::after { background-color: var(--cobalt); transform: translateX(-4px); }
-.also__dots { display: none; }
-@media (max-width: 900px) {
-  .also ul {
+@media (min-width: 1101px) {
+  .ways:has(> :nth-child(3)) { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .ways:has(> :nth-child(3)) > .way { grid-column: span 2; }
+  .ways:has(> :nth-child(3)) > .way:nth-child(3n + 1):nth-last-child(2) { grid-column: 2 / span 2; }
+  .ways:has(> :nth-child(3)) > .way:nth-child(3n + 1):last-child { grid-column: 3 / span 2; }
+}
+@media (min-width: 761px) and (max-width: 1100px) {
+  .ways:has(> :nth-child(3)) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .ways:has(> :nth-child(3)) > .way { grid-column: span 2; }
+  .ways:has(> :nth-child(3)) > .way:nth-child(2n + 1):last-child { grid-column: 2 / span 2; }
+}
+@media (max-width: 760px) {
+  .ways:has(> :nth-child(3)) {
     display: flex; gap: 12px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory;
     margin-inline: -8px; padding: 6px 8px; scroll-padding-inline: 8px; scrollbar-width: none;
   }
-  .also ul::-webkit-scrollbar { display: none; }
-  .also li { flex: 0 0 min(82%, 340px); scroll-snap-align: start; }
-  .also__dots { display: flex; justify-content: center; margin-top: 8px; }
-  .also__dots[hidden] { display: none; }
-  .also__dots button { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; background: none; cursor: pointer; }
-  .also__dots button::before { content: ""; width: 8px; height: 8px; border-radius: var(--pill); background: var(--rule); transition: width .2s, background-color .2s; }
-  .also__dots button.is-on::before { width: 20px; background: var(--ink); }
+  .ways:has(> :nth-child(3))::-webkit-scrollbar { display: none; }
+  .ways:has(> :nth-child(3)) > .way { flex: 0 0 86%; scroll-snap-align: start; }
+  .ways__dots { display: flex; justify-content: center; margin-top: 8px; }
+  .ways__dots[hidden] { display: none; }
+  .ways__dots button { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; background: none; cursor: pointer; }
+  .ways__dots button::before { content: ""; width: 8px; height: 8px; border-radius: var(--pill); background: var(--rule); transition: width .2s, background-color .2s; }
+  .ways__dots button.is-on::before { width: 20px; background: var(--ink); }
 }
-@media (prefers-reduced-motion: no-preference) { .also ul { scroll-behavior: smooth; } }
+@media (prefers-reduced-motion: no-preference) { .ways { scroll-behavior: smooth; } }
 
 /* Sections -----------------------------------------------------------------*/
 .section { padding-block: var(--section); }
@@ -985,7 +988,6 @@ html.a11y-contrast .hero::before, html.a11y-contrast .page-hero::before { displa
 html.a11y-contrast :focus-visible { outline: 3px solid #ff8c00 !important; outline-offset: 3px; }
 html.a11y-contrast .actionbar { background: #fff; box-shadow: 0 -2px 0 #000; }
 html.a11y-contrast .actionbar__btn { border: 1px solid #000; }
-html.a11y-contrast .also li a { border: 1px solid #000; }
 
 /* Shop: a page's buy section, the payment link page, the note after paying */
 .offer .price, .paybox .price { margin: 4px 0 0; display: grid; gap: 2px; }
@@ -1098,7 +1100,6 @@ html.menu-open body { overflow: hidden; }
   .page-hero[data-art] .wrap::before { width: 48px; height: 48px; margin-bottom: 18px; }
   .hero { padding: 48px 0 44px; }
   .section__title { margin-bottom: 28px; }
-  .also { margin-top: 36px; }
   .way { padding: 28px 22px; gap: 22px; }
   .site-footer { padding: 52px 0 28px; }
   .site-footer__bottom { margin-top: 36px; }
