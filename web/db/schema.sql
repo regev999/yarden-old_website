@@ -250,3 +250,15 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE INDEX IF NOT EXISTS orders_created ON orders(created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS orders_lowprofile ON orders(lowprofile_id) WHERE lowprofile_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS orders_link ON orders(payment_link_id) WHERE payment_link_id IS NOT NULL;
+
+-- Posts copied from the Focusing for Freedom blog (lib/blogsync.js): which post there,
+-- its address (the canonical of the copy) and the version copied
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS source_id TEXT;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS source_url TEXT;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS source_modified TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS posts_source ON posts(source_id) WHERE source_id IS NOT NULL;
+-- Images of those posts, copied once to this site's storage
+CREATE TABLE IF NOT EXISTS synced_media (
+  source_url TEXT PRIMARY KEY,
+  url TEXT NOT NULL
+);

@@ -43,10 +43,11 @@ async function resolve(path, { drafts = false } = {}) {
       type: 'page',
       html: pageDocument({
         path, title: post.title, seoTitle: post.seo_title, description: post.description,
-        // an old copy of another page sends search engines to the original
-        canonical: post.duplicate_of || null,
+        // an old copy of another page, or a post copied from the Focusing for Freedom blog,
+        // sends search engines to the original
+        canonical: post.duplicate_of || post.source_url || null,
         ogType: 'article', ogImage: ogImageFor(path, post.og_image), noindex: post.noindex || post.status !== 'published',
-        ld: post.duplicate_of ? null : { ...postLd(post), image: ogImageFor(path, post.og_image) },
+        ld: post.duplicate_of || post.source_url ? null : { ...postLd(post), image: ogImageFor(path, post.og_image) },
         main: await postMain(post), gaId: await gaId(),
       }),
     };
