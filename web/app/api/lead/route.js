@@ -1,13 +1,16 @@
 /**
- * Receives the site's contact / newsletter forms, stores the lead and emails a
- * notification. The page's script sends it and reads a JSON answer; a form
- * sent without the script (blocked, still loading) gets a thank-you page.
+ * Receives the site's contact / newsletter forms. A contact form is stored as a
+ * lead and emailed as a notification; a newsletter sign-up goes to the
+ * subscribers list and on to Rav-Messer (lib/newsletter.js). The page's script
+ * sends it and reads a JSON answer; a form sent without the script (blocked,
+ * still loading) gets a thank-you page.
  */
 import { q, getSetting } from '@/lib/db';
 import { sendMail } from '@/lib/mail';
 import { bodyTooLarge, ipHash, sameOrigin, takeAttempt } from '@/lib/security';
 import { esc } from '@/lib/html';
 import { LEAD_SOURCES } from '@/lib/leads';
+import { subscribe } from '@/lib/newsletter';
 import { siteBase } from '@/lib/shop';
 import { pageDocument } from '@/lib/shell';
 
@@ -22,11 +25,11 @@ function localPath(v) {
   return /^\/(?![/\\])[^\s\\@<>"]*$/.test(p) ? p.slice(0, 300) : '';
 }
 
-function answer(request, status, body, back = '/') {
+function answer(request, status, body, back = '/', newsletter = false) {
   if ((request.headers.get('accept') || '').includes('application/json')) return Response.json(body, { status, headers: HEADERS });
   const ok = status === 200 && body.ok;
-  const title = ok ? 'תודה, הפרטים התקבלו' : 'השליחה לא הצליחה';
-  const text = ok ? 'אחזור אליך בהקדם.' : (body.error || 'אפשר לנסות שוב, או להתקשר ישירות.');
+  const title = ok ? (newsletter ? 'תודה, נרשמת לניוזלטר' : 'תודה, הפרטים התקבלו') : 'השליחה לא הצליחה';
+  const text = ok ? (newsletter ? 'העדכונים יגיעו אליך למייל.' : 'אחזור אליך בהקדם.') : (body.error || 'אפשר לנסות שוב, או להתקשר ישירות.');
   const main = `<header class="page-hero"><div class="wrap"><h1>${esc(title)}</h1><p class="page-hero__sub">${esc(text)}</p>
 <div class="actions"><a class="btn btn--paper" href="${esc(back)}">חזרה לעמוד</a></div></div></header>`;
   return new Response(pageDocument({ path: '/api/lead/', title, noindex: true, main }), { status, headers: { ...HEADERS, 'Content-Type': 'text/html; charset=utf-8' } });
@@ -56,6 +59,12 @@ export async function POST(request) {
   }
 
   const kind = field('form', 20);
+  if (kind === 'newsletter') {
+    const email = field('email', 160);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return answer(request, 422, { ok: false, error: 'כתובת המייל לא תקינה.' }, page || '/', true);
+    await subscribe({ email, name: field('name', 120), page, ipHash: ipHash(request) });
+    return answer(request, 200, { ok: true }, page || '/', true);
+  }
   const product = field('product', 20);
   const lead = {
     name: field('name', 120), phone: field('phone', 40), email: field('email', 160), message: field('message', 4000),

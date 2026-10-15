@@ -5,6 +5,8 @@ import { publishChanges, logActivity } from '../common';
 import { matchCode, newRecoveryCodes, newSecret, otpauthUrl, qrSvg, spaced } from '../totp';
 import { adminPage, csrfField, esc, heDate, html, redirect } from '../ui';
 import { USERNAME, EMAIL } from './auth';
+import { isConfigured as ravmesserReady } from '../../ravmesser';
+import { LIST_SETTING, listId } from '../../newsletter';
 
 const back = (msg, type = 'ok', hash = '') => redirect('/admin/settings/' + hash, msg, type);
 
@@ -89,6 +91,7 @@ export const page = {
   async GET(ctx) {
     const notify = await getSetting('notify_email', process.env.NOTIFY_EMAIL || '');
     const ga = await getSetting('ga_id', '');
+    const [newsList, ravOn] = await Promise.all([listId(), ravmesserReady()]);
     const mailOn = await mailReady();
     const u = await one('SELECT username, totp_enabled, totp_secret, totp_since, recovery_codes FROM users WHERE id = $1', [ctx.user.id]);
     const body = `<div class="settings-grid">
@@ -104,6 +107,16 @@ export const page = {
     </form>
     <form method="post" class="inline-form">${csrfField(ctx)}<input type="hidden" name="action" value="test">
       <button class="btn btn--quiet" type="submit">שליחת מייל בדיקה</button></form>
+  </section>
+  <section class="panel" id="newsletter">
+    <h2>ניוזלטר</h2>
+    ${ravOn ? '' : '<p class="notice notice--warn">רב־מסר עוד לא מחובר. הנרשמים נשמרים באתר בכל מקרה. <a href="/admin/connections/#ravmesser">לחיבור רב־מסר</a></p>'}
+    <form method="post" class="stack">${csrfField(ctx)}<input type="hidden" name="action" value="newsletter">
+      <label>מזהה רשימה ברב־מסר <input name="list_id" value="${esc(newsList)}" dir="ltr" maxlength="120">
+        <small>כל מי שנרשם לניוזלטר באתר נכנס לרשימה הזו. אפשר כמה רשימות, מופרדות בפסיק.</small></label>
+      <button class="btn" type="submit">שמירה</button>
+    </form>
+    <p class="muted small"><a href="/admin/newsletter/">כל הנרשמים לניוזלטר</a></p>
   </section>
   <section class="panel">
     <h2>Google Analytics</h2>
@@ -169,6 +182,12 @@ export const page = {
         if (to && !EMAIL.test(to)) return back('כתובת המייל לא תקינה.', 'error');
         await setSetting('notify_email', to);
         return back(to ? `התראות על לידים חדשים יישלחו אל ${to}` : 'התראות במייל כבויות. הלידים עדיין נשמרים במערכת.');
+      }
+      case 'newsletter': {
+        const ids = f('list_id').slice(0, 120).split(/[\s,]+/).filter(Boolean);
+        await setSetting(LIST_SETTING, ids.join(','));
+        await logActivity(ctx, ids.length ? 'בחר רשימת ניוזלטר ברב־מסר' : 'ביטל את רשימת הניוזלטר', ids.join(','), '/admin/newsletter/');
+        return back(ids.length ? `נרשמים חדשים לניוזלטר ייכנסו לרשימה ${ids.join(', ')} ברב־מסר.` : 'לא נבחרה רשימה: הנרשמים לניוזלטר יישמרו באתר בלבד.', 'ok', '#newsletter');
       }
       case 'ga': {
         const id = f('ga_id').toUpperCase();

@@ -1,0 +1,10 @@
+{
+  "id": "2026-10-courses-retire-404",
+  "path": "/404/",
+  "replace": [
+    [
+      "<a class=\"linkcard linkcard--read\" href=\"/קורסים/\"><span class=\"linkcard__icon\" aria-hidden=\"true\"></span><span class=\"linkcard__title\">קורסים</span><span class=\"linkcard__where\">התמקדות</span></a>",
+      "<a class=\"linkcard linkcard--read\" href=\"/טראומה-מורכבת/\"><span class=\"linkcard__icon\" aria-hidden=\"true\"></span><span class=\"linkcard__title\">הכשרת מטפלים</span><span class=\"linkcard__where\">התמקדות</span></a>"
+    ]
+  ]
+}

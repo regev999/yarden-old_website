@@ -91,6 +91,16 @@ if (await seedOnce('redirects')) {
   console.log(`[migrate] redirects: ${r.length}`);
 }
 
+// Newsletter sign-ups made before the subscribers list existed were kept as leads
+if (await seedOnce('subscribers')) {
+  const r = await sql.query(
+    `INSERT INTO subscribers (email, name, page, ip_hash, created_at)
+     SELECT DISTINCT ON (lower(email)) lower(email), name, page, ip_hash, created_at FROM leads
+     WHERE kind = 'newsletter' AND email <> '' ORDER BY lower(email), created_at
+     ON CONFLICT (email) DO NOTHING RETURNING id`);
+  console.log(`[migrate] subscribers from earlier leads: ${r.length}`);
+}
+
 // 3. Content updates (content/updates/): each one is applied once.
 //    Each update is content/updates/<id>.json (path, file, contact, description)
 //    plus the page body in <id>.body.html. An update can also only set a
@@ -129,6 +139,14 @@ for (const u of updates) {
                      ON CONFLICT (source) DO UPDATE SET target = EXCLUDED.target, note = EXCLUDED.note`, [u.path, u.retire, u.note || 'הוסר מהאתר']);
     await sql.query('UPDATE pages SET noindex = true, updated_at = now() WHERE path = $1', [u.path]);
     await sql.query("UPDATE posts SET status = 'draft' WHERE path = $1", [u.path]);
+  } else if (u.testimonials) {
+    // Corrected testimonials, each found by a piece of its text as it was: one already
+    // rewritten in the admin no longer has that text and is left as it is.
+    for (const t of u.testimonials) {
+      const done = await sql.query(`UPDATE testimonials SET body = $2, name = COALESCE($3, name), role = COALESCE($4, role)
+                                    WHERE strpos(body, $1) > 0 RETURNING id`, [t.find, t.body, t.name ?? null, t.role ?? null]);
+      if (!done.length) console.warn(`[migrate] update ${u.id}: no testimonial with "${t.find}", skipped`);
+    }
   } else if (u.duplicate_of) {
     // An old post that repeats another page: its canonical and the sitemap point to the original.
     const done = await sql.query('UPDATE posts SET duplicate_of = $2 WHERE path = $1 RETURNING id', [u.path, u.duplicate_of]);

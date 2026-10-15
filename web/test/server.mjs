@@ -17,6 +17,9 @@ async function route(pathname) {
   if (seg[0] === 'files' && seg.length > 1) return [await import('../app/files/[...path]/route.js'), { path: seg.slice(1) }];
   if (seg[0] === 'api' && seg[1] === 'lead') return [await import('../app/api/lead/route.js'), {}];
   if (seg[0] === 'api' && seg[1] === 'blog-sync') return [await import('../app/api/blog-sync/route.js'), {}];
+  if (seg[0] === 'api' && seg[1] === 'checkout') return [await import('../app/api/checkout/route.js'), {}];
+  if (seg[0] === 'api' && seg[1] === 'cardcom-webhook') return [await import('../app/api/cardcom-webhook/route.js'), {}];
+  if (seg[0] === 'pay' && seg.length === 2) return [await import('../app/pay/[token]/route.js'), { token: seg[1] }];
   if (seg.length === 1 && XML.includes(seg[0])) return [await import(`../app/${seg[0]}/route.js`), {}];
   return [await import('../app/[[...slug]]/route.js'), { slug: seg.length ? seg : undefined }];
 }
