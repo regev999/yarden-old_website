@@ -28,7 +28,7 @@ export const NAV = [
     ['טיפול במגע: שיטת גרינברג', '/גרינברג/'], ['שיטת פאולה', '/שיטת-פאולה/'],
   ]],
   ['קורסים', [
-    ['קורסי התמקדות', '/קורסים/'], ['הכשרת מטפלים', '/טראומה-מורכבת/'],
+    ['הכשרת מטפלים', '/טראומה-מורכבת/'],
     ['The Inner Freedom Map', '/פוקוסינג-לחיי-היום-יום/'], ['אפליקציית Focusing Parts Map', '/focusing-parts-map/'],
   ]],
   ['על ירדן', [
@@ -78,6 +78,17 @@ function actionBarHtml(book) {
 export function footerHtml() {
   return `<footer class="site-footer">
   <div class="wrap">
+    <section class="site-footer__news" aria-labelledby="footer-news">
+      <div><h2 id="footer-news">ניוזלטר</h2><p class="quiet">הצטרפו לניוזלטר שלי כדי לקבל עדכונים וחדשות.</p></div>
+      <form class="form news-form" method="post" action="/api/lead/" data-form="newsletter"><input type="hidden" name="form" value="newsletter">
+        <label class="sr-only" for="footer-nl-name">שם</label><input id="footer-nl-name" type="text" name="name" placeholder="שם (לא חובה)" autocomplete="name">
+        <label class="sr-only" for="footer-nl-email">דוא"ל</label><input id="footer-nl-email" type="email" name="email" required placeholder="כתובת הדוא&quot;ל שלך" autocomplete="email" dir="auto">
+        <button class="btn" type="submit">הרשמה</button>
+        <div class="hp" aria-hidden="true"><label>אתר<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+        <p class="form__status" role="status"></p>
+        <p class="news-form__note">אפשר להסיר את ההרשמה בכל עת. <a href="/מדיניות-פרטיות/">מדיניות פרטיות</a></p>
+      </form>
+    </section>
     <div class="site-footer__grid">
       <div>
         <p class="site-footer__brand">${SITE_NAME}</p>
@@ -85,8 +96,8 @@ export function footerHtml() {
         <p><a href="https://www.focusingfreedom.co.il/" target="_blank" rel="noopener">Focusing for Freedom</a></p>
       </div>
       <div><h2>טיפול וקורסים</h2><ul>
-        <li><a href="/טיפול-אישי/">טיפול אישי</a></li><li><a href="/קורסים/">קורסי התמקדות</a></li>
-        <li><a href="/טראומה-מורכבת/">הכשרת מטפלים</a></li><li><a href="/פוקוסינג-לחיי-היום-יום/">The Inner Freedom Map</a></li>
+        <li><a href="/טיפול-אישי/">טיפול אישי</a></li><li><a href="/טראומה-מורכבת/">הכשרת מטפלים</a></li>
+        <li><a href="/פוקוסינג-לחיי-היום-יום/">The Inner Freedom Map</a></li>
         <li><a href="/focusing-parts-map/">אפליקציית Focusing Parts Map</a></li></ul></div>
       <div><h2>לקרוא ולהאזין</h2><ul>
         <li><a href="/מאמרים-שאני-כתבתי/">מאמרים</a></li><li><a href="/בלוג/">בלוג</a></li>

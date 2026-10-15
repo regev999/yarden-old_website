@@ -108,9 +108,9 @@ const oldH1 = (await h1.textContent()).trim();
 await h1.click();
 await page.keyboard.press('End');
 await page.keyboard.type(' בדיקה');
-await page.click('[data-yk-save]');
+// The editor reloads itself once the save is done
+await Promise.all([page.waitForEvent('framenavigated', (f) => f === page.mainFrame()), page.click('[data-yk-save]')]);
 await page.waitForLoadState('load');
-await page.waitForTimeout(1500);
 let live = await (await page.request.get(B + '/' + encodeURIComponent('אודות') + '/')).text();
 assert.ok(live.includes(oldH1 + ' בדיקה'), 'edited heading is live');
 await page.goto(B + '/admin/revisions/?path=' + encodeURIComponent('/אודות/'));
@@ -134,8 +134,8 @@ assert.match(postHtml, /פסקה ראשונה של המאמר/);
 assert.match(postHtml, /BlogPosting/);
 const blog = await (await page.request.get(B + '/' + encodeURIComponent('בלוג') + '/')).text();
 assert.match(blog, /מאמר בדיקה חדש/);
-assert.match(blog, /כל <!--yk:count-->92</); // 91 published (old duplicates left out) + this one
-step('post published, listed in blog (count 92)');
+assert.match(blog, /כל <!--yk:count-->90</); // 89 published (old duplicates and two retired posts left out) + this one
+step('post published, listed in blog (count 90)');
 
 // Media upload: 4000x3000 JPEG is compressed in the browser
 await page.goto(B + '/admin/media/');
@@ -199,18 +199,18 @@ step('mobile sidebar');
   await page.fill('[name=description]', 'מפגשים שבועיים בזום');
   await page.fill('[name=price]', '1800');
   await page.fill('[name=max_payments]', '3');
-  await page.selectOption('[name=page_path]', '/קורסים/');
+  await page.selectOption('[name=page_path]', '/התמקדות/');
   await page.click('button:has-text("שמירה")');
   assert.match(await page.textContent('table'), /קורס התמקדות שנתי[\s\S]*1,800/);
   const configured = !(await page.$('.notice--warn'));
   if (!configured) {
     // Without Cardcom credentials nothing is offered on the site
-    await page.goto(B + encodeURI('/קורסים/'));
+    await page.goto(B + encodeURI('/התמקדות/'));
     assert.equal(await page.$('#buy'), null);
     step('shop: products saved, no buy button while Cardcom is not connected');
   } else {
     const mock = 'http://localhost:4010';
-    await page.goto(B + encodeURI('/קורסים/'));
+    await page.goto(B + encodeURI('/התמקדות/'));
     assert.match(await page.textContent('#buy'), /1,800 ₪[\s\S]*עד 3 תשלומים של 600 ₪/);
     await page.click('#buy [data-checkout]');
     await page.waitForURL(/localhost:4010\/pay\//);
@@ -222,7 +222,7 @@ step('mobile sidebar');
     assert.equal(sent.Document.DocumentTypeToCreate, 'TaxInvoiceAndReceipt');
     assert.equal(sent.Document.Products[0].UnitCost, 1800);
     await page.click('#pay');
-    await page.waitForURL(/\/%D7%A7%D7%95%D7%A8%D7%A1%D7%99%D7%9D\/(\?payment=success)?$/);
+    await page.waitForURL(/\/%D7%94%D7%AA%D7%9E%D7%A7%D7%93%D7%95%D7%AA\/(\?payment=success)?$/);
     assert.match(await page.textContent('.pay-toast'), /התשלום התקבל/);
     assert.ok(!page.url().includes('payment='), 'the notice shows once');
     await page.goto(B + '/admin/sales/');
@@ -347,6 +347,30 @@ step('mobile sidebar');
   assert.match(await page.textContent('#signins'), /קוד גיבוי/);
   assert.match(await page.textContent('#devices'), /המכשיר הזה/);
   step('two-step sign-in: QR secret, codes, no replay, recovery code once, sign-in log');
+}
+
+// Newsletter: the form in the footer, the subscribers list and its Rav-Messer list in the admin
+{
+  const visitor = await browser.newPage();
+  await visitor.goto(B + '/');
+  await visitor.fill('#footer-nl-name', 'נועה');
+  await visitor.fill('#footer-nl-email', 'Noa@Example.com');
+  await visitor.click('.news-form button[type=submit]');
+  await visitor.waitForFunction(() => /תודה/.test(document.querySelector('.news-form .form__status').textContent));
+  await visitor.close();
+  const leadsNow = await page.request.get(B + '/admin/export/');
+  assert.doesNotMatch(await leadsNow.text(), /noa@example\.com/i, 'a sign-up is not a lead');
+
+  await page.goto(B + '/admin/settings/');
+  await page.fill('#newsletter [name=list_id]', ' 123 ');
+  await page.click('#newsletter button[type=submit]');
+  assert.match(await page.textContent('.notice'), /לרשימה 123 ברב־מסר/);
+  await page.goto(B + '/admin/newsletter/');
+  assert.match(await page.textContent('table'), /נועה[\s\S]*noa@example\.com[\s\S]*עוד לא נשלח/);
+  assert.match(await page.textContent('.notice--warn'), /רב־מסר עוד לא מחובר/);
+  const csv = await (await page.request.get(B + '/admin/newsletter-export/')).text();
+  assert.match(csv, /נועה,noa@example\.com,עוד לא נשלח/);
+  step('newsletter: footer sign-up, kept apart from leads, list id in settings, admin list + CSV');
 }
 
 console.log(errors.length ? 'browser errors:\n' + errors.join('\n') : 'no browser errors');

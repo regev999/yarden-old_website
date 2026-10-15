@@ -1,0 +1,7 @@
+{
+  "id": "2026-10-courses-retire-one-on-one",
+  "path": "/פגישות-1-על-1/",
+  "remove": [
+    "<a class=\"btn btn--line\" href=\"/קורסים/\" data-product=\"course\">לעמוד הקורסים</a>\n"
+  ]
+}

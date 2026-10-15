@@ -262,3 +262,19 @@ CREATE TABLE IF NOT EXISTS synced_media (
   source_url TEXT PRIMARY KEY,
   url TEXT NOT NULL
 );
+
+-- Newsletter sign-ups (the form at the bottom of every page, lib/newsletter.js): one row per
+-- address, and whether it reached the Rav-Messer list chosen in the admin settings
+CREATE TABLE IF NOT EXISTS subscribers (
+  id SERIAL PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,                  -- lower case
+  name TEXT NOT NULL DEFAULT '',
+  page TEXT NOT NULL DEFAULT '',
+  ip_hash TEXT NOT NULL DEFAULT '',
+  list_status TEXT NOT NULL DEFAULT 'waiting' CHECK (list_status IN ('waiting', 'sent', 'failed')),
+  list_id TEXT NOT NULL DEFAULT '',            -- the list it was added to
+  list_error TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  sent_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS subscribers_created ON subscribers(created_at DESC);

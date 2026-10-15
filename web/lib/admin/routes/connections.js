@@ -83,7 +83,7 @@ export const page = {
 
 <section class="panel" id="ravmesser">
   <h2>רב־מסר (רשימות תפוצה)</h2>
-  ${state(rav, 'מחובר: קונים נרשמים אוטומטית לרשימה של המוצר', 'לא מחובר (לא חובה)')}
+  ${state(rav, 'מחובר: קונים נרשמים אוטומטית לרשימה של המוצר, ונרשמים לניוזלטר לרשימה שבהגדרות', 'לא מחובר (לא חובה)')}
   <form method="post" class="stack narrow-form" autocomplete="off">${csrfField(ctx)}<input type="hidden" name="service" value="ravmesser">
     ${field(d, 'RAVMESSER_CLIENT_ID', 'Client ID')}
     ${field(d, 'RAVMESSER_CLIENT_SECRET', 'Client Secret', { secret: true })}

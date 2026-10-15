@@ -8,6 +8,7 @@ import { bodyTooLarge, sameOrigin, sameSecret } from '../security';
 import * as authRoutes from './routes/auth';
 import * as dashboard from './routes/dashboard';
 import * as leads from './routes/leads';
+import * as newsletter from './routes/newsletter';
 import * as settings from './routes/settings';
 import * as posts from './routes/posts';
 import * as pages from './routes/pages';
@@ -24,6 +25,7 @@ const PUBLIC = {
 const PRIVATE = {
   '': dashboard.home, 'logout': authRoutes.logout,
   'leads': leads.list, 'lead': leads.oneLead, 'export': leads.exportCsv,
+  'newsletter': newsletter.list, 'newsletter-export': newsletter.exportCsv,
   'settings': settings.page, 'connections': connections.page,
   'posts': posts.list, 'post-edit': posts.edit, 'preview': posts.preview,
   'pages': pages.list, 'page-edit': pages.edit, 'page-save': pages.save, 'revisions': pages.revisions,

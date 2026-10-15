@@ -7,6 +7,7 @@ export { esc };
 const ICONS = {
   dashboard: '<path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-16v5h6V4h-6Z"/>',
   leads: '<path d="M4 5h16v11H7l-3 3V5Zm2 2v7.2l.8-.8H18V7H6Zm2 2h8v1.5H8V9Zm0 2.5h5V13H8v-1.5Z"/>',
+  newsletter: '<path d="M3 5h18v14H3V5Zm2 2v.6l7 4.7 7-4.7V7H5Zm14 3-7 4.7L5 10v7h14v-7Z"/>',
   pages: '<path d="M6 3h8l4 4v14H6V3Zm2 2v14h8V8h-3V5H8Zm1.5 6h5v1.5h-5V11Zm0 3h5v1.5h-5V14Z"/>',
   posts: '<path d="M4 4h12v2H4V4Zm0 4h16v2H4V8Zm0 4h16v2H4v-2Zm0 4h10v2H4v-2Zm13 0 3-3 1.5 1.5-3 3H17V16Z"/>',
   testimonials: '<path d="M6 7h5v5.5c0 2.5-1.6 4.3-4 4.5v-2c1.1-.3 1.8-1.1 2-2.5H6V7Zm7 0h5v5.5c0 2.5-1.6 4.3-4 4.5v-2c1.1-.3 1.8-1.1 2-2.5h-3V7Z"/>',
@@ -39,7 +40,7 @@ export async function adminPage(ctx, { title, active, body, actions = '', script
   // Sales in the last day, as a badge (0 when the shop tables aren't there yet)
   const newSales = (await one(`SELECT count(*)::int AS n FROM orders WHERE status = 'paid' AND paid_at > now() - interval '1 day'`).catch(() => null))?.n || 0;
   const groups = [
-    ['', [['dashboard', '/admin/', 'סקירה'], ['leads', '/admin/leads/', 'לידים', newLeads]]],
+    ['', [['dashboard', '/admin/', 'סקירה'], ['leads', '/admin/leads/', 'לידים', newLeads], ['newsletter', '/admin/newsletter/', 'ניוזלטר']]],
     ['תוכן', [['pages', '/admin/pages/', 'עמודים'], ['posts', '/admin/posts/', 'מאמרים ובלוג'],
       ['testimonials', '/admin/testimonials/', 'המלצות'], ['media', '/admin/media/', 'תמונות וקבצים']]],
     ['מכירות', [['sales', '/admin/sales/', 'מכירות', newSales], ['products', '/admin/products/', 'מוצרים'], ['pay-links', '/admin/pay-links/', 'קישורי תשלום']]],

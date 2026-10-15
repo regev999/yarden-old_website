@@ -1,0 +1,16 @@
+{
+  "id": "2026-10-courses-retire-home",
+  "path": "/",
+  "replace": [
+    [
+      "<a class=\"btn btn--line\" href=\"/קורסים/\" data-product=\"course\">הרשמה לקורס</a>",
+      "<a class=\"btn btn--line\" href=\"/טראומה-מורכבת/\" data-product=\"course\">הכשרת מטפלים</a>"
+    ]
+  ],
+  "remove": [
+    [
+      "<article class=\"way way--mist\">\n        <p class=\"way__kind\">קורס שנתי, אונליין או פרונטלי</p>",
+      "</article>\n"
+    ]
+  ]
+}
