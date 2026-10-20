@@ -18,6 +18,7 @@ import * as seo from './routes/seo';
 import * as redirectsRoutes from './routes/redirects';
 import * as shop from './routes/shop';
 import * as connections from './routes/connections';
+import * as users from './routes/users';
 
 const PUBLIC = {
   'login': authRoutes.login, 'verify': authRoutes.verify, 'forgot': authRoutes.forgot, 'reset': authRoutes.reset, 'setup': authRoutes.setup,
@@ -26,7 +27,7 @@ const PRIVATE = {
   '': dashboard.home, 'logout': authRoutes.logout,
   'leads': leads.list, 'lead': leads.oneLead, 'export': leads.exportCsv,
   'newsletter': newsletter.list, 'newsletter-export': newsletter.exportCsv,
-  'settings': settings.page, 'connections': connections.page,
+  'settings': settings.page, 'connections': connections.page, 'users': users.page,
   'posts': posts.list, 'post-edit': posts.edit, 'preview': posts.preview,
   'pages': pages.list, 'page-edit': pages.edit, 'page-save': pages.save, 'revisions': pages.revisions,
   'testimonials': testimonials.page,

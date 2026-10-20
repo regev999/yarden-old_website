@@ -1,9 +1,9 @@
 /** Login, logout, password reset and first-run account setup. */
 import { q, one } from '../../db';
 import { mailReady, sendMail } from '../../mail';
-import { clearAttempts, ipHash, ipHint, sameSecret, sha256, takeAttempt, token } from '../../security';
+import { clearAttempts, ipHash, ipHint, sameSecret, sha256, takeAttempt } from '../../security';
 import { siteBase } from '../../shop';
-import { currentPending, currentSession, deviceName, endPending, endSession, hashPassword, knownDevice, logSignin, passwordProblem, setPassword, startPending, startSession, userCount, verifyPassword } from '../auth';
+import { currentPending, currentSession, deviceName, endPending, endSession, hashPassword, knownDevice, logSignin, passwordLink, passwordProblem, setPassword, startPending, startSession, userCount, verifyPassword } from '../auth';
 import { matchCode, matchRecoveryCode } from '../totp';
 import { authPage, esc, html, redirect } from '../ui';
 
@@ -151,8 +151,8 @@ export const forgot = {
 <p class="auth-card__alt"><a href="/admin/login/">חזרה לכניסה</a></p>`));
   },
   async POST(ctx) {
-    // The setup code works as a recovery key for the one account: it lives only
-    // on the server and with the site's owner. Limited, logged, and 2FA still applies.
+    // The setup code works as a recovery key for the owner's account (the first one): it lives
+    // only on the server and with the site's owner. Limited, logged, and 2FA still applies.
     if (ctx.form.get('action') === 'setup-key') {
       const expected = process.env.ADMIN_SETUP_KEY || '';
       const limited = await takeAttempt('reset-key|' + ipHash(ctx.request), 5, 900);
@@ -163,21 +163,16 @@ export const forgot = {
         return html(authPage(ctx, 'איפוס סיסמה', `<p class="notice notice--error" role="alert">${limited ? 'יותר מדי ניסיונות. נסו שוב בעוד רבע שעה.' : 'קוד ההתקנה שגוי.'}</p>
 <p><a class="btn" href="/admin/forgot/">חזרה</a></p>`), 400);
       }
-      const t = token();
-      await q('DELETE FROM password_resets WHERE user_id = $1', [u.id]);
-      await q(`INSERT INTO password_resets(token_hash, user_id, expires_at) VALUES($1, $2, now() + interval '15 minutes')`, [sha256(t), u.id]);
+      const link = await passwordLink(u.id, 15);
       await logSignin(ctx.request, { username: u.username, ok: true, step: 'setup-key' });
-      return redirect(`/admin/reset/?token=${t}`);
+      return redirect(link);
     }
     const who = String(ctx.form.get('who') || '').trim();
     const key = 'reset|' + ipHash(ctx.request);
     if (who && !(await takeAttempt(key, 5, 3600))) {
       const u = await one('SELECT id, email, username FROM users WHERE lower(email) = lower($1) OR lower(username) = lower($1)', [who]);
       if (u) {
-        const t = token();
-        await q('DELETE FROM password_resets WHERE user_id = $1', [u.id]);
-        await q(`INSERT INTO password_resets(token_hash, user_id, expires_at) VALUES($1, $2, now() + interval '1 hour')`, [sha256(t), u.id]);
-        const link = `${siteBase(ctx.request)}/admin/reset/?token=${t}`;
+        const link = siteBase(ctx.request) + await passwordLink(u.id, 60);
         await sendMail({
           to: u.email, subject: 'איפוס סיסמה לניהול האתר',
           text: `שלום ${u.username},\n\nכדי לבחור סיסמה חדשה לאזור הניהול של האתר, פתחו את הקישור:\n${link}\n\n`
@@ -193,11 +188,16 @@ export const forgot = {
 
 async function findReset(t) {
   if (!/^[\w-]{30,60}$/.test(t || '')) return null;
-  return one('SELECT user_id FROM password_resets WHERE token_hash = $1 AND expires_at > now()', [sha256(t)]);
+  // An invited account has no password yet (an empty hash)
+  return one(`SELECT r.user_id, u.username, u.password_hash = '' AS invited FROM password_resets r JOIN users u ON u.id = r.user_id
+              WHERE r.token_hash = $1 AND r.expires_at > now()`, [sha256(t)]);
 }
 
-function resetForm(ctx, t, error = '') {
-  return html(authPage(ctx, 'בחירת סיסמה חדשה', `${errorBox(error)}
+function resetForm(ctx, t, r, error = '') {
+  const intro = r.invited
+    ? `<p class="muted">ברוכים הבאים! בוחרים סיסמה לחשבון <b dir="ltr">${esc(r.username)}</b>, ובכניסות הבאות נכנסים עם שם המשתמש (או המייל) והסיסמה הזאת.</p>`
+    : `<p class="muted">החשבון: <b dir="ltr">${esc(r.username)}</b></p>`;
+  return html(authPage(ctx, r.invited ? 'בחירת סיסמה' : 'בחירת סיסמה חדשה', `${intro}${errorBox(error)}
 <form method="post" class="stack">
   <input type="hidden" name="token" value="${esc(t)}">
   <label>סיסמה חדשה <input name="password" type="password" required minlength="10" autocomplete="new-password" autofocus dir="ltr"><small>לפחות 10 תווים.</small></label>
@@ -207,13 +207,14 @@ function resetForm(ctx, t, error = '') {
 <p class="auth-card__alt"><a href="/admin/login/">חזרה לכניסה</a></p>`));
 }
 
-const badLink = (ctx) => html(authPage(ctx, 'בחירת סיסמה חדשה', `<p class="notice notice--error" role="alert">הקישור לא תקף. ייתכן שפג תוקפו (שעה) או שכבר השתמשו בו.</p>
+const badLink = (ctx) => html(authPage(ctx, 'בחירת סיסמה חדשה', `<p class="notice notice--error" role="alert">הקישור לא תקף. ייתכן שפג תוקפו או שכבר השתמשו בו.</p>
 <p><a class="btn" href="/admin/forgot/">שליחת קישור חדש</a></p>`), 400);
 
 export const reset = {
   async GET(ctx) {
     const t = ctx.query.get('token') || '';
-    return (await findReset(t)) ? resetForm(ctx, t) : badLink(ctx);
+    const r = await findReset(t);
+    return r ? resetForm(ctx, t, r) : badLink(ctx);
   },
   async POST(ctx) {
     const t = String(ctx.form.get('token') || '');
@@ -222,11 +223,16 @@ export const reset = {
     const pw = String(ctx.form.get('password') || '');
     const u = await one('SELECT username, email, totp_enabled FROM users WHERE id = $1', [r.user_id]);
     const problem = passwordProblem(pw, u || {}) || (pw !== String(ctx.form.get('password2') || '') ? 'הסיסמאות לא זהות.' : null);
-    if (problem) return resetForm(ctx, t, problem);
+    if (problem) return resetForm(ctx, t, r, problem);
     await setPassword(r.user_id, pw); // also invalidates this link
     await q('DELETE FROM sessions WHERE user_id = $1', [r.user_id]);
     // A reset link proves the mailbox, not the phone: the code is still needed
     if (u?.totp_enabled) return redirect('/admin/verify/', 'הסיסמה עודכנה. נשאר להקליד את הקוד מהאפליקציה.', 'ok', [await startPending(ctx.request, r.user_id, '/admin/')]);
+    if (r.invited) {
+      // Like setup: a first sign-in, so no "new device" mail
+      await logSignin(ctx.request, { username: r.username, ok: true, step: 'invite' });
+      return redirect('/admin/settings/#twostep', 'הסיסמה נשמרה ואתם מחוברים. מומלץ להפעיל עכשיו אימות דו־שלבי.', 'ok', [await startSession(ctx.request, r.user_id)]);
+    }
     return redirect('/admin/', 'הסיסמה עודכנה ואתם מחוברים.', 'ok', [await signedIn(ctx, r.user_id, 'reset')]);
   },
 };

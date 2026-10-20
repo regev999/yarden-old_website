@@ -10,7 +10,7 @@ import { LIST_SETTING, listId } from '../../newsletter';
 
 const back = (msg, type = 'ok', hash = '') => redirect('/admin/settings/' + hash, msg, type);
 
-const STEPS = { password: 'סיסמה', code: 'קוד מהאפליקציה', recovery: 'קוד גיבוי', reset: 'איפוס סיסמה', setup: 'יצירת החשבון', 'setup-key': 'איפוס עם קוד ההתקנה' };
+const STEPS = { password: 'סיסמה', code: 'קוד מהאפליקציה', recovery: 'קוד גיבוי', reset: 'איפוס סיסמה', setup: 'יצירת החשבון', 'setup-key': 'איפוס עם קוד ההתקנה', invite: 'הזמנה (בחירת סיסמה)' };
 
 /** Two-step sign-in: off, being set up (QR on screen), or on. */
 function twoStepPanel(ctx, u) {
@@ -66,11 +66,11 @@ async function sessionsPanel(ctx) {
 async function signinsPanel() {
   const rows = await q('SELECT at, username, ok, step, ip_hint, user_agent FROM signins ORDER BY id DESC LIMIT 12');
   const failed = (await one(`SELECT count(*)::int AS n FROM signins WHERE NOT ok AND at > now() - interval '7 days'`)).n;
-  const list = rows.map((r) => `<tr><td>${esc(heDate(r.at))}</td><td>${r.ok ? '<span class="tag tag--ok">הצליחה</span>' : '<span class="tag tag--fail">נכשלה</span>'}</td>
+  const list = rows.map((r) => `<tr><td>${esc(heDate(r.at))}</td><td dir="ltr">${esc(r.username)}</td><td>${r.ok ? '<span class="tag tag--ok">הצליחה</span>' : '<span class="tag tag--fail">נכשלה</span>'}</td>
     <td>${esc(STEPS[r.step] || r.step)}</td><td>${esc(deviceName(r.user_agent))}${r.ip_hint ? ` <span class="muted small" dir="ltr">${esc(r.ip_hint)}</span>` : ''}</td></tr>`).join('');
   return `<section class="panel panel--wide" id="signins"><h2>כניסות אחרונות</h2>
     ${failed ? `<p class="muted">${failed} ניסיונות כניסה שנכשלו בשבוע האחרון. ניסיונות חוזרים נחסמים אוטומטית לרבע שעה.</p>` : ''}
-    ${rows.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>מתי</th><th>תוצאה</th><th>שלב</th><th>מכשיר</th></tr></thead><tbody>${list}</tbody></table></div>` : '<p class="empty">עוד אין כניסות.</p>'}
+    ${rows.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>מתי</th><th>משתמש</th><th>תוצאה</th><th>שלב</th><th>מכשיר</th></tr></thead><tbody>${list}</tbody></table></div>` : '<p class="empty">עוד אין כניסות.</p>'}
   </section>`;
 }
 

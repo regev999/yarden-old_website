@@ -185,8 +185,8 @@ CREATE TABLE IF NOT EXISTS signins (
 );
 CREATE INDEX IF NOT EXISTS signins_at ON signins(at DESC);
 
--- The site has one manager: the database itself refuses a second account
-DO $$ BEGIN IF (SELECT count(*) FROM users) <= 1 THEN CREATE UNIQUE INDEX IF NOT EXISTS users_single ON users ((true)); END IF; END $$;
+-- More than one manager: accounts are added from the admin's Users screen (an earlier version allowed only one)
+DROP INDEX IF EXISTS users_single;
 
 -- Shop: products, payment links and orders (Cardcom). Prices are in agorot.
 -- The price in the database is what gets charged; the browser never sends one.

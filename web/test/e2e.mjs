@@ -38,13 +38,13 @@ await page.fill('[name=password]', 'correct-horse-9');
 await page.click('button[type=submit]');
 await page.waitForURL(B + '/admin/settings/#twostep');
 assert.match(await page.textContent('.notice'), /החשבון נוצר/);
-// Only one account can ever exist: the setup screen is closed now
+// The setup screen closes after the first account (more are added from the Users screen)
 await page.goto(B + '/admin/setup/');
 assert.match(page.url(), /\/admin\/(login\/)?$/);
 await page.goto(B + '/admin/');
 assert.match(await page.textContent('.notice--warn'), /אימות דו־שלבי/);
 await shot('dashboard');
-step('setup (single account) + dashboard');
+step('setup (closes after the first account) + dashboard');
 
 // Lead from the public form shows up
 const r = await page.request.post(B + '/api/lead/', { multipart: { name: 'דנה', phone: '050-1112233', form: 'contact', product: 'course', message: 'שלום', page: '/' }, headers: { Origin: B } });
@@ -156,6 +156,55 @@ const clients = await (await page.request.get(B + '/' + encodeURIComponent('לק
 assert.match(clients, /ההמלצה החדשה שלי/);
 step('testimonial added and live');
 
+// Users: password to add, duplicate refused, re-invite, password from the link, delete
+await page.goto(B + '/admin/users/');
+const addUser = async (username, email, current = 'correct-horse-9') => {
+  await page.fill('#new-user [name=username]', username);
+  await page.fill('#new-user [name=email]', email);
+  await page.fill('#new-user [name=current]', current);
+  await page.click('#new-user button[type=submit]');
+};
+await addUser('Noa.K', 'noa@example.com', 'not-my-password');
+assert.match(await page.textContent('.notice--error'), /הסיסמה שלכם שגויה/);
+assert.equal(await page.inputValue('#new-user [name=email]'), 'noa@example.com');
+await addUser('YARDEN', 'other@example.com');
+assert.match(await page.textContent('.notice--error'), /כבר יש משתמש/);
+await addUser('Noa.K', 'noa@example.com');
+assert.match(await page.textContent('.notice'), /החשבון של Noa\.K נוצר/);
+const firstLink = await page.inputValue('.invite input');
+await page.click('button:has-text("שליחת הזמנה מחדש")');
+const inviteLink = await page.inputValue('.invite input');
+assert.notEqual(inviteLink, firstLink);
+const noa = await (await browser.newContext()).newPage();
+await noa.goto(firstLink);
+assert.match(await noa.textContent('.notice--error'), /הקישור לא תקף/);
+await noa.goto(inviteLink);
+assert.match(await noa.textContent('main'), /ברוכים הבאים[\s\S]*Noa\.K/);
+await noa.fill('[name=password]', 'a-river-of-tea-7');
+await noa.fill('[name=password2]', 'a-river-of-tea-7');
+await noa.click('button[type=submit]');
+await noa.waitForURL(B + '/admin/settings/#twostep');
+assert.match(await noa.textContent('.side__user'), /Noa\.K/);
+await page.goto(B + '/admin/users/');
+assert.match(await page.textContent('tr:has-text("Noa.K")'), /פעיל/);
+assert.equal(await page.locator('tr:has-text("yarden@") button[value=delete]').count(), 0, 'no delete button on your own account');
+await shot('users');
+await page.goto(B + '/admin/settings/');
+assert.match(await page.textContent('#signins'), /Noa\.K[\s\S]*הזמנה/);
+await page.goto(B + '/admin/users/');
+await page.click('tr:has-text("Noa.K") button[value=delete]');
+assert.match(await page.textContent('.notice'), /החשבון של Noa\.K נמחק/);
+await noa.goto(B + '/admin/leads/');
+assert.match(noa.url(), /\/admin\/login\//);
+await noa.context().close();
+step('users: password to add, duplicate refused, re-invite, password from link, delete ends the session');
+
+// Main menu: the blog is a top-level item, not inside "מאמרים"
+await page.goto(B + '/');
+assert.equal(await page.locator('#nav > ul > li > a', { hasText: 'בלוג' }).count(), 1);
+assert.equal(await page.locator('#nav .nav__sub a', { hasText: 'בלוג' }).count(), 0);
+step('main menu: blog at the top level');
+
 // Settings + links + logout + login
 await page.goto(B + '/admin/settings/');
 await page.fill('[name=ga_id]', 'G-TEST1234');
@@ -202,6 +251,14 @@ step('mobile sidebar');
   await page.selectOption('[name=page_path]', '/התמקדות/');
   await page.click('button:has-text("שמירה")');
   assert.match(await page.textContent('table'), /קורס התמקדות שנתי[\s\S]*1,800/);
+  // A new price shows in the card's own "מחיר" line too, with or without Cardcom
+  await page.click('a:has-text("The Inner Freedom Map")');
+  await page.fill('[name=price]', '2250');
+  await page.check('[name=active]');
+  await page.click('button:has-text("שמירה")');
+  const ifm = await (await page.request.get(B + encodeURI('/פוקוסינג-לחיי-היום-יום/'))).text();
+  assert.match(ifm, /<dt>מחיר<\/dt><dd>2,250 ₪, אפשר לחלק עד 10 תשלומים של 225 ₪<\/dd>/);
+  assert.doesNotMatch(ifm, /2,400/);
   const configured = !(await page.$('.notice--warn'));
   if (!configured) {
     // Without Cardcom credentials nothing is offered on the site
