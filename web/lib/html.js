@@ -137,6 +137,23 @@ export function videoEmbed(id, title = '') {
   return `<div class="video" data-yt="${esc(id)}"><button type="button" class="video__play" aria-label="הפעלת סרטון: ${label}">${videoThumb(`https://i.ytimg.com/vi/${esc(id)}/hqdefault.jpg`)}<span class="video__icon" aria-hidden="true"></span></button></div>`;
 }
 
+/** The stored home-page lecture (admin → הגדרות), always with all its fields. */
+export function lectureSetting(json) {
+  let v = {};
+  try { v = JSON.parse(json || '{}') || {}; } catch { /* nothing saved yet */ }
+  return { url: String(v.url || ''), title: String(v.title || ''), text: String(v.text || ''), label: String(v.label || '') };
+}
+
+/** The home page's lecture block: a YouTube link plays in place, any other link is a button. Nothing without a link. */
+export function lectureHtml({ url, title, text, label }) {
+  if (!url) return '';
+  const id = youtubeId(url);
+  const name = title || 'הרצאה';
+  const media = id ? videoEmbed(id, name)
+    : `<div class="actions"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${esc(label || 'לצפייה בהרצאה')}</a></div>`;
+  return `<div class="lecture${id ? ' lecture--video' : ''}"><div class="lecture__text"><h2>${esc(name)}</h2>${text ? `<p>${esc(text)}</p>` : ''}</div>${media}</div>`;
+}
+
 /* ---------------------------------------------------------------- lists */
 
 export function excerptOf(p, n = 140) {

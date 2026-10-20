@@ -1,0 +1,21 @@
+{
+  "id": "2026-10-home8-podcast-lecture",
+  "path": "/",
+  "replace": [
+    [
+      "<div class=\"wrap media-split\">\n    <div class=\"podcard\">",
+      "<div class=\"wrap\">\n    <div class=\"podcard podcard--wide\">"
+    ],
+    [
+      "<a class=\"btn btn--line-light btn--sm\" href=\"/פודקאסט/\">כל הפרקים</a></div>\n    </div>",
+      "<a class=\"btn btn--line-light btn--sm\" href=\"/פודקאסט/\">כל הפרקים</a></div>\n    </div>\n    <!--yk:lecture--><!--/yk:lecture-->"
+    ]
+  ],
+  "remove": [
+    [
+      "\n    <div>\n      <h2>לקרוא: מאמרים</h2>",
+      "כל המאמרים</a></p>\n    </div>"
+    ]
+  ],
+  "note": "המאמרים יורדים מדף הבית, הפודקאסט על כל הרוחב, ומתחתיו מקום להרצאה (נקבעת בניהול ← הגדרות)"
+}
