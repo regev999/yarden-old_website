@@ -18,6 +18,7 @@ const ICONS = {
   products: '<path d="M3 11.6V4h7.6l10 10-7.6 7.6-10-10Zm2-5.6v4.8l8 8 4.8-4.8-8-8H5Zm2.5 3.6a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2Z"/>',
   'pay-links': '<path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.5-3.5a1 1 0 1 1 1.4 1.4l-3.5 3.5a1 1 0 0 1-1.4 0ZM8 18a4 4 0 0 1-2.8-6.8l2.1-2.1 1.4 1.4-2.1 2.1a2 2 0 0 0 2.8 2.8l2.1-2.1 1.4 1.4-2.1 2.1A4 4 0 0 1 8 18Zm8.7-3.1-1.4-1.4 2.1-2.1a2 2 0 0 0-2.8-2.8l-2.1 2.1-1.4-1.4 2.1-2.1a4 4 0 0 1 5.6 5.6l-2.1 2.1Z"/>',
   connections: '<path d="M9 2h2v5h2V2h2v5h1a1 1 0 0 1 1 1v4a5 5 0 0 1-4 4.9V22h-2v-5.1A5 5 0 0 1 7 12V8a1 1 0 0 1 1-1h1V2Zm0 7v3a3 3 0 0 0 6 0V9H9Z"/>',
+  users: '<path d="M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM4 20c0-3.3 3.6-6 8-6s8 2.7 8 6v1H4v-1Zm2.2-1h11.6c-.8-1.8-3-3-5.8-3s-5 1.2-5.8 3Z"/>',
   settings: '<path d="M11 3h2l.5 2.4 1.6.7 2-1.4 1.4 1.4-1.4 2 .7 1.6L20 11v2l-2.4.5-.7 1.6 1.4 2-1.4 1.4-2-1.4-1.6.7L13 21h-2l-.5-2.4-1.6-.7-2 1.4-1.4-1.4 1.4-2-.7-1.6L4 13v-2l2.4-.5.7-1.6-1.4-2 1.4-1.4 2 1.4 1.6-.7L11 3Zm1 6a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/>',
 };
 
@@ -44,7 +45,8 @@ export async function adminPage(ctx, { title, active, body, actions = '', script
     ['תוכן', [['pages', '/admin/pages/', 'עמודים'], ['posts', '/admin/posts/', 'מאמרים ובלוג'],
       ['testimonials', '/admin/testimonials/', 'המלצות'], ['media', '/admin/media/', 'תמונות וקבצים']]],
     ['מכירות', [['sales', '/admin/sales/', 'מכירות', newSales], ['products', '/admin/products/', 'מוצרים'], ['pay-links', '/admin/pay-links/', 'קישורי תשלום']]],
-    ['אתר', [['seo', '/admin/seo/', 'קידום (SEO)'], ['redirects', '/admin/redirects/', 'הפניות 301 ו־404'], ['connections', '/admin/connections/', 'חיבורים'], ['settings', '/admin/settings/', 'הגדרות']]],
+    ['אתר', [['seo', '/admin/seo/', 'קידום (SEO)'], ['redirects', '/admin/redirects/', 'הפניות 301 ו־404'], ['connections', '/admin/connections/', 'חיבורים'],
+      ['users', '/admin/users/', 'משתמשים'], ['settings', '/admin/settings/', 'הגדרות']]],
   ];
   const nav = groups.map(([label, items]) => (label ? `<p class="side__group">${esc(label)}</p>` : '') + '<ul>'
     + items.map(([key, href, text, badge]) => `<li><a href="${href}"${key === active ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[key]}</svg><span>${esc(text)}</span>${badge ? `<span class="side__badge">${badge}</span>` : ''}</a></li>`).join('')
@@ -127,7 +129,9 @@ export function json(body, status = 200) {
 /** 303 redirect, optionally with a one-time message shown on the next page. */
 export function redirect(location, flash = null, type = 'ok', extraCookies = []) {
   const h = new Headers({ ...SECURITY_HEADERS, Location: location });
-  if (flash) h.append('Set-Cookie', `yk_flash=${encodeURIComponent(JSON.stringify({ text: flash, type }))}; Path=/admin; HttpOnly; SameSite=Strict; Max-Age=60`);
+  // The message is text, or { text, ...more } for a screen that shows more than the text
+  const data = typeof flash === 'string' ? { text: flash } : flash;
+  if (flash) h.append('Set-Cookie', `yk_flash=${encodeURIComponent(JSON.stringify({ ...data, type }))}; Path=/admin; HttpOnly; SameSite=Strict; Max-Age=60`);
   for (const c of extraCookies) h.append('Set-Cookie', c);
   return new Response(null, { status: 303, headers: h });
 }

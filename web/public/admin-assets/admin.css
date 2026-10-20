@@ -327,3 +327,8 @@ code { background: var(--mist); padding: 1px 6px; border-radius: 4px; font-size:
 .conn-state { margin: -4px 0 16px; color: var(--slate); font-weight: 500; }
 .conn-state--on { color: var(--ok); }
 .field-error { color: var(--err); }
+
+/* Users */
+.invite { border-color: #b9dcc8; }
+.invite__link { display: flex; gap: 8px; }
+.invite__link input { flex: 1; min-width: 0; }

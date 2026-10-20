@@ -61,6 +61,14 @@ export async function setPassword(userId, pw) {
   await q('DELETE FROM password_resets WHERE user_id = $1', [userId]);
 }
 
+/** A one-time link for choosing a password (reset or invitation); earlier links for the account stop working. */
+export async function passwordLink(userId, minutes) {
+  const t = token();
+  await q('DELETE FROM password_resets WHERE user_id = $1', [userId]);
+  await q('INSERT INTO password_resets(token_hash, user_id, expires_at) VALUES($1, $2, now() + make_interval(mins => $3))', [sha256(t), userId, minutes]);
+  return `/admin/reset/?token=${t}`;
+}
+
 export async function userCount() {
   return (await one('SELECT count(*)::int AS n FROM users')).n;
 }

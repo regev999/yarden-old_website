@@ -147,11 +147,14 @@ export function buySectionHtml(products) {
  *   page asks for it (<!--yk:buy-->) or else just before the contact block.
  * Until Cardcom is connected or a product is switched on, the marked buttons
  * stay as they are (a link to the contact form).
+ * The price written in a marked card (<dt>מחיר</dt><dd>…</dd>) always shows the
+ * product's price from the admin, so the two never disagree.
  */
 export async function withBuySection(html, path) {
-  if (!(await isConfigured())) return html;
   const products = await productsForPage(path).catch(() => []);
   if (!products.length) return html;
+  html = withLivePrices(html, products);
+  if (!(await isConfigured())) return html;
   const inline = new Set();
   for (const p of products) {
     const slug = p.slug.replace(/[^\w-]/g, '');
@@ -172,4 +175,15 @@ export async function withBuySection(html, path) {
   if (html.includes('<!--yk:buy-->')) return html.replace('<!--yk:buy-->', section);
   const at = html.indexOf('<section class="section section--ink block--contact"');
   return at >= 0 ? html.slice(0, at) + section + '\n' + html.slice(at) : html + section;
+}
+
+/** The "מחיר" line of each card whose button is marked data-buy="<slug>", from that product's price. */
+function withLivePrices(html, products) {
+  for (const p of products) {
+    const slug = p.slug.replace(/[^\w-]/g, '');
+    const price = `<dd>${esc(shekels(p.price_agorot))} ₪, ${esc(installmentsText(p.price_agorot, p.max_payments))}</dd>`;
+    const card = new RegExp(`<article\\b[^>]*>(?:(?!</article>)[\\s\\S])*?\\sdata-buy="${slug}"`, 'g');
+    html = html.replace(card, (m) => m.replace(/(<dt>מחיר<\/dt>\s*)<dd>[\s\S]*?<\/dd>/, (_, dt) => dt + price));
+  }
+  return html;
 }
