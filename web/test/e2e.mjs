@@ -205,6 +205,17 @@ assert.equal(await page.locator('#nav > ul > li > a', { hasText: 'בלוג' }).c
 assert.equal(await page.locator('#nav .nav__sub a', { hasText: 'בלוג' }).count(), 0);
 step('main menu: blog at the top level');
 
+// Focusing course: its own page, registration at the Mind-Body Center, and the old /קורסים/ leads to it
+const coursePage = await (await page.request.get(B + encodeURI('/קורס-התמקדות/'))).text();
+assert.match(coursePage, /<h1>קורס התמקדות<\/h1>/);
+assert.match(coursePage, /1\.11\.2026[\s\S]*2\.11\.2026/);
+assert.equal((coursePage.match(/href="https:\/\/www\.mindbody\.co\.il\/courses_\/focusing-therapy\/" target="_blank" rel="noopener"/g) || []).length, 4);
+assert.equal(await page.locator('#nav .nav__sub a', { hasText: 'קורס התמקדות' }).count(), 1);
+const oldCourses = await page.request.get(B + encodeURI('/קורסים/'), { maxRedirects: 0 });
+assert.equal(oldCourses.status(), 301);
+assert.equal(decodeURIComponent(oldCourses.headers().location), '/קורס-התמקדות/');
+step('focusing course page: Mind-Body Center registration, in the menu, /קורסים/ → 301');
+
 // Settings + links + logout + login
 await page.goto(B + '/admin/settings/');
 await page.fill('[name=ga_id]', 'G-TEST1234');

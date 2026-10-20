@@ -28,7 +28,7 @@ export const NAV = [
     ['טיפול במגע: שיטת גרינברג', '/גרינברג/'], ['שיטת פאולה', '/שיטת-פאולה/'],
   ]],
   ['קורסים', [
-    ['הכשרת מטפלים', '/טראומה-מורכבת/'],
+    ['קורס התמקדות', '/קורס-התמקדות/'], ['הכשרת מטפלים', '/טראומה-מורכבת/'],
     ['The Inner Freedom Map', '/פוקוסינג-לחיי-היום-יום/'], ['אפליקציית Focusing Parts Map', '/focusing-parts-map/'],
   ]],
   ['על ירדן', [
@@ -96,7 +96,8 @@ export function footerHtml() {
         <p><a href="https://www.focusingfreedom.co.il/" target="_blank" rel="noopener">Focusing for Freedom</a></p>
       </div>
       <div><h2>טיפול וקורסים</h2><ul>
-        <li><a href="/טיפול-אישי/">טיפול אישי</a></li><li><a href="/טראומה-מורכבת/">הכשרת מטפלים</a></li>
+        <li><a href="/טיפול-אישי/">טיפול אישי</a></li><li><a href="/קורס-התמקדות/">קורס התמקדות</a></li>
+        <li><a href="/טראומה-מורכבת/">הכשרת מטפלים</a></li>
         <li><a href="/פוקוסינג-לחיי-היום-יום/">The Inner Freedom Map</a></li>
         <li><a href="/focusing-parts-map/">אפליקציית Focusing Parts Map</a></li></ul></div>
       <div><h2>לקרוא ולהאזין</h2><ul>
