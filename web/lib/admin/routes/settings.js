@@ -7,6 +7,7 @@ import { adminPage, csrfField, esc, heDate, html, redirect } from '../ui';
 import { USERNAME, EMAIL } from './auth';
 import { isConfigured as ravmesserReady } from '../../ravmesser';
 import { LIST_SETTING, listId } from '../../newsletter';
+import { lectureSetting } from '../../html';
 
 const back = (msg, type = 'ok', hash = '') => redirect('/admin/settings/' + hash, msg, type);
 
@@ -91,6 +92,7 @@ export const page = {
   async GET(ctx) {
     const notify = await getSetting('notify_email', process.env.NOTIFY_EMAIL || '');
     const ga = await getSetting('ga_id', '');
+    const lecture = lectureSetting(await getSetting('home_lecture', ''));
     const [newsList, ravOn] = await Promise.all([listId(), ravmesserReady()]);
     const mailOn = await mailReady();
     const u = await one('SELECT username, totp_enabled, totp_secret, totp_since, recovery_codes FROM users WHERE id = $1', [ctx.user.id]);
@@ -123,6 +125,17 @@ export const page = {
     <form method="post" class="stack">${csrfField(ctx)}<input type="hidden" name="action" value="ga">
       <label>מזהה מדידה (Measurement ID) <input name="ga_id" value="${esc(ga)}" placeholder="G-XXXXXXXXXX" dir="ltr">
         <small>נטען רק אחרי שהגולש מאשר עוגיות סטטיסטיקה. השאירו ריק כדי לכבות.</small></label>
+      <button class="btn" type="submit">שמירה</button>
+    </form>
+  </section>
+  <section class="panel" id="lecture">
+    <h2>הרצאה בדף הבית</h2>
+    <form method="post" class="stack">${csrfField(ctx)}<input type="hidden" name="action" value="lecture">
+      <label>קישור להרצאה <input name="lecture_url" value="${esc(lecture.url)}" dir="ltr" placeholder="https://www.youtube.com/watch?v=…">
+        <small>קישור מיוטיוב מוצג כנגן בדף הבית, מתחת לפודקאסט. כל קישור אחר מוצג ככפתור. השאירו ריק כדי להסתיר את הבלוק.</small></label>
+      <label>כותרת <input name="lecture_title" value="${esc(lecture.title)}" placeholder="הרצאה" maxlength="120"></label>
+      <label>כמה מילים על ההרצאה (לא חובה) <textarea name="lecture_text" rows="3" maxlength="600">${esc(lecture.text)}</textarea></label>
+      <label>טקסט הכפתור (לקישור שאינו מיוטיוב) <input name="lecture_label" value="${esc(lecture.label)}" placeholder="לצפייה בהרצאה" maxlength="40"></label>
       <button class="btn" type="submit">שמירה</button>
     </form>
   </section>
@@ -196,6 +209,15 @@ export const page = {
         publishChanges();
         await logActivity(ctx, id ? 'חיבר את Google Analytics' : 'ניתק את Google Analytics', id);
         return back(id ? 'Google Analytics מחובר. המדידה תתחיל תוך דקה.' : 'Google Analytics כבוי.');
+      }
+      case 'lecture': {
+        const url = f('lecture_url');
+        if (url && !/^https?:\/\/[^\s"'<>]+$/i.test(url)) return back('הקישור צריך להתחיל ב־https://', 'error', '#lecture');
+        const v = { url, title: f('lecture_title').slice(0, 120), text: f('lecture_text').slice(0, 600), label: f('lecture_label').slice(0, 40) };
+        await setSetting('home_lecture', JSON.stringify(v));
+        publishChanges();
+        await logActivity(ctx, url ? 'עדכן את ההרצאה בדף הבית' : 'הסתיר את ההרצאה מדף הבית', v.title, '/admin/settings/#lecture');
+        return back(url ? 'ההרצאה מוצגת בדף הבית תוך דקה.' : 'בלוק ההרצאה הוסתר מדף הבית.', 'ok', '#lecture');
       }
       case 'test': {
         const to = (await getSetting('notify_email', process.env.NOTIFY_EMAIL || '')) || ctx.user.email;

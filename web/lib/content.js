@@ -4,10 +4,10 @@
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { q, one } from './db';
+import { q, one, getSetting } from './db';
 import { artForPath, artForPost, withArt } from './art';
 import {
-  ESSAY_CATEGORIES, blogHtml, entriesHtml, fillRegions, optimizeImages, plain, postLd, postMainHtml,
+  ESSAY_CATEGORIES, blogHtml, entriesHtml, fillRegions, lectureHtml, lectureSetting, optimizeImages, plain, postLd, postMainHtml,
   testimonialsHtml, tidyLegacy, voicesHtml,
 } from './html';
 import { titleVideos } from './videos';
@@ -64,6 +64,7 @@ async function regionsFor(page) {
     regions.essays = entriesHtml(essays, true);
   }
   if (used.has('testimonials')) regions.testimonials = testimonialsHtml(await testimonials());
+  if (used.has('lecture')) regions.lecture = lectureHtml(lectureSetting(await getSetting('home_lecture', '')));
   if (used.has('voices')) {
     const v = await testimonials({ homeOnly: true });
     if (v.length) regions.voices = voicesHtml(v);

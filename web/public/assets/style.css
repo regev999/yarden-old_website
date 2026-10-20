@@ -787,6 +787,19 @@ img.is-missing, .figure.is-missing, .gallery figure.is-missing { display: none; 
 .podcard__lead { margin: 0 0 28px; color: var(--on-ink-soft); }
 .podcard .episode p { color: var(--on-ink); }
 .podcard .actions { margin-top: 8px; }
+.podcard--wide { display: grid; grid-template-columns: 1fr 1fr; column-gap: clamp(24px, 4vw, 56px); }
+.podcard--wide > :not(.episode) { grid-column: 1 / -1; }
+@media (max-width: 760px) { .podcard--wide { grid-template-columns: 1fr; } }
+
+/* Home: the lecture under the podcast (link and words from the admin's settings) */
+.lecture { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px clamp(24px, 4vw, 56px);
+  margin-top: clamp(28px, 4vw, 48px); padding: clamp(28px, 4vw, 48px); border-radius: var(--r-panel); background: var(--mist); }
+.lecture h2 { font-size: var(--t-h3); font-weight: 400; margin: 0; }
+.lecture__text { flex: 1 1 320px; max-width: 40em; }
+.lecture__text p { margin: 12px 0 0; color: var(--ink-soft); }
+.lecture .actions { margin: 0; }
+.lecture--video { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
+@media (max-width: 760px) { .lecture--video { grid-template-columns: 1fr; } }
 
 /* A photo at the centre of a page hero's lens (the podcast page) */
 .portrait.page-hero__portrait {

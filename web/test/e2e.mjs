@@ -216,6 +216,30 @@ assert.equal(oldCourses.status(), 301);
 assert.equal(decodeURIComponent(oldCourses.headers().location), '/קורס-התמקדות/');
 step('focusing course page: Mind-Body Center registration, in the menu, /קורסים/ → 301');
 
+// Home: no articles list, the podcast across the width, and a lecture block set from Settings
+let home = await (await page.request.get(B + '/')).text();
+assert.doesNotMatch(home, /לקרוא: מאמרים/);
+assert.match(home, /class="podcard podcard--wide"/);
+assert.doesNotMatch(home, /class="lecture/);
+const saveLecture = async (fields) => {
+  await page.goto(B + '/admin/settings/');
+  for (const [name, value] of Object.entries(fields)) await page.fill(`[name=${name}]`, value);
+  await page.click('#lecture button[type=submit]');
+  return { notice: await page.textContent('.notice'), home: await (await page.request.get(B + '/')).text() };
+};
+let saved = await saveLecture({ lecture_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', lecture_title: 'הרצאה על לופ הטראומה', lecture_text: 'שעה על המנגנון שמחזיק אותנו תקועים.' });
+assert.match(saved.notice, /ההרצאה מוצגת בדף הבית/);
+assert.match(saved.home, /<div class="lecture lecture--video">[\s\S]*הרצאה על לופ הטראומה[\s\S]*שעה על המנגנון[\s\S]*data-yt="dQw4w9WgXcQ"/);
+saved = await saveLecture({ lecture_url: 'https://example.com/lecture', lecture_label: 'להרשמה להרצאה' });
+assert.match(saved.home, /<div class="lecture">[\s\S]*href="https:\/\/example\.com\/lecture" target="_blank" rel="noopener">להרשמה להרצאה</);
+saved = await saveLecture({ lecture_url: 'javascript:alert(1)' });
+assert.match(saved.notice, /https/);
+assert.match(saved.home, /example\.com\/lecture/);
+saved = await saveLecture({ lecture_url: '' });
+assert.match(saved.notice, /הוסתר/);
+assert.doesNotMatch(saved.home, /class="lecture/);
+step('home: articles off, podcast across the width, lecture block from Settings (video, link, hidden)');
+
 // Settings + links + logout + login
 await page.goto(B + '/admin/settings/');
 await page.fill('[name=ga_id]', 'G-TEST1234');
