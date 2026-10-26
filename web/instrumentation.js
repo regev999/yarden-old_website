@@ -1,8 +1,8 @@
 /**
  * Runs once when the server starts. A minute later, and then every 15 minutes,
  * it asks the site to copy new and edited posts from the Focusing for Freedom
- * blog (app/api/blog-sync). The copy runs as a request to the site itself,
- * because only a request can clear the page cache.
+ * blog, and that site's testimonial videos (app/api/blog-sync). The copy runs
+ * as a request to the site itself, because only a request can clear the page cache.
  */
 export function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs' || process.env.NEXT_PHASE === 'phase-production-build') return;

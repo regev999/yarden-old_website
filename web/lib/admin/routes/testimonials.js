@@ -1,8 +1,10 @@
 import { q, one } from '../../db';
 import { plain } from '../../html';
+import { SOURCE_NAME } from '../../blogsync';
+import { VIDEOS_PAGE, lastVideoSync, syncVideos } from '../../videosync';
 import { htmlForEditor, sanitizeHtml } from '../sanitize';
 import { logActivity, publishChanges } from '../common';
-import { adminPage, csrfField, esc, html, redirect } from '../ui';
+import { adminPage, csrfField, esc, heDate, html, redirect } from '../ui';
 
 const all = () => q('SELECT * FROM testimonials ORDER BY position, id');
 
@@ -25,7 +27,13 @@ export const page = {
       return html(await adminPage(ctx, { title: t.id ? 'עריכת המלצה' : 'המלצה חדשה', active: 'testimonials', body, scripts: ['editor'] }));
     }
     const list = await all();
-    const body = `<p class="muted">ההמלצות מוצגות בעמוד <a href="/לקוחות-מספרים/" target="_blank" rel="noopener">לקוחות מספרים</a> לפי הסדר כאן. המסומנות "בדף הבית" מתחלפות בדף הבית.</p>
+    const sync = await lastVideoSync();
+    const syncState = !sync ? 'עוד לא היה סנכרון.'
+      : sync.ok ? `הסנכרון האחרון: ${esc(heDate(sync.at))}.` : `הסנכרון האחרון (${esc(heDate(sync.at))}) נכשל: ${esc(sync.error)}`;
+    const body = `<form method="post" class="panel inline-form">${csrfField(ctx)}<input type="hidden" name="action" value="sync-videos">
+  <p class="small"><b>סרטוני ההמלצות</b> בעמוד <a href="${VIDEOS_PAGE}" target="_blank" rel="noopener">המלצות</a> מגיעים מעמוד העדויות של ${SOURCE_NAME}: סרטון שנוסף או הוסר שם מתעדכן כאן לבד, כל 15 דקות. ${syncState}</p>
+  <button class="btn btn--quiet" type="submit">סנכרון עכשיו</button></form>
+<p class="muted">ההמלצות מוצגות בעמוד <a href="/לקוחות-מספרים/" target="_blank" rel="noopener">לקוחות מספרים</a> לפי הסדר כאן. המסומנות "בדף הבית" מתחלפות בדף הבית.</p>
 <ol class="t-list">${list.map((t, i) => `<li id="t${t.id}" class="t-item${t.published ? '' : ' is-hidden'}">
   <div class="t-item__text"><p>${esc(plain(t.body, 220))}</p>
     <p class="small"><b>${esc(t.name || 'ללא שם')}</b>${t.role ? ' · ' + esc(t.role) : ''}
@@ -44,6 +52,13 @@ export const page = {
   async POST(ctx) {
     const action = String(ctx.form.get('action') || '');
     const id = parseInt(ctx.form.get('id'), 10) || 0;
+    if (action === 'sync-videos') {
+      const r = await syncVideos();
+      await logActivity(ctx, 'סנכרן את סרטוני ההמלצות', SOURCE_NAME, '/admin/testimonials/');
+      if (!r.ok) return redirect('/admin/testimonials/', `הסנכרון נכשל: ${r.error}`, 'error');
+      const done = [r.added && `נוספו ${r.added}`, r.removed && `הוסרו ${r.removed}`].filter(Boolean);
+      return redirect('/admin/testimonials/', done.length ? `הסנכרון הסתיים: ${done.join(', ')}.` : 'הסנכרון הסתיים. אין סרטונים חדשים.');
+    }
     if (action === 'save') {
       const name = String(ctx.form.get('name') || '').trim().slice(0, 120);
       const role = String(ctx.form.get('role') || '').trim().slice(0, 200);
