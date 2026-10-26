@@ -1,0 +1,19 @@
+{
+  "id": "2026-10-home9-podcast-kimchi",
+  "path": "/",
+  "replace": [
+    [
+      "aria-label=\"הפעלת סרטון: פרק 13: שיחה עם אשרת קוטלר\"",
+      "aria-label=\"הפעלת סרטון: פרק 14: שיחה עם אשרת קוטלר\""
+    ],
+    [
+      "<p>פרק 13: שיחה עם אשרת קוטלר</p>",
+      "<p>פרק 14: שיחה עם אשרת קוטלר</p>"
+    ],
+    [
+      "<div class=\"episode\"><div class=\"video\" data-yt=\"XHTzIAGLnHI\"><button type=\"button\" class=\"video__play\" aria-label=\"הפעלת סרטון: פרק שנים עשר - איך להבין את הדברים עד הסוף - סשן עם איריס גולדפינגר\" style=\"background-image:url(https://i.ytimg.com/vi/XHTzIAGLnHI/hqdefault.jpg)\"><span class=\"video__icon\" aria-hidden=\"true\"></span></button></div><p>פרק שנים עשר - איך להבין את הדברים עד הסוף - סשן עם איריס גולדפינגר</p></div>",
+      "<div class=\"episode\"><div class=\"video\" data-yt=\"aCYdXNZZpuA\"><button type=\"button\" class=\"video__play\" aria-label=\"הפעלת סרטון: פרק 13: התמקדות ומיניות – שיחה עם קטי קמחי\" style=\"background-image:url(https://i.ytimg.com/vi/aCYdXNZZpuA/hqdefault.jpg)\"><span class=\"video__icon\" aria-hidden=\"true\"></span></button></div><p>פרק 13: התמקדות ומיניות – שיחה עם קטי קמחי</p></div>"
+    ]
+  ],
+  "note": "בדף הבית: השיחה עם אשרת קוטלר נשארת (פרק 14, כמו בעמוד הפודקאסט), והשיחה עם קטי קמחי (פרק 13) במקום הסשן עם איריס גולדפינגר"
+}
