@@ -1,0 +1,15 @@
+{
+  "id": "2026-10-video-testimonials-sync",
+  "path": "/המלצות/",
+  "replace": [
+    [
+      "<h2 class=\"heading\">עשרים ושישה סיפורים</h2>\n<div class=\"cols cols-4\">",
+      "<h2 class=\"heading\">כל הסיפורים</h2>\n<!--yk:videos--><div class=\"cols cols-4\">"
+    ],
+    [
+      "</figure></div>\n</div>\n<div class=\"actions\"><a class=\"btn btn--line\" href=\"/לקוחות-מספרים/\">",
+      "</figure></div>\n</div><!--/yk:videos-->\n<div class=\"actions\"><a class=\"btn btn--line\" href=\"/לקוחות-מספרים/\">"
+    ]
+  ],
+  "note": "הסרטונים מתעדכנים מעמוד העדויות של Focusing for Freedom (lib/videosync.js); הכותרת בלי מספר, כי המספר משתנה"
+}

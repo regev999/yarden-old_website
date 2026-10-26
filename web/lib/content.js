@@ -8,7 +8,7 @@ import { q, one, getSetting } from './db';
 import { artForPath, artForPost, withArt } from './art';
 import {
   ESSAY_CATEGORIES, blogHtml, entriesHtml, fillRegions, lectureHtml, lectureSetting, optimizeImages, plain, postLd, postMainHtml,
-  testimonialsHtml, tidyLegacy, voicesHtml,
+  testimonialsHtml, tidyLegacy, videoCardsHtml, voicesHtml,
 } from './html';
 import { titleVideos } from './videos';
 import { withBuySection } from './shop';
@@ -44,6 +44,18 @@ export async function testimonials({ homeOnly = false } = {}) {
   return q(`SELECT id, name, role, body FROM testimonials WHERE published${homeOnly ? ' AND show_on_home' : ''} ORDER BY position, id`);
 }
 
+export const VIDEO_LIST_KEY = 'testimonial_videos';
+
+/** The testimonial videos copied from Focusing for Freedom (lib/videosync.js): [{ id, name, note }], or null before the first copy. */
+export async function syncedVideos() {
+  try {
+    const list = JSON.parse(await getSetting(VIDEO_LIST_KEY, ''));
+    return Array.isArray(list) ? list : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Fill the live lists inside a stored page. Only queries what the page uses. */
 async function regionsFor(page) {
   const used = new Set([...page.main.matchAll(/<!--yk:(\w+)-->/g)].map((m) => m[1]));
@@ -65,6 +77,11 @@ async function regionsFor(page) {
   }
   if (used.has('testimonials')) regions.testimonials = testimonialsHtml(await testimonials());
   if (used.has('lecture')) regions.lecture = lectureHtml(lectureSetting(await getSetting('home_lecture', '')));
+  if (used.has('videos')) {
+    // Before the first copy from Focusing for Freedom, the videos stored in the page stay
+    const videos = await syncedVideos();
+    if (videos?.length) regions.videos = videoCardsHtml(videos);
+  }
   if (used.has('voices')) {
     const v = await testimonials({ homeOnly: true });
     if (v.length) regions.voices = voicesHtml(v);

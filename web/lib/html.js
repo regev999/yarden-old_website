@@ -199,6 +199,17 @@ export function testimonialsHtml(items) {
   return `<div class="quotes">${cards.join('')}</div>`;
 }
 
+/** The testimonial videos copied from the Focusing for Freedom site (lib/videosync.js), as on /המלצות/. */
+export function videoCardsHtml(videos) {
+  const cards = videos.map((v) => {
+    const id = esc(v.id);
+    const caption = v.name || v.note
+      ? `<figcaption>${v.name ? `<h3>${esc(v.name)}</h3>` : ''}${v.note ? `<p>${esc(v.note)}</p>` : ''}</figcaption>` : '';
+    return `<div class="col"><figure class="film"><div class="video" data-yt="${id}"><button type="button" class="video__play" aria-label="הפעלת סרטון${v.name ? `: ${esc(v.name)}` : ''}" style="background-image:url(https://i.ytimg.com/vi/${id}/hqdefault.jpg)"><span class="video__icon" aria-hidden="true"></span></button></div>${caption}</figure></div>`;
+  });
+  return `<div class="cols cols-4">\n${cards.join('\n')}\n</div>`;
+}
+
 export function voicesHtml(items) {
   const n = items.length;
   const voices = items.map((t, i) => `<figure class="voice"${i ? ' hidden' : ''}><blockquote>${esc(plain(t.body))}</blockquote><figcaption>${esc([t.name, t.role].filter(Boolean).join(', '))}</figcaption></figure>`).join('');
