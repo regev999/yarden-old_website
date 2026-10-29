@@ -7,7 +7,7 @@ import path from 'node:path';
 import { q, one, getSetting } from './db';
 import { artForPath, artForPost, withArt } from './art';
 import {
-  ESSAY_CATEGORIES, blogHtml, entriesHtml, fillRegions, lectureHtml, lectureSetting, optimizeImages, plain, postLd, postMainHtml,
+  ESSAY_CATEGORIES, blogHtml, entriesHtml, fillRegions, lectureFactsHtml, lectureHtml, lectureSetting, lectureWhen, optimizeImages, plain, postLd, postMainHtml,
   testimonialsHtml, tidyLegacy, videoCardsHtml, voicesHtml,
 } from './html';
 import { titleVideos } from './videos';
@@ -56,6 +56,17 @@ export async function syncedVideos() {
   }
 }
 
+export const LECTURE_KEY = 'lecture_event';
+
+/** The flagship lecture's date, place and price, copied from Focusing for Freedom (lib/lecturesync.js). */
+export async function lectureEvent() {
+  try {
+    return JSON.parse(await getSetting(LECTURE_KEY, '')) || {};
+  } catch {
+    return {};
+  }
+}
+
 /** Fill the live lists inside a stored page. Only queries what the page uses. */
 async function regionsFor(page) {
   const used = new Set([...page.main.matchAll(/<!--yk:(\w+)-->/g)].map((m) => m[1]));
@@ -77,6 +88,12 @@ async function regionsFor(page) {
   }
   if (used.has('testimonials')) regions.testimonials = testimonialsHtml(await testimonials());
   if (used.has('lecture')) regions.lecture = lectureHtml(lectureSetting(await getSetting('home_lecture', '')));
+  if (used.has('lecturefacts') || used.has('lecturewhen')) {
+    // Before the first copy, the page keeps what it was written with ("יפורסם בקרוב")
+    const ev = await lectureEvent();
+    regions.lecturefacts = lectureFactsHtml(ev);
+    if (ev.date) regions.lecturewhen = lectureWhen(ev);
+  }
   if (used.has('videos')) {
     // Before the first copy from Focusing for Freedom, the videos stored in the page stay
     const videos = await syncedVideos();

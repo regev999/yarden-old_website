@@ -154,6 +154,18 @@ export function lectureHtml({ url, title, text, label }) {
   return `<div class="lecture${id ? ' lecture--video' : ''}"><div class="lecture__text"><h2>${esc(name)}</h2>${text ? `<p>${esc(text)}</p>` : ''}</div>${media}</div>`;
 }
 
+/** When the flagship lecture takes place (copied from Focusing for Freedom, lib/lecturesync.js). */
+export function lectureWhen(ev) {
+  return ev.date ? (ev.time ? `${ev.date} · ${ev.time}` : ev.date) : '';
+}
+
+/** The lecture page's facts: date, length, place, recording, and the price once there is one. */
+export function lectureFactsHtml(ev) {
+  const rows = [['מועד', lectureWhen(ev) || 'יפורסם בקרוב'], ['אורך', 'שעתיים'], ['איפה', ev.location || 'זום'], ['הקלטה', 'לכל הנרשמים']];
+  if (ev.price > 0) rows.push(['מחיר', `${ev.price.toLocaleString('he-IL')} ₪`]);
+  return `<dl class="facts">${rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`;
+}
+
 /* ---------------------------------------------------------------- lists */
 
 export function excerptOf(p, n = 140) {
