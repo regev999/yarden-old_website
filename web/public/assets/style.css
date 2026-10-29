@@ -858,6 +858,18 @@ img.is-missing, .figure.is-missing, .gallery figure.is-missing { display: none; 
 .stats b { display: block; font-size: clamp(2.2rem, 1.6rem + 2vw, 3.2rem); font-weight: 200; line-height: 1.1; color: var(--cobalt); letter-spacing: -0.03em; }
 .stats span { color: var(--slate); font-size: 1rem; }
 
+/* The flagship lecture's banner on the home page, right under the hero */
+.section.lecture-banner { margin-top: 8px; padding-block: clamp(48px, 7vw, 88px) !important; }
+.lecture-banner__inner { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 28px clamp(28px, 5vw, 72px); }
+.lecture-banner__text { flex: 1 1 520px; max-width: 46em; }
+.lecture-banner h2 { margin: 0; font-size: var(--t-h2); font-weight: 300; line-height: 1.15; }
+.lecture-banner__kicker { margin: 0 0 14px; color: var(--pod); font-size: 1rem; }
+.lecture-banner .lead { margin: 14px 0 0; font-size: var(--t-lead); }
+.lecture-banner__name { margin: 26px 0 0; font-size: var(--t-h3); color: var(--paper); }
+.lecture-banner .quiet { margin: 10px 0 0; }
+.lecture-banner__meta { margin: 18px 0 0; color: var(--halo); font-size: 1rem; }
+.lecture-banner .actions { margin: 0; }
+
 /* Facts: what, when and where for an event (the lecture), in one panel */
 .facts { margin: 0; display: flex; flex-wrap: wrap; gap: 1px; border-radius: var(--r-card); background: var(--rule); overflow: hidden; }
 .facts > div { flex: 1 1 150px; padding: 18px 22px; background: var(--white); }
