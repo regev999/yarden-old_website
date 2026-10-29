@@ -1,0 +1,16 @@
+{
+  "id": "2026-10-lecture-shop",
+  "path": "/",
+  "products": [
+    {
+      "slug": "lecture",
+      "title": "הרצאת הדגל: למה זה לא זז?",
+      "description": "הרצאה וסדנה של שעתיים בזום, כולל הקלטה.",
+      "price": 97,
+      "max_payments": 1,
+      "page_path": "/הרצאה/",
+      "position": 6,
+      "active": true
+    }
+  ]
+}
