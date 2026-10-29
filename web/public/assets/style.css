@@ -858,16 +858,20 @@ img.is-missing, .figure.is-missing, .gallery figure.is-missing { display: none; 
 .stats b { display: block; font-size: clamp(2.2rem, 1.6rem + 2vw, 3.2rem); font-weight: 200; line-height: 1.1; color: var(--cobalt); letter-spacing: -0.03em; }
 .stats span { color: var(--slate); font-size: 1rem; }
 
-/* The flagship lecture's banner on the home page, right under the hero */
-.section.lecture-banner { margin-top: 8px; padding-block: clamp(48px, 7vw, 88px) !important; }
-.lecture-banner__inner { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 28px clamp(28px, 5vw, 72px); }
+/* The flagship lecture's banner on the home page, right under the hero: a light,
+   warm card with the podcast's mustard, so it stands apart from the dark hero */
+.section.lecture-banner { padding-block: clamp(20px, 3vw, 36px) !important; }
+.lecture-banner__inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px clamp(28px, 5vw, 72px);
+  padding: clamp(28px, 4vw, 52px) clamp(24px, 4.5vw, 64px); border-radius: var(--r-panel); background: var(--white);
+  background: color-mix(in srgb, var(--pod) 9%, var(--white)); border: 1px solid color-mix(in srgb, var(--pod) 35%, var(--white));
+  border-inline-start: 6px solid var(--pod); box-shadow: var(--shadow); }
 .lecture-banner__text { flex: 1 1 520px; max-width: 46em; }
-.lecture-banner h2 { margin: 0; font-size: var(--t-h2); font-weight: 300; line-height: 1.15; }
-.lecture-banner__kicker { margin: 0 0 14px; color: var(--pod); font-size: 1rem; }
-.lecture-banner .lead { margin: 14px 0 0; font-size: var(--t-lead); }
-.lecture-banner__name { margin: 26px 0 0; font-size: var(--t-h3); color: var(--paper); }
-.lecture-banner .quiet { margin: 10px 0 0; }
-.lecture-banner__meta { margin: 18px 0 0; color: var(--halo); font-size: 1rem; }
+.lecture-banner__kicker { display: inline-block; margin: 0 0 16px; padding: 4px 14px; border-radius: var(--pill); background: var(--pod); color: var(--ink); font-size: .95rem; font-weight: 500; }
+.lecture-banner h2 { margin: 0; font-size: clamp(1.75rem, 1.2rem + 1.8vw, 2.6rem); font-weight: 300; line-height: 1.2; color: var(--ink); }
+.lecture-banner .lead { margin: 10px 0 0; font-size: var(--t-body); color: var(--slate); }
+.lecture-banner__name { margin: 22px 0 0; font-size: 1.4rem; font-weight: 500; color: var(--ink); }
+.lecture-banner .quiet { margin: 8px 0 0; }
+.lecture-banner__meta { margin: 16px 0 0; color: var(--cobalt-deep); font-size: 1rem; font-weight: 500; }
 .lecture-banner .actions { margin: 0; }
 
 /* Facts: what, when and where for an event (the lecture), in one panel */
