@@ -1,0 +1,15 @@
+{
+  "id": "2026-10-home9c-lecture-banner-light",
+  "path": "/",
+  "replace": [
+    [
+      "<section class=\"section section--ink lecture-banner\" id=\"lecture-banner\">\n  <span class=\"field\" aria-hidden=\"true\"></span>\n  <div class=\"wrap lecture-banner__inner\">",
+      "<section class=\"section lecture-banner\" id=\"lecture-banner\">\n  <div class=\"wrap\"><div class=\"lecture-banner__inner\">"
+    ],
+    [
+      "<div class=\"actions\"><a class=\"btn btn--paper\" href=\"/הרצאה/\">לפרטים והרשמה</a></div>\n  </div>\n</section>",
+      "<div class=\"actions\"><a class=\"btn\" href=\"/הרצאה/\">לפרטים והרשמה</a></div>\n  </div></div>\n</section>"
+    ]
+  ],
+  "note": "באנר ההרצאה בדף הבית בהיר (כרטיס עם פס חרדל), כדי שלא יתמזג עם הפתיח הכהה"
+}
