@@ -11,7 +11,7 @@ import {
   testimonialsHtml, tidyLegacy, videoCardsHtml, voicesHtml,
 } from './html';
 import { titleVideos } from './videos';
-import { withBuySection } from './shop';
+import { activeProduct, withBuySection } from './shop';
 
 const POST_COLS = 'id, path, title, body, format, excerpt, seo_title, description, og_image, noindex, categories, tags, status, is_video, duplicate_of, source_url, date, modified';
 
@@ -91,6 +91,9 @@ async function regionsFor(page) {
   if (used.has('lecturefacts') || used.has('lecturewhen')) {
     // Before the first copy, the page keeps what it was written with ("יפורסם בקרוב")
     const ev = await lectureEvent();
+    // Sold here too: the price is the one this site charges
+    const own = await activeProduct('lecture').catch(() => null);
+    if (own) ev.price = own.price_agorot / 100;
     regions.lecturefacts = lectureFactsHtml(ev);
     if (ev.date) regions.lecturewhen = lectureWhen(ev);
   }
