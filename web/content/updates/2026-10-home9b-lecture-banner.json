@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-home9b-lecture-banner",
+  "path": "/",
+  "replace": [
+    [
+      "</figure>\n  </div>\n</section>\n\n<section class=\"section section--mist\">\n  <div class=\"wrap about\">",
+      "</figure>\n  </div>\n</section>\n\n<section class=\"section section--ink lecture-banner\" id=\"lecture-banner\">\n  <span class=\"field\" aria-hidden=\"true\"></span>\n  <div class=\"wrap lecture-banner__inner\">\n    <div class=\"lecture-banner__text\">\n      <p class=\"lecture-banner__kicker\">הרצאה חווייתית בזום</p>\n      <h2>שחרור מטראומה, תקיעות וחסמים אנושיים</h2>\n      <p class=\"lead\">גם אם ניסית כבר הכל, וגם אם זו הפעם הראשונה שאת נוגעת בזה</p>\n      <p class=\"lecture-banner__name\">הרצאת הדגל: למה זה לא זז?</p>\n      <p class=\"quiet\">שעתיים של הרצאה וסדנה יחד: מה זו טראומה, איך היא נוצרת ואיך היא מתבטאת, הלופ שמחזיק אותנו תקועים, חלקי העצמי, וכלי מרכזי ועוד 6 כלים לעבודה עם מצבי טראומה, שילוו אותך לתמיד ויתנו לך דרך חדשנית לנוע לקראת חופש.</p>\n      <p class=\"lecture-banner__meta\"><!--yk:lecturewhen-->המועד יפורסם בקרוב<!--/yk:lecturewhen--> · בזום · שעתיים · כל הנרשמים מקבלים את ההקלטה</p>\n    </div>\n    <div class=\"actions\"><a class=\"btn btn--paper\" href=\"/הרצאה/\">לפרטים והרשמה</a></div>\n  </div>\n</section>\n\n<section class=\"section section--mist\">\n  <div class=\"wrap about\">"
+    ]
+  ],
+  "note": "באנר הרצאת הדגל בדף הבית, מתחת לפתיח (כמו באתר Focusing for Freedom), עם המועד מהסנכרון וכפתור לעמוד ההרצאה"
+}
