@@ -110,3 +110,16 @@ Several videos with captions: `<div class="films"><figure class="film">VIDEO<fig
 Also available: `.cols.cols-2|3` with `.col`, `.card`, `.quotes`/`.quote` (testimonials), `.figure` (images), `.gallery`, `.actions` + `.btn`, `.btn--line`.
 
 See `2026-09-video-therapy.body.html` for a finished example.
+
+## Offer pages: the lecture's components (`lp-*`)
+
+The lecture and the offer pages (courses, training, the digital programme, therapy, the app) use a louder set, taken from the lecture page on Focusing for Freedom in this site's colours. See `2026-11-lecture-redesign.body.html` for the full set and `2026-11-therapy-personal-redesign.body.html` for a short page. Every class sits on a wrapper; the words inside stay plain (`b`, `em`, `a`, `br`, lists), so the admin's editor keeps the design.
+
+- Page: `<header class="lp-hero">` (no `page-hero`, so no contents bar), then `<section class="lp-sec …">` sections. A section is paper by default; add `lp-panel` and one of `lp-sec--ink`, `lp-sec--mist`, `lp-sec--band` (light blue, like the gold bands there) or `lp-sec--deep`. Extras: `lp-glow` (the lens behind the words), `lp-marked` (a lens mark in the corner).
+- Hero: `lp-hero__grid` > `lp-hero__text` (`p.lp-kicker`, `h1.lp-h1` with the big word in `<em>`, `p.lp-sub`, `p.lp-lead`, `ul.lp-chips`, `.actions`) and `figure.lp-hero__art` (Yarden's cutout `img.lp-hero__photo`, or `--center` with `span.lp-arch`, `img.lp-hero__frame` or `span.lp-phone`; `figcaption.lp-badge` for the yellow tag).
+- Headings: `<div class="lp-head lp-center"><p class="lp-kicker">…</p><h2 class="lp-title">top line <em>big word</em></h2><p class="lp-lead">…</p></div>`. `lp-title--giant` for a bigger word, `lp-title--rule` for the yellow bar, `p.lp-pre` for a small line above.
+- Text: `div.lp-copy` (`--lead`, `--narrow`), one-liners `p.lp-big`, `p.lp-giant`, `p.lp-say`, `p.lp-panelnote`, `p.lp-end`, `p.lp-note`, `p.lp-pill`, `p.lp-sign`.
+- Lists inside `div.lp-copy.<kind>`: `lp-qgrid` (questions, two by two), `lp-flow` (pills with arrows), `lp-pills`, `lp-strike` (crossed out, with `p.lp-nots__lead` in `div.lp-nots`), `lp-fit` (cards with a tick), `lp-notfit`, `lp-checks` (`--two`), `lp-rows` (numbered rows, `<b>title</b>` first; `--two`), `lp-stats` (`<b>number</b>label`).
+- Cards: `ol.lp-cards` with `<li><h3>…</h3><p class="lp-text">…</p></li>`; `lp-cards--num` (01, 02…), `lp-steps` (numbered circles), `lp-steps--flow` (three in a row with arrows), `lp-steps--loop` (the lecture's three icons). Also `ul.lp-duo` (two ink cards), `div.lp-feature` (one central card, `p.lp-tag`), `ol.lp-tools` (`--desc`).
+- Registration: `div.lp-register` with `div.lp-facts` (holds `<!--yk:lecturefacts-->`) and `div.lp-formcard` (a `form.form[data-form=contact]`; `data-done` sets its thank-you text, `data-product-fixed` keeps its product). Purchases stay `.offers` / `article.offer` with `data-buy`. FAQ: `div.lp-faq > details > summary > h3` + `div.lp-copy`.
+- Never put a `<!--yk:…-->` region, a form, a video or a buy button inside `p.lp-*` or `div.lp-copy`: those are editable blocks, and an edit would drop them. Use a `div` (`lp-when`, `lp-note` as a div) around live regions.
