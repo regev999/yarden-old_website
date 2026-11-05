@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-podcast5-whatsapp",
+  "path": "/פודקאסט/",
+  "replace": [
+    [
+      "rel=\"noopener\">לערוץ היוטיוב</a></div>",
+      "rel=\"noopener\">לערוץ היוטיוב</a><a class=\"btn btn--line-light\" href=\"https://chat.whatsapp.com/IFRtxKixGJDE67TREjlRCH\" target=\"_blank\" rel=\"noopener\">לקבוצת הווטסאפ</a></div>"
+    ],
+    [
+      "<section class=\"section section--ink block--contact\" id=\"contact\">",
+      "<section class=\"block block--tint\" id=\"whatsapp\"><div class=\"wrap\">\n<h2 class=\"heading\">קבוצת הווטסאפ</h2>\n<p class=\"section-intro\">כדי להצטרף לקבוצת ה־WhatsApp שלי, יש להיכנס לקישור:</p>\n<div class=\"actions\"><a class=\"btn btn--whatsapp\" href=\"https://chat.whatsapp.com/IFRtxKixGJDE67TREjlRCH\" target=\"_blank\" rel=\"noopener\">להצטרפות לקבוצת הווטסאפ</a></div>\n</div></section>\n\n<section class=\"section section--ink block--contact\" id=\"contact\">"
+    ]
+  ],
+  "note": "קישור הצטרפות לקבוצת הווטסאפ של ירדן: כפתור בראש העמוד וקטע לפני יצירת הקשר"
+}

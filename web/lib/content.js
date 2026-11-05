@@ -91,9 +91,10 @@ async function regionsFor(page) {
   if (used.has('lecturefacts') || used.has('lecturewhen')) {
     // Before the first copy, the page keeps what it was written with ("יפורסם בקרוב")
     const ev = await lectureEvent();
-    // Sold here too: the price is the one this site charges
+    // The price is only ever this site's own: while the lecture is on sale here (product
+    // "lecture" switched on in the admin) the page shows what it costs, otherwise it is free
     const own = await activeProduct('lecture').catch(() => null);
-    if (own) ev.price = own.price_agorot / 100;
+    ev.price = own ? own.price_agorot / 100 : 0;
     regions.lecturefacts = lectureFactsHtml(ev);
     if (ev.date) regions.lecturewhen = lectureWhen(ev);
   }

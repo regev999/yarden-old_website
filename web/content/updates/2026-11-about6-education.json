@@ -1,0 +1,25 @@
+{
+  "id": "2026-11-about6-education",
+  "path": "/אודות/",
+  "replace": [
+    [
+      "<p class=\"section-intro\">השכלה אקדמית:</p>\n",
+      "<h3 class=\"heading\">השכלה אקדמית</h3>\n<ol class=\"timeline\">\n<li><span class=\"timeline__when\"><span dir=\"ltr\">2000–2020–2026</span></span><p><span dir=\"ltr\">M.S.W.</span> בעבודה סוציאלית קלינית, אוניברסיטת חיפה</p></li>\n<li><span class=\"timeline__when\"><span dir=\"ltr\">2013–2015</span></span><p><span dir=\"ltr\">M.A.</span> במסלול \"טיפול בהבעה ויצירה\", אוניברסיטת תל אביב</p></li>\n<li><span class=\"timeline__when\"><span dir=\"ltr\">2001–2005</span></span><p><span dir=\"ltr\">M.F.A.</span> בקולנוע וטלוויזיה, אוניברסיטת תל אביב</p></li>\n<li><span class=\"timeline__when\"><span dir=\"ltr\">1991–1999</span></span><p><span dir=\"ltr\">B.A.</span> בפילוסופיה ומחשבת ישראל, האוניברסיטה העברית, ירושלים</p></li>\n</ol>\n"
+    ],
+    [
+      "<figure class=\"citation\">\n<blockquote dir=\"ltr\"><p>Kerem Y. (2015)",
+      "<h3 class=\"heading\">פרסומים</h3>\n<figure class=\"citation\">\n<blockquote dir=\"ltr\"><p>Kerem Y. (2015)"
+    ]
+  ],
+  "remove": [
+    [
+      "<ul class=\"chips\">\n<li>B.A. בפילוסופיה ומחשבת ישראל",
+      "</ul>\n"
+    ],
+    [
+      "<div class=\"gallery\">\n<figure><img src=\"/wp-content/uploads/2022/02/IMG-7732.jpg\"",
+      "</div>\n"
+    ]
+  ],
+  "note": "השכלה אקדמית עם שנים ופרסומים כפי שירדן שלחה; גלריית התמונות יורדת, נשארת התמונה הראשית בלבד"
+}
