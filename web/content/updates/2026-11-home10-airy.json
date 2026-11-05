@@ -1,0 +1,33 @@
+{
+  "id": "2026-11-home10-airy",
+  "path": "/",
+  "replace": [
+    [
+      "<section class=\"section lecture-banner\" id=\"lecture-banner\">",
+      "<section class=\"section lecture-feature\" id=\"lecture\" aria-labelledby=\"lecture-title\">\n  <div class=\"wrap lecture-feature__grid\">\n    <div class=\"lecture-feature__text\">\n      <p class=\"lecture-feature__kicker\">הרצאת הדגל · חווייתית בזום</p>\n      <h2 id=\"lecture-title\">למה זה לא זז?</h2>\n      <p class=\"lecture-feature__sub\">שחרור מטראומה, תקיעות וחסמים אנושיים.</p>\n      <p class=\"quiet\">שעתיים של הרצאה וסדנה יחד, בהן תביני את הלופ של הטראומה שמחזיק אותך תקועה במקום.</p>\n      <ul class=\"lecture-feature__points\">\n        <li><h3>הרצאה מרתקת</h3><p>הרצאה חיה וסדנה יחד, עם הסברים בהירים והתנסות בגוף.</p></li>\n        <li><h3>ידע שלא תקבלי במקום אחר</h3><p>מפת לופ הטראומה, המודל שפיתחתי מתוך 30 שנה של טיפול, הוראה וחקר.</p></li>\n        <li><h3>צמיחה ושינוי</h3><p>כשמבינים מה מחזיק את הלופ סגור, נפתח מקום לצמיחה ולתנועה.</p></li>\n        <li><h3>כלים יישומיים</h3><p>כלי מרכזי אחד ועוד 6 כלים לעבודה עם מצבי טראומה, לחיים ולקליניקה.</p></li>\n      </ul>\n    </div>\n    <aside class=\"lecture-ticket\" aria-label=\"פרטי ההרצאה\">\n      <span class=\"field\" aria-hidden=\"true\"></span>\n      <p class=\"lecture-ticket__kind\">הרצאה וסדנה, שעתיים</p>\n      <p class=\"lecture-ticket__price\">חינם</p>\n      <dl>\n        <div><dt>מועד</dt><dd><!--yk:lecturewhen-->יפורסם בקרוב<!--/yk:lecturewhen--></dd></div>\n        <div><dt>איפה</dt><dd>בזום</dd></div>\n        <div><dt>הקלטה</dt><dd>לכל הנרשמים</dd></div>\n      </dl>\n      <a class=\"btn btn--paper\" href=\"/הרצאה/#register\">אני רוצה להירשם</a>\n      <a class=\"lecture-ticket__more\" href=\"/הרצאה/#program\">מה נעבור יחד</a>\n    </aside>\n  </div>\n</section>\n\n<section class=\"section lecture-banner\" id=\"lecture-banner\">"
+    ],
+    [
+      "<div class=\"about__side\">\n      <h2>אני כאן כדי ללמד הקשבה לגוף</h2>\n",
+      "<div class=\"about__side\">\n      <h2>אני כאן כדי ללמד הקשבה לגוף</h2>\n      <figure class=\"arch about__arch\"><img src=\"/assets/yarden-arch.jpg\" alt=\"ירדן כרם\" width=\"576\" height=\"860\" loading=\"lazy\" decoding=\"async\"></figure>\n"
+    ],
+    [
+      "      <ul class=\"plain-list\">\n        <li>התהליך ממוקד יותר, כי עובדים עם מפה ולא בתוך ערפל.</li>\n        <li>אפשר לעשות תהליך אישי קצר לאורך היום, גם בלי תלות באדם אחר.</li>\n        <li>מתפתחת עצמאות: היכולת להוביל את החיים מבפנים.</li>\n      </ul>\n    </div>\n  </div>\n",
+      "    </div>\n  </div>\n  <div class=\"wrap\">\n    <ol class=\"points\">\n      <li>התהליך ממוקד יותר, כי עובדים עם מפה ולא בתוך ערפל.</li>\n      <li>אפשר לעשות תהליך אישי קצר לאורך היום, גם בלי תלות באדם אחר.</li>\n      <li>מתפתחת עצמאות: היכולת להוביל את החיים מבפנים.</li>\n    </ol>\n  </div>\n"
+    ],
+    [
+      "<h2 class=\"section__title\" id=\"ways-title\">איך אפשר לעבוד איתי</h2>",
+      "<h2 class=\"section__title\" id=\"ways-title\">איך אפשר לעבוד איתי</h2>\n    <p class=\"section__sub\">טיפול, תכנית דיגיטלית, קורס והכשרה.</p>"
+    ],
+    [
+      "<h2 class=\"section__title\">לצפות</h2>",
+      "<h2 class=\"section__title\">לצפות</h2>\n    <p class=\"section__sub\">ראיונות, הרצאות ושיעורים.</p>"
+    ]
+  ],
+  "remove": [
+    [
+      "<section class=\"section lecture-banner\" id=\"lecture-banner\">",
+      "</section>\n"
+    ]
+  ],
+  "note": "דף הבית מאוורר: להרצאה חלק משלה במקום הבאנר, תמונה של ירדן ב'אודות', שלוש הנקודות בשורה"
+}
