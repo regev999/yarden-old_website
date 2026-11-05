@@ -1260,8 +1260,12 @@ html.menu-open body { overflow: hidden; }
    Every class sits on a wrapper and the words inside stay plain (b, em, a, br,
    lists), so the admin's text editor keeps the design when a text changes.
    Colours come from the section: --lp-fg (text), --lp-soft (secondary),
-   --lp-hi (the big word: cobalt on light, the mustard on ink), --lp-card.
+   --lp-hi (the big word: cobalt on light, a soft gold on ink), --lp-card.
+   The gold (#e8c97e, as on Focusing for Freedom's lecture page) takes the
+   mustard's place on these pages only: in big bold words the mustard turns
+   green. It also reaches the contact block at the end of an offer page.
    ========================================================================== */
+.lp-sec, .lp-hero, .lp-sec ~ .block--contact { --pod: #e8c97e; }
 .lp-sec, .lp-hero {
   --lp-fg: var(--ink); --lp-soft: var(--slate); --lp-hi: var(--cobalt); --lp-mark: var(--pod);
   --lp-card: var(--mist); --lp-line: var(--rule); --lp-pill: rgba(15, 33, 64, .2); --lp-dot: var(--ink); --lp-dot-fg: var(--pod);
@@ -1330,7 +1334,7 @@ html.menu-open body { overflow: hidden; }
 .lp-hero { margin: 8px clamp(8px, 1.2vw, 16px) 0; border-radius: var(--r-panel); overflow: hidden; padding-top: clamp(48px, 6vw, 88px); }
 .lp-hero__grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 16px clamp(24px, 4vw, 64px); align-items: end; }
 .lp-hero__text { align-self: center; padding-bottom: clamp(48px, 6vw, 96px); }
-.lp-hero .lp-kicker { padding: 6px 18px; border: 1px solid rgba(197, 181, 24, .6); border-radius: var(--pill); }
+.lp-hero .lp-kicker { padding: 6px 18px; border: 1px solid rgba(232, 201, 126, .6); border-radius: var(--pill); }
 .lp-hero .lp-lead { color: var(--on-ink-soft); }
 .lp-hero .actions { margin-top: 28px; }
 .lp-chips { list-style: none; margin: 28px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
@@ -1345,7 +1349,7 @@ html.menu-open body { overflow: hidden; }
   -webkit-mask-image: radial-gradient(circle, #000 46%, transparent 71%); mask-image: radial-gradient(circle, #000 46%, transparent 71%);
   animation: breathe 11s ease-in-out infinite;
 }
-.lp-hero__art::after { content: ""; position: absolute; z-index: -1; left: 50%; bottom: -8%; width: min(480px, 104%); aspect-ratio: 1; translate: -50% 0; border-radius: 50%; border: 1px solid rgba(197, 181, 24, .55); pointer-events: none; }
+.lp-hero__art::after { content: ""; position: absolute; z-index: -1; left: 50%; bottom: -8%; width: min(480px, 104%); aspect-ratio: 1; translate: -50% 0; border-radius: 50%; border: 1px solid rgba(232, 201, 126, .55); pointer-events: none; }
 .lp-hero__art--center { align-items: center; padding-bottom: clamp(48px, 6vw, 96px); }
 .lp-hero__art--center::before { bottom: auto; top: 50%; translate: -50% -50%; }
 .lp-hero__art--center::after { bottom: auto; top: 50%; translate: -50% -50%; }
@@ -1469,7 +1473,7 @@ html.menu-open body { overflow: hidden; }
 /* For whom: cards with a tick; and what it is not */
 .lp-fit ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 12px; }
 .lp-fit ul > li { position: relative; margin: 0; padding: 22px 24px; padding-inline-start: 72px; border-radius: 20px; background: var(--lp-card); font-size: 1.06rem; line-height: 1.65; color: var(--lp-soft); }
-.lp-fit ul > li::before { content: ""; position: absolute; inset-inline-start: 24px; top: 23px; width: 32px; height: 32px; border-radius: 50%; background: var(--ink) center / 16px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23c5b518' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.lp-fit ul > li::before { content: ""; position: absolute; inset-inline-start: 24px; top: 23px; width: 32px; height: 32px; border-radius: 50%; background: var(--ink) center / 16px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23e8c97e' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 .lp-notfit { margin-top: 22px; padding: 20px 24px; border: 2px dashed rgba(15, 33, 64, .22); border-radius: 20px; }
 .lp-sec--ink .lp-notfit, .lp-sec--deep .lp-notfit { border-color: rgba(232, 238, 247, .25); }
 .lp-notfit ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -1503,7 +1507,7 @@ html.menu-open body { overflow: hidden; }
 .lp-zoom__tiles i { position: relative; aspect-ratio: 4 / 3; border-radius: 10px; background: linear-gradient(160deg, #24407a, var(--ink-2)); }
 .lp-zoom__tiles i::after { content: ""; position: absolute; top: 50%; left: 50%; width: 34%; aspect-ratio: 1; border-radius: 50%; translate: -50% -50%; background: rgba(185, 203, 245, .55); }
 .lp-zoom__tiles i:nth-child(2)::after { background: rgba(232, 238, 247, .45); }
-.lp-zoom__tiles i:nth-child(3)::after { background: rgba(197, 181, 24, .75); }
+.lp-zoom__tiles i:nth-child(3)::after { background: rgba(232, 201, 126, .8); }
 .lp-zoom__tiles i:nth-child(4)::after { background: rgba(91, 134, 255, .6); }
 .lp-zoom__tools { display: flex; justify-content: center; gap: 10px; margin-top: 12px; }
 .lp-zoom__tools i { width: 32px; height: 32px; border-radius: 50%; background: rgba(255, 255, 255, .12); }
