@@ -207,7 +207,7 @@ step('main menu: blog at the top level');
 
 // Focusing course: its own page, registration at the Mind-Body Center, and the old /קורסים/ leads to it
 const coursePage = await (await page.request.get(B + encodeURI('/קורס-התמקדות/'))).text();
-assert.match(coursePage, /<h1>קורס התמקדות<\/h1>/);
+assert.match(coursePage, /<h1 class="lp-h1">קורס <em>התמקדות<\/em><\/h1>/);
 assert.match(coursePage, /1\.11\.2026[\s\S]*2\.11\.2026/);
 assert.equal((coursePage.match(/href="https:\/\/www\.mindbody\.co\.il\/courses_\/focusing-therapy\/" target="_blank" rel="noopener"/g) || []).length, 4);
 assert.equal(await page.locator('#nav .nav__sub a', { hasText: 'קורס התמקדות' }).count(), 1);
