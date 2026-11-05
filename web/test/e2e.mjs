@@ -220,7 +220,8 @@ step('focusing course page: Mind-Body Center registration, in the menu, /קור�
 let home = await (await page.request.get(B + '/')).text();
 assert.doesNotMatch(home, /לקרוא: מאמרים/);
 assert.match(home, /class="podcard podcard--wide"/);
-assert.doesNotMatch(home, /class="lecture/);
+// The admin's lecture block (the flagship lecture's own section, lecture-feature, is always there)
+assert.doesNotMatch(home, /<div class="lecture[ "]/);
 const saveLecture = async (fields) => {
   await page.goto(B + '/admin/settings/');
   for (const [name, value] of Object.entries(fields)) await page.fill(`[name=${name}]`, value);
@@ -237,7 +238,7 @@ assert.match(saved.notice, /https/);
 assert.match(saved.home, /example\.com\/lecture/);
 saved = await saveLecture({ lecture_url: '' });
 assert.match(saved.notice, /הוסתר/);
-assert.doesNotMatch(saved.home, /class="lecture/);
+assert.doesNotMatch(saved.home, /<div class="lecture[ "]/);
 step('home: articles off, podcast across the width, lecture block from Settings (video, link, hidden)');
 
 // Settings + links + logout + login

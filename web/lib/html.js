@@ -159,10 +159,10 @@ export function lectureWhen(ev) {
   return ev.date ? (ev.time ? `${ev.date} · ${ev.time}` : ev.date) : '';
 }
 
-/** The lecture page's facts: date, length, place, recording, and the price once there is one. */
+/** The lecture page's facts: date, length, place, recording, and the price, or that it is free. */
 export function lectureFactsHtml(ev) {
   const rows = [['מועד', lectureWhen(ev) || 'יפורסם בקרוב'], ['אורך', 'שעתיים'], ['איפה', ev.location || 'זום'], ['הקלטה', 'לכל הנרשמים']];
-  if (ev.price > 0) rows.push(['מחיר', `${ev.price.toLocaleString('he-IL')} ₪`]);
+  rows.push(ev.price > 0 ? ['מחיר', `${ev.price.toLocaleString('he-IL')} ₪`] : ['השתתפות', 'חינם']);
   return `<dl class="facts">${rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`;
 }
 
