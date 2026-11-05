@@ -115,6 +115,9 @@ strong, b { font-weight: 600; }
 .btn--line-light { background: transparent; color: var(--paper) !important; border-color: rgba(249, 250, 252, .45); }
 .btn--line-light:hover { background: var(--paper); color: var(--ink) !important; border-color: var(--paper); }
 .btn--sm { min-height: 44px; padding: 0 22px; font-size: 1rem; }
+/* WhatsApp's green, darkened so the white words stay readable (5.4:1) */
+.btn--whatsapp { background: #0f7a40; border-color: #0f7a40; }
+.btn--whatsapp:hover { background: #0b5f32; border-color: #0b5f32; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .btn-row { margin: 8px 0 0; }
 .more { font-weight: 500; }
@@ -305,38 +308,33 @@ strong, b { font-weight: 600; }
 .way .actions { margin-top: auto; }
 @media (max-width: 900px) { .ways { grid-template-columns: 1fr; } .way { min-height: 0; } }
 
-/* More than two ways: all the same size, three to a row (a short last row centred),
-   two on tablets, and on phones a row to swipe through, with dots under it (main.js) */
-.ways__dots { display: none; }
-@media (min-width: 761px) {
-  .ways:has(> :nth-child(3)) { grid-auto-rows: 1fr; }
-  .ways:has(> :nth-child(3)) > .way { min-height: 0; padding: clamp(28px, 3vw, 44px); }
-  .ways:has(> :nth-child(3)) .way h2 { font-size: clamp(2rem, 1.3rem + 1.4vw, 2.75rem); }
+/* More than two ways: one row that slides, all the cards the same size: three in view on
+   a wide screen, two on a tablet, one (and the edge of the next) on a phone. Under the row,
+   arrows and dots move it and show which cards are in view (main.js), only when it overflows. */
+.ways:has(> :nth-child(3)) {
+  display: flex; gap: 16px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none;
 }
-@media (min-width: 1101px) {
-  .ways:has(> :nth-child(3)) { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-  .ways:has(> :nth-child(3)) > .way { grid-column: span 2; }
-  .ways:has(> :nth-child(3)) > .way:nth-child(3n + 1):nth-last-child(2) { grid-column: 2 / span 2; }
-  .ways:has(> :nth-child(3)) > .way:nth-child(3n + 1):last-child { grid-column: 3 / span 2; }
-}
-@media (min-width: 761px) and (max-width: 1100px) {
-  .ways:has(> :nth-child(3)) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .ways:has(> :nth-child(3)) > .way { grid-column: span 2; }
-  .ways:has(> :nth-child(3)) > .way:nth-child(2n + 1):last-child { grid-column: 2 / span 2; }
-}
+.ways:has(> :nth-child(3))::-webkit-scrollbar { display: none; }
+.ways:has(> :nth-child(3)) > .way { flex: 0 0 calc((100% - 32px) / 3); min-height: 0; padding: clamp(28px, 3vw, 44px); scroll-snap-align: start; }
+.ways:has(> :nth-child(3)) .way h2 { font-size: clamp(2rem, 1.3rem + 1.4vw, 2.75rem); }
+@media (max-width: 1100px) { .ways:has(> :nth-child(3)) > .way { flex-basis: calc((100% - 16px) / 2); } }
 @media (max-width: 760px) {
-  .ways:has(> :nth-child(3)) {
-    display: flex; gap: 12px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory;
-    margin-inline: -8px; padding: 6px 8px; scroll-padding-inline: 8px; scrollbar-width: none;
-  }
-  .ways:has(> :nth-child(3))::-webkit-scrollbar { display: none; }
-  .ways:has(> :nth-child(3)) > .way { flex: 0 0 86%; scroll-snap-align: start; }
-  .ways__dots { display: flex; justify-content: center; margin-top: 8px; }
-  .ways__dots[hidden] { display: none; }
-  .ways__dots button { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; background: none; cursor: pointer; }
-  .ways__dots button::before { content: ""; width: 8px; height: 8px; border-radius: var(--pill); background: var(--rule); transition: width .2s, background-color .2s; }
-  .ways__dots button.is-on::before { width: 20px; background: var(--ink); }
+  .ways:has(> :nth-child(3)) { gap: 12px; margin-inline: -8px; padding: 6px 8px; scroll-padding-inline: 8px; }
+  .ways:has(> :nth-child(3)) > .way { flex-basis: 86%; }
 }
+.ways__nav { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 20px; }
+.ways__nav[hidden] { display: none; }
+.ways__dots { display: flex; }
+.ways__dots button { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; background: none; cursor: pointer; }
+.ways__dots button::before { content: ""; width: 8px; height: 8px; border-radius: var(--pill); background: var(--rule); transition: width .2s, background-color .2s; }
+.ways__dots button.is-on::before { width: 20px; background: var(--ink); }
+.ways__arrow { display: grid; place-items: center; width: 48px; height: 48px; padding: 0; border-radius: 50%; border: 1px solid var(--ink); background: transparent; color: var(--ink); cursor: pointer; transition: background-color .2s, color .2s, opacity .2s; }
+.ways__arrow:hover:not(:disabled) { background: var(--ink); color: var(--paper); }
+.ways__arrow:disabled { opacity: .3; cursor: default; }
+.ways__arrow svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* The page reads right to left: "previous" points right, "next" points left */
+.ways__arrow--prev svg { transform: scaleX(-1); }
+@media (max-width: 760px) { .ways__arrow { display: none; } .ways__nav { margin-top: 8px; } }
 @media (prefers-reduced-motion: no-preference) { .ways { scroll-behavior: smooth; } }
 
 /* Sections -----------------------------------------------------------------*/
@@ -663,6 +661,7 @@ img.is-missing, .figure.is-missing, .gallery figure.is-missing { display: none; 
 .citation { margin: clamp(32px, 4vw, 48px) 0; padding: clamp(24px, 3vw, 36px); border-radius: var(--r-card); background: var(--ink); color: var(--on-ink); max-width: 52em; }
 .citation blockquote { margin: 0 0 16px; text-align: left; font-size: 1.0625rem; line-height: 1.7; }
 .citation figcaption { color: var(--on-ink-soft); font-size: 1rem; }
+h3.heading + .citation { margin-top: 0; }
 
 /* Link cards: where a link leads, said plainly */
 .linkcards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 10px; }

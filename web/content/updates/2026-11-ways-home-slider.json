@@ -1,0 +1,19 @@
+{
+  "id": "2026-11-ways-home-slider",
+  "path": "/",
+  "replace": [
+    [
+      "      <article class=\"way way--mist\">\n        <p class=\"way__kind\">הכשרה למטפלים, 32 מפגשים בזום</p>",
+      "      <article class=\"way way--ink\">\n        <p class=\"way__kind\">24 מפגשים, במרכז גוף-נפש ברמת השרון</p>\n        <h2>קורס התמקדות</h2>\n        <dl>\n          <div><dt>למי זה מתאים</dt><dd>למטפלים מגישות טיפול שונות ולקהל הרחב, גם בלי ניסיון טיפולי קודם. ההתמקדות היא בשביל כולם.</dd></div>\n          <div><dt>מה לומדים</dt><dd>קורס מעשי וחוויתי: מהשיעור הראשון מתמקדים אחד עם השני, בתרגול בקבוצות קטנות. קורס ערב בימי א' או קורס בוקר בימי ב'.</dd></div>\n        </dl>\n        <div class=\"actions\">\n          <a class=\"btn btn--paper\" href=\"/קורס-התמקדות/#dates\" data-product=\"course\">מועדים והרשמה</a>\n          <a class=\"btn btn--line-light\" href=\"/קורס-התמקדות/#curriculum\">תכנית הלימודים</a>\n        </div>\n      </article>\n      <article class=\"way way--ink\">\n        <p class=\"way__kind\">הכשרה למטפלים, 32 מפגשים בזום</p>"
+    ],
+    [
+      "<a class=\"btn\" href=\"/טראומה-מורכבת/#join\" data-product=\"course\">להרשמה</a>",
+      "<a class=\"btn btn--paper\" href=\"/טראומה-מורכבת/#join\" data-product=\"course\">להרשמה</a>"
+    ],
+    [
+      "<a class=\"btn btn--line\" href=\"/טראומה-מורכבת/#curriculum\">תכנית הלימודים</a>",
+      "<a class=\"btn btn--line-light\" href=\"/טראומה-מורכבת/#curriculum\">תכנית הלימודים</a>"
+    ]
+  ],
+  "note": "דרכי העבודה בדף הבית: כל הכרטיסים כהים, בשורה אחת שגוללים בה, ונוסף קורס ההתמקדות"
+}

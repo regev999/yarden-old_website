@@ -113,11 +113,14 @@
     });
   }
 
-  // The ways in (home): where the cards are a row to swipe through (phones), dots show which are in view.
-  // Visitors on a keyboard tab through the cards themselves, so the dots are for pointers only.
+  // The ways in (home): more than two cards are one row that slides. Under it, arrows (wider screens)
+  // move it a card at a time and dots show which cards are in view; both only when the row overflows.
+  // Visitors on a keyboard tab through the cards themselves (each scrolls into view), so the dots are for pointers only.
   var ways = document.querySelector('.ways');
   if (ways && ways.children.length > 2 && 'IntersectionObserver' in window) {
     var cards = Array.prototype.slice.call(ways.children);
+    var nav = document.createElement('div');
+    nav.className = 'ways__nav';
     var dots = document.createElement('div');
     dots.className = 'ways__dots';
     dots.setAttribute('aria-hidden', 'true');
@@ -128,13 +131,36 @@
       dot.addEventListener('click', function () { card.scrollIntoView({ block: 'nearest', inline: 'start' }); });
       dots.appendChild(dot);
     });
-    ways.after(dots);
+    // In a right-to-left page the row runs to the left, so "next" scrolls left
+    var sign = getComputedStyle(ways).direction === 'rtl' ? -1 : 1;
+    var arrow = function (dir, label) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ways__arrow ways__arrow--' + (dir > 0 ? 'next' : 'prev');
+      b.setAttribute('aria-label', label);
+      b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+      b.addEventListener('click', function () {
+        var step = cards[0].getBoundingClientRect().width + (parseFloat(getComputedStyle(ways).columnGap) || 0);
+        ways.scrollBy({ left: dir * sign * step });
+      });
+      return b;
+    };
+    var prev = arrow(-1, 'לכרטיסים הקודמים');
+    var next = arrow(1, 'לכרטיסים הבאים');
+    nav.append(prev, dots, next);
+    ways.after(nav);
     var seen = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) { dots.children[cards.indexOf(e.target)].classList.toggle('is-on', e.intersectionRatio >= 0.6); });
     }, { root: ways, threshold: [0.6] });
     cards.forEach(function (card) { seen.observe(card); });
-    var fit = function () { dots.hidden = ways.scrollWidth <= ways.clientWidth + 1; };
+    var ends = function () {
+      var at = Math.abs(ways.scrollLeft), max = ways.scrollWidth - ways.clientWidth;
+      prev.disabled = at < 2;
+      next.disabled = at > max - 2;
+    };
+    var fit = function () { nav.hidden = ways.scrollWidth <= ways.clientWidth + 1; ends(); };
     fit();
+    ways.addEventListener('scroll', ends, { passive: true });
     window.addEventListener('resize', fit);
   }
 

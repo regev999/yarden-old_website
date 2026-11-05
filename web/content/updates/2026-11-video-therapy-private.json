@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-video-therapy-private",
+  "path": "/וידאו-תרפיה/",
+  "replace": [
+    [
+      "<figure class=\"film\"><div class=\"video\" data-yt=\"zr5WX59KT9o\"><button type=\"button\" class=\"video__play\" aria-label=\"הפעלת סרטון: הדר – החופש לעשות\" style=\"background-image:url(https://i.ytimg.com/vi/zr5WX59KT9o/hqdefault.jpg)\"><span class=\"video__icon\" aria-hidden=\"true\"></span></button></div><figcaption>",
+      "<figure class=\"film film--text\"><figcaption>"
+    ]
+  ],
+  "remove": [
+    [
+      "<li><a class=\"linkcard linkcard--video\" href=\"https://www.youtube.com/watch?v=KS0z2m73_go\"",
+      "</a></li>\n"
+    ]
+  ],
+  "note": "הסרטון של \"הדר – החופש לעשות\" והדיון אחרי ההקרנה הפכו לפרטיים ביוטיוב: יורדים מהעמוד, הטקסט על הסרט נשאר"
+}
