@@ -433,7 +433,8 @@
 
   // Remember which product a visitor chose, so the lead says "therapy" or "course"
   function setProduct(p) {
-    document.querySelectorAll('form[data-form="contact"] [name="product"]').forEach(function (i) { i.value = p; });
+    // A form that is about one thing (the lecture's registration) keeps its own product
+    document.querySelectorAll('form[data-form="contact"]:not([data-product-fixed]) [name="product"]').forEach(function (i) { i.value = p; });
     try { sessionStorage.setItem('product', p); } catch (e) {}
   }
   try { if (sessionStorage.getItem('product')) setProduct(sessionStorage.getItem('product')); } catch (e) {}
@@ -538,7 +539,7 @@
             form.reset();
             status.textContent = form.dataset.form === 'newsletter'
               ? 'תודה! נרשמת לעדכונים.'
-              : 'תודה! הפרטים התקבלו ואחזור אליך בהקדם.';
+              : form.dataset.done || 'תודה! הפרטים התקבלו ואחזור אליך בהקדם.';
           })
           .catch(function (err) {
             status.textContent = err.message || ('השליחה לא הצליחה. אפשר להתקשר או לכתוב ישירות אל ' + cfg.email);

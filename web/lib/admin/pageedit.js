@@ -7,10 +7,10 @@
 import { sanitizeHtml } from './sanitize';
 
 const PATTERNS = [
-  ['rich', /<div class="(?:prose|card__body prose|body|vision)"[^>]*>/g],
+  ['rich', /<div class="(?:prose|card__body prose|body|vision|lp-copy(?: [\w-]+)*)"[^>]*>/g],
   ['rich', /<dl\b[^>]*>/g],
   ['inline', /<h[1-4]\b[^>]*>/g],
-  ['inline', /<p class="(?:lead|page-hero__sub|hero__place|way__kind|motto|crumb)"[^>]*>/g],
+  ['inline', /<p class="(?:lead|page-hero__sub|hero__place|way__kind|motto|crumb|lp-[\w-]+(?: [\w-]+)*)"[^>]*>/g],
   ['inline', /<span class="methods__(?:name|desc)"[^>]*>/g],
   ['inline', /<figcaption\b[^>]*>/g],
 ];
