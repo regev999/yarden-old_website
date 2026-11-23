@@ -13,5 +13,5 @@ rsync -a --delete --exclude node_modules --exclude .next --exclude test .src-yk/
 printf '{\n  "name": "yk-runner",\n  "private": true,\n  "scripts": { "start": "cd .app && npm start" }\n}\n' > package.json
 cd .app
 npm ci --no-audit --no-fund
-NOINDEX_ALL=1 NEXT_TELEMETRY_DISABLED=1 npx next build
+NEXT_TELEMETRY_DISABLED=1 npx next build
 # Then restart the Node.js app in the panel (the start script runs the DB migration).
