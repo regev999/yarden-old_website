@@ -71,7 +71,7 @@ export const page = {
         <option value="resend"${method === 'resend' ? ' selected' : ''}>דרך Resend (צריך מפתח)</option>
         <option value="off"${method === 'off' ? ' selected' : ''}>כבוי</option>
       </select></label>
-    ${field(d, 'MAIL_FROM', 'כתובת השולח', { placeholder: 'אתר ירדן כרם <no-reply@yarden.to-web.co.il>', hint: 'מומלץ כתובת בדומיין של האתר. אם המיילים מגיעים לספאם, אפשר ליצור תיבה בפרוג׳ינטר ולכתוב אותה כאן.' })}
+    ${field(d, 'MAIL_FROM', 'כתובת השולח', { placeholder: 'אתר ירדן כרם <no-reply@yardenkerem.co.il>', hint: 'מומלץ כתובת בדומיין של האתר. אם המיילים מגיעים לספאם, אפשר ליצור תיבה בפרוג׳ינטר ולכתוב אותה כאן.' })}
     ${field(d, 'RESEND_API_KEY', 'מפתח API של Resend (רק אם בוחרים ב־Resend)', { secret: true })}
     <div class="actions">
       <button class="btn" type="submit" name="action" value="save">שמירה</button>

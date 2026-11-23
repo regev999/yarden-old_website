@@ -11,7 +11,7 @@ import { randomBytes } from 'node:crypto';
 import { settings } from './integrations';
 
 const NAMES = ['MAIL_METHOD', 'RESEND_API_KEY', 'MAIL_FROM', 'SMTP_HOST', 'SMTP_PORT'];
-const DEFAULT_FROM = 'אתר ירדן כרם <no-reply@yarden.to-web.co.il>';
+const DEFAULT_FROM = 'אתר ירדן כרם <no-reply@yardenkerem.co.il>';
 
 async function config() {
   const v = await settings(NAMES);
